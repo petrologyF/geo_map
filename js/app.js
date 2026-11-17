@@ -6,14 +6,30 @@
    */
   const CONFIG = {
     GEOJSON_URL: 'data/map_index.geojson',
-    GSI_PALE_TILE_URL: 'https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',
-    GSI_ATTRIBUTION: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer">地理院タイル</a>',
+    BASEMAPS: {
+      pale: {
+        url: 'https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',
+        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer">地理院タイル（淡色）</a>',
+        maxZoom: 18
+      },
+      std: {
+        url: 'https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',
+        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer">地理院タイル（標準）</a>',
+        maxZoom: 18
+      },
+      photo: {
+        url: 'https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg',
+        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer">地理院タイル（航空写真）</a>',
+        maxZoom: 18
+      }
+    },
     GSJ_ATTRIBUTION: '産業技術総合研究所 地質調査総合センター',
     INITIAL_CENTER: [36.2048, 138.2529],
     INITIAL_ZOOM: 5,
     MIN_ZOOM: 2,
     MAX_ZOOM: 18,
     MAX_LIST_ITEMS: 100,
+    MAX_SUGGESTIONS: 10,
     DEFAULT_OVERLAY_OPACITY: 0.85,
     WMS_OPTIONS: {
       layers: 'geo_A',
@@ -51,9 +67,13 @@
    */
   const state = {
     map: null,
+    activeBaseLayer: null,
     indexLayerGroup: null,
     allItems: [],
     filteredItems: [],
+    suggestionPool: [],
+    currentSuggestions: [],
+    activeSuggestionIndex: -1,
     activeOverlayLayer: null,
     selectedItem: null,
     dominantLegendItem: null,
@@ -65,11 +85,14 @@
    */
   const dom = {
     floatingPanel: document.getElementById('floating-panel'),
+    fitAllBtn: document.getElementById('fit-all-btn'),
     togglePanelBtn: document.getElementById('toggle-panel-btn'),
     searchInput: document.getElementById('search-input'),
+    searchSuggestions: document.getElementById('search-suggestions'),
     yearMinInput: document.getElementById('year-min'),
     yearMaxInput: document.getElementById('year-max'),
     resetFiltersBtn: document.getElementById('reset-filters'),
+    basemapButtons: document.querySelectorAll('.segmented-btn[data-basemap]'),
     resultCount: document.getElementById('result-count'),
     activeWmsBar: document.getElementById('active-wms-bar'),
     wmsStatusDot: document.getElementById('wms-status-dot'),
@@ -185,12 +208,24 @@
       prefectures
     ].join(' ').toLowerCase();
 
+    const authorList = [];
+    if (Array.isArray(props.authors_ja)) {
+      authorList.push(...props.authors_ja);
+    } else if (typeof props.authors === 'string' && props.authors.trim()) {
+      authorList.push(...props.authors.split(/[・,、]/));
+    }
+    if (Array.isArray(props.authors_en)) {
+      authorList.push(...props.authors_en);
+    }
+    const cleanAuthorList = [...new Set(authorList.map((a) => String(a).trim()).filter(Boolean))];
+
     return {
       mapId,
       mapCode,
       mapNameJa,
       mapNameEn,
       authorsJa: authorsJa || '不明',
+      authorList: cleanAuthorList,
       publishedYear: props.published_year ?? null,
       publisher: props.publisher_ja || props.publisher_en || '',
       prefectures,
@@ -232,6 +267,54 @@
   }
 
   /**
+   * ベースマップ（背景地図）を切り替える
+   * @param {'pale'|'std'|'photo'} key - CONFIG.BASEMAPS のキー
+   */
+  function switchBasemap(key) {
+    const basemap = CONFIG.BASEMAPS[key];
+    if (!basemap || !state.map) {
+      return;
+    }
+
+    if (state.activeBaseLayer) {
+      state.map.removeLayer(state.activeBaseLayer);
+    }
+
+    state.activeBaseLayer = L.tileLayer(basemap.url, {
+      attribution: basemap.attribution,
+      maxZoom: basemap.maxZoom
+    }).addTo(state.map);
+
+    state.activeBaseLayer.bringToBack();
+
+    dom.basemapButtons.forEach((btn) => {
+      btn.classList.toggle('is-active', btn.dataset.basemap === key);
+    });
+  }
+
+  /**
+   * 表示中の全図幅が画面内に収まるようにズーム・パンする
+   */
+  function fitAllVisibleItems() {
+    if (!state.map) {
+      return;
+    }
+    const targetItems = state.filteredItems.length > 0 ? state.filteredItems : state.allItems;
+    const combinedBounds = L.latLngBounds([]);
+
+    targetItems.forEach((item) => {
+      const bounds = getItemBounds(item);
+      if (bounds && bounds.isValid()) {
+        combinedBounds.extend(bounds);
+      }
+    });
+
+    if (combinedBounds.isValid()) {
+      state.map.fitBounds(combinedBounds, { padding: [48, 48], maxZoom: 11 });
+    }
+  }
+
+  /**
    * Leafletマップと地理院淡色地図ベースレイヤーを初期化する
    * @returns {L.Map} 初期化されたLeafletマップインスタンス
    */
@@ -244,11 +327,10 @@
       zoomControl: false
     });
 
-    // 地理院地図（淡色地図）をベースマップとして追加
-    L.tileLayer(CONFIG.GSI_PALE_TILE_URL, {
-      attribution: CONFIG.GSI_ATTRIBUTION,
-      maxZoom: CONFIG.MAX_ZOOM
-    }).addTo(map);
+    state.map = map;
+
+    // 地理院地図（淡色地図）を初期ベースマップとして追加
+    switchBasemap('pale');
 
     // ズームコントロールを画面右下に配置
     L.control.zoom({ position: 'bottomright' }).addTo(map);
@@ -718,7 +800,173 @@
 
     dom.resultListSection.hidden = state.allItems.length === 0;
     updateResultCount(state.allItems.length, state.allItems.length);
+    buildSuggestionPool();
     updateDominantLegend();
+  }
+
+  /**
+   * 図幅名および著者名のサジェスト候補プールを構築する
+   */
+  function buildSuggestionPool() {
+    const pool = [];
+    const seenKeys = new Set();
+
+    state.allItems.forEach((item) => {
+      const { meta } = item;
+      const mapKey = `map:${meta.mapNameJa}`;
+      if (!seenKeys.has(mapKey)) {
+        seenKeys.add(mapKey);
+        pool.push({
+          type: 'map',
+          label: meta.mapNameJa,
+          badge: '図幅',
+          searchText: `${meta.mapNameJa} ${meta.mapNameEn} ${meta.mapCode}`.toLowerCase(),
+          item
+        });
+      }
+
+      meta.authorList.forEach((author) => {
+        const authorKey = `author:${author}`;
+        if (!seenKeys.has(authorKey)) {
+          seenKeys.add(authorKey);
+          pool.push({
+            type: 'author',
+            label: author,
+            badge: '著者',
+            searchText: author.toLowerCase(),
+            item: null
+          });
+        }
+      });
+    });
+
+    state.suggestionPool = pool;
+  }
+
+  /**
+   * サジェストドロップダウンを閉じる
+   */
+  function hideSuggestions() {
+    dom.searchSuggestions.hidden = true;
+    dom.searchInput.setAttribute('aria-expanded', 'false');
+    state.currentSuggestions = [];
+    state.activeSuggestionIndex = -1;
+  }
+
+  /**
+   * サジェスト候補を選択した際の処理
+   * @param {Object} suggestion - サジェスト候補オブジェクト
+   */
+  function selectSuggestion(suggestion) {
+    if (!suggestion) {
+      return;
+    }
+
+    dom.searchInput.value = suggestion.label;
+    hideSuggestions();
+    applyFilters();
+
+    if (suggestion.type === 'map' && suggestion.item) {
+      zoomToMapItem(suggestion.item);
+      selectMapItem(suggestion.item);
+    } else {
+      fitAllVisibleItems();
+    }
+  }
+
+  /**
+   * 現在の検索入力値に応じたサジェスト候補を描画する
+   */
+  function renderSuggestions() {
+    const query = dom.searchInput.value.trim().toLowerCase();
+    const candidates = query
+      ? state.suggestionPool.filter((entry) => entry.searchText.includes(query))
+      : state.suggestionPool;
+
+    const limited = candidates.slice(0, CONFIG.MAX_SUGGESTIONS);
+    state.currentSuggestions = limited;
+    state.activeSuggestionIndex = -1;
+
+    if (limited.length === 0) {
+      hideSuggestions();
+      return;
+    }
+
+    dom.searchSuggestions.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+
+    limited.forEach((entry, index) => {
+      const li = document.createElement('li');
+      li.className = 'suggestion-item';
+      li.setAttribute('role', 'option');
+      li.setAttribute('aria-selected', 'false');
+
+      const textSpan = document.createElement('span');
+      textSpan.className = 'suggestion-text';
+      textSpan.textContent = entry.label;
+
+      const badgeSpan = document.createElement('span');
+      badgeSpan.className = `suggestion-badge ${entry.type === 'map' ? 'is-map' : 'is-author'}`;
+      badgeSpan.textContent = entry.badge;
+
+      li.append(textSpan, badgeSpan);
+      li.addEventListener('mousedown', (event) => {
+        event.preventDefault();
+        selectSuggestion(entry);
+      });
+      li.addEventListener('mousemove', () => {
+        state.activeSuggestionIndex = index;
+        updateActiveSuggestionHighlight();
+      });
+
+      fragment.appendChild(li);
+    });
+
+    dom.searchSuggestions.appendChild(fragment);
+    dom.searchSuggestions.hidden = false;
+    dom.searchInput.setAttribute('aria-expanded', 'true');
+  }
+
+  /**
+   * サジェストリストのアクティブハイライトを更新する
+   */
+  function updateActiveSuggestionHighlight() {
+    const items = dom.searchSuggestions.querySelectorAll('.suggestion-item');
+    items.forEach((el, idx) => {
+      const isActive = idx === state.activeSuggestionIndex;
+      el.classList.toggle('is-active', isActive);
+      el.setAttribute('aria-selected', String(isActive));
+      if (isActive) {
+        el.scrollIntoView({ block: 'nearest' });
+      }
+    });
+  }
+
+  /**
+   * 検索欄でのキーボード操作（上下移動・Enter確定・Esc閉じ）を処理する
+   * @param {KeyboardEvent} event - キーダウンイベント
+   */
+  function handleSearchKeydown(event) {
+    if (dom.searchSuggestions.hidden || state.currentSuggestions.length === 0) {
+      return;
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      state.activeSuggestionIndex = (state.activeSuggestionIndex + 1) % state.currentSuggestions.length;
+      updateActiveSuggestionHighlight();
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      state.activeSuggestionIndex =
+        (state.activeSuggestionIndex - 1 + state.currentSuggestions.length) % state.currentSuggestions.length;
+      updateActiveSuggestionHighlight();
+    } else if (event.key === 'Enter' && state.activeSuggestionIndex >= 0) {
+      event.preventDefault();
+      selectSuggestion(state.currentSuggestions[state.activeSuggestionIndex]);
+    } else if (event.key === 'Escape') {
+      event.stopPropagation();
+      hideSuggestions();
+    }
   }
 
   /**
@@ -850,16 +1098,32 @@
    * UIおよびキーボードイベントリスナーを登録する
    */
   function initEventListeners() {
-    dom.searchInput.addEventListener('input', applyFilters);
+    dom.searchInput.addEventListener('input', () => {
+      applyFilters();
+      renderSuggestions();
+    });
+    dom.searchInput.addEventListener('focus', renderSuggestions);
+    dom.searchInput.addEventListener('blur', hideSuggestions);
+    dom.searchInput.addEventListener('keydown', handleSearchKeydown);
+
     dom.yearMinInput.addEventListener('input', applyFilters);
     dom.yearMaxInput.addEventListener('input', applyFilters);
-    dom.resetFiltersBtn.addEventListener('click', resetFilters);
+    dom.resetFiltersBtn.addEventListener('click', () => {
+      hideSuggestions();
+      resetFilters();
+    });
+    dom.fitAllBtn.addEventListener('click', fitAllVisibleItems);
     dom.togglePanelBtn.addEventListener('click', togglePanel);
     dom.toggleListBtn.addEventListener('click', toggleResultList);
     dom.toggleLegendBtn.addEventListener('click', toggleLegend);
     dom.clearWmsBtn.addEventListener('click', clearActiveOverlayLayer);
     dom.zoomWmsBtn.addEventListener('click', () => zoomToMapItem(state.selectedItem));
     dom.wmsOpacitySlider.addEventListener('input', handleOpacityChange);
+
+    dom.basemapButtons.forEach((btn) => {
+      btn.addEventListener('click', () => switchBasemap(btn.dataset.basemap));
+    });
+
     document.addEventListener('keydown', handleGlobalKeydown);
   }
 

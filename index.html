@@ -42,6 +42,17 @@
         <span id="result-count" class="result-badge" aria-live="polite">読込中...</span>
         <button
           type="button"
+          id="fit-all-btn"
+          class="icon-button subtle"
+          title="表示中の全図幅にズーム"
+          aria-label="表示中の全図幅にズーム"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+          </svg>
+        </button>
+        <button
+          type="button"
           id="toggle-panel-btn"
           class="icon-button subtle"
           title="パネルを折りたたむ"
@@ -56,23 +67,29 @@
     </div>
 
     <div id="panel-body" class="panel-body">
-      <!-- テキスト検索 -->
-      <div class="search-field">
-        <span class="search-icon" aria-hidden="true">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
-        </span>
-        <input
-          type="search"
-          id="search-input"
-          class="text-input"
-          placeholder="図幅名または著者で検索"
-          autocomplete="off"
-          aria-label="図幅名または著者で検索"
-        >
-        <kbd class="shortcut-hint" title="検索にフォーカス">/</kbd>
+      <!-- テキスト検索 + サジェスト -->
+      <div class="search-autocomplete">
+        <div class="search-field">
+          <span class="search-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </span>
+          <input
+            type="search"
+            id="search-input"
+            class="text-input"
+            placeholder="図幅名または著者で検索"
+            autocomplete="off"
+            aria-label="図幅名または著者で検索"
+            aria-autocomplete="list"
+            aria-controls="search-suggestions"
+            aria-expanded="false"
+          >
+          <kbd class="shortcut-hint" title="検索にフォーカス">/</kbd>
+        </div>
+        <ul id="search-suggestions" class="search-suggestions" role="listbox" hidden></ul>
       </div>
 
       <!-- 年代フィルタ -->
@@ -99,6 +116,16 @@
             placeholder="終了年"
             aria-label="終了年"
           >
+        </div>
+      </div>
+
+      <!-- ベースマップ切替 -->
+      <div class="basemap-row" role="group" aria-label="背景地図の切り替え">
+        <span class="filter-label">背景地図</span>
+        <div class="segmented-control">
+          <button type="button" class="segmented-btn is-active" data-basemap="pale">淡色</button>
+          <button type="button" class="segmented-btn" data-basemap="std">標準</button>
+          <button type="button" class="segmented-btn" data-basemap="photo">航空写真</button>
         </div>
       </div>
 

@@ -4,23 +4,27 @@ Leaflet.js (v1.9.4) と Vanilla JavaScript を用いて構築した、産業技�
 
 ## 主な機能
 
-- **ベースマップ表示**: 国土地理院の淡色地図をフルスクリーン（`100vw × 100vh`）で表示し、右下にズームコントロール、左下にスケールバーを配置。
-- **図郭ポリゴン描画**: `data/map_index.geojson` を非同期読み込みし、図郭インデックスを地図上に描画（ホバー時のハイライトおよび図幅名ツールチップ付き）。
-- **即時フィルタリング**:
-  - 図幅名（日本語・英語）、著者名、図幅コード、都道府県名による部分一致検索（`/` または `Ctrl+K` / `Cmd+K` で検索欄へフォーカス）。
-  - 発行年（開始年〜終了年）による範囲絞り込み。
-  - 絞り込み結果の図幅一覧リスト表示およびクリックでの自動ズーム連動。
-- **XYZタイル優先オーバーレイ（WMSフォールバック対応） & 凡例表示**:
+- **ベースマップ表示・切り替え**:
+  - 初期表示は国土地理院の淡色地図をフルスクリーン（`100vw × 100vh`）で表示し、右下にズームコントロール、左下にスケールバーを配置。
+  - 検索パネル内から **淡色地図 / 標準地図 / 航空写真（シームレス空中写真）** をワンクリックで切り替え可能。
+- **図郭ポリゴン描画**: `data/map_index.geojson` を非同期読み込みし、図郭インデックスを地図上に描画（ホバー時のハイライトおよび図幅名・発行年ツールチップ付き）。
+- **検索サジェスト & 即時フィルタリング**:
+  - 検索欄への入力・フォーカス時に **図幅名・著者名のサジェスト候補（種別バッジ付き）** を表示（`↑`/`↓` キーで選択、`Enter` で確定、`Esc` で閉じる、`/` または `Ctrl+K` / `Cmd+K` で検索欄へフォーカス）。
+  - 図幅名（日本語・英語）、著者名、図幅コード、都道府県名による部分一致検索と、発行年（開始年〜終了年）による範囲絞り込みに対応。
+  - 絞り込み結果の図幅一覧リスト表示、および **表示中の全図幅へ戻る（全体表示）** ボタンを搭載。
+- **XYZタイル優先オーバーレイ（WMSフォールバック対応）**:
   - 図幅クリック時に、**TileJSON / XYZタイル**（`tile.webp_template` / `tile.png_template`）が利用可能であれば `L.tileLayer()` で直接オーバーレイ表示します（WMSのみ提供の図幅は `L.tileLayer.wms()` に自動フォールバック）。
-  - 選択中図幅の **地質凡例画像（`legend_image_url`）** をサイドパネル内にプレビュー表示（折りたたみ・別タブ拡大対応）。
   - **不透明度スライダー（0%〜100%）**・図幅へのズーム・オーバーレイ解除に対応。
-  - ポップアップに書誌情報（図幅名・発行年・著者・発行機関・地域）および詳細情報・説明書PDF・原図JPGへのリンクを表示。
+  - ポップアップに書誌情報（図幅名・発行年・著者・発行機関・地域）および詳細情報（GSJ Linked Data メタデータHTML）・説明書PDF・原図JPGへのリンクを表示。
+- **右手フローティング地質凡例パネル**:
+  - 画面右上に独立した凡例パネルを配置し、**現在画面内で最も広く表示されている図幅の凡例**を地図移動・ズームに合わせて自動で切り替えて表示（折りたたみ・別タブ拡大表示対応）。
 
 ## 技術スタック
 
 - HTML5 / CSS3 / Vanilla JavaScript（フレームワーク不使用）
 - [Leaflet.js v1.9.4](https://leafletjs.com/)
 - Google Fonts（Noto Sans JP）
+- Python 3（カタログ生成・ローカルサーバーランチャー）
 
 ## ディレクトリ構成
 
@@ -32,57 +36,64 @@ Leaflet.js (v1.9.4) と Vanilla JavaScript を用いて構築した、産業技�
 ├── css/
 │   └── style.css                # Chrome風ミニマルUIスタイル
 ├── data/
-│   ├── map_index.geojson        # 図幅インデックス（初期データとして「槍ヶ岳」図幅を収録）
+│   ├── map_catalog.json         # GSJメタデータから生成した図幅カタログ
+│   ├── map_index.geojson        # 図幅インデックス（槍ヶ岳周辺12図幅を収録）
 │   └── map_index.sample.geojson # 推奨GeoJSONスキーマのサンプル
 ├── js/
-│   └── app.js                   # 地図初期化・フィルタリング・XYZ/WMS・凡例制御
+│   └── app.js                   # 地図初期化・サジェスト・フィルタ・XYZ/WMS・凡例制御
+├── scripts/
+│   ├── build_map_catalog.py     # GSJメタデータ & TileJSON取得・GeoJSON生成スクリプト
+│   └── serve.py                 # 空きポート自動検出・ブラウザ起動対応ローカルサーバー
+├── .gitattributes
 ├── .gitignore
 ├── index.html
 ├── LICENSE
-└── README.md
+├── README.md
+├── requirements.txt
+└── start_app.bat                # Windows ワンクリック起動用ランチャー
 ```
-
-## データ仕様
-
-アプリケーションは `data/map_index.geojson` を読み込みます。推奨スキーマでは `properties` に以下の情報を格納します（従来の `map_name` / `authors` / `wms_url` 形式との後方互換も維持しています）。
-
-- `map_id` / `map_code`: 図幅IDおよびコード（例: `507`, `"G50_10_037yarigatake"`）
-- `map_name_ja` / `map_name_en`: 図幅名（日本語・英語）
-- `authors_ja` / `authors_en`: 著者配列
-- `published_year`: 発行年
-- `bounds` / `zoom`: 表示範囲 `[west, south, east, north]` およびズーム範囲 `{ min, max, default }`
-- `tile`: `{ webp_template, png_template, tilejson_url, ... }`（XYZタイル情報）
-- `legend_image_url` / `original_image_url` / `downloads` / `related_resources`: 凡例・原図・PDF・カタログリンク
-- `is_tile_available` / `is_wms_available`: タイル / WMS 利用可否フラグ
 
 ## ローカルでの起動方法
 
 ### Windows（ワンクリック起動）
-プロジェクト直下の [start_app.bat](start_app.bat) をダブルクリックするだけで、ローカル HTTP サーバーが起動し、既定のブラウザで `http://localhost:8000` が自動的に開きます（終了時は開いたコマンドウィンドウを閉じてください）。
+プロジェクト直下の [start_app.bat](start_app.bat) をダブルクリック（またはクリック）するだけで、ローカル HTTP サーバーが起動し、既定のブラウザで自動的にアプリが開きます（終了時は開いたコマンドウィンドウを閉じるか `Ctrl + C` を押してください）。
 
 ### コマンドラインから起動する場合
 `fetch` API を使用して GeoJSON を読み込むため、ローカル HTTP サーバー経由でアクセスしてください（`file://` 直開きでは CORS 制約により動作しません）。
 
 ```bash
-# Python 3 を使用する場合
-python -m http.server 8000
+# 付属のランチャーを使う場合（自動で空きポート検出しブラウザを起動）
+python scripts/serve.py
 
-# Node.js (npx) を使用する場合
+# 標準の http.server や npx を使う場合
+python -m http.server 8000
+# または
 npx serve .
 ```
 
-起動後、ブラウザで `http://localhost:8000` を開きます。
+## 図幅データの追加・更新方法
+
+`scripts/build_map_catalog.py` を使うと、GSJ Linked Data のメタデータ HTML と TileJSON から `map_catalog.json` および `map_index.geojson` を自動生成できます。
+
+```bash
+pip install -r requirements.txt
+
+python scripts/build_map_catalog.py \
+  --map-id 501 502 503 504 505 506 507 508 509 510 511 512 \
+  --output data/map_catalog.json \
+  --geojson-output data/map_index.geojson
+```
 
 ## GitHub Pages での公開手順
 
 本リポジトリには `.github/workflows/pages.yml` が含まれています。
 
-1. 必要に応じて `data/map_index.geojson` に図幅を追加して `main` ブランチへプッシュします。
+1. `main` ブランチへプッシュします。
 2. GitHub リポジトリの **Settings > Pages** を開き、**Source** で **GitHub Actions** を選択します。
 3. ワークフロー完了後、公開 URL からアプリケーションにアクセスできます。
 
 ## 出典・ライセンス
 
-- ベースマップ: [国土地理院 地理院タイル（淡色地図）](https://maps.gsi.go.jp/development/ichiran.html)
+- ベースマップ: [国土地理院 地理院タイル（淡色地図・標準地図・シームレス空中写真）](https://maps.gsi.go.jp/development/ichiran.html)
 - 地質図データ・凡例: 産業技術総合研究所 地質調査総合センター（政府標準利用規約（第2.0版）準拠）
 - ソフトウェアライセンス: [MIT License](LICENSE)（`LICENSE` 内の `<YOUR_NAME>` をご自身の名前に変更してください）
