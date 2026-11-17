@@ -602,8 +602,8 @@
 
     const zoom = CONFIG.LOUPE_ZOOM;
     dom.legendLoupe.hidden = false;
-    const loupeW = dom.legendLoupe.offsetWidth || 260;
-    const loupeH = dom.legendLoupe.offsetHeight || 132;
+    const loupeW = dom.legendLoupe.offsetWidth || 180;
+    const loupeH = dom.legendLoupe.offsetHeight || 180;
     const halfW = loupeW / 2;
     const halfH = loupeH / 2;
 

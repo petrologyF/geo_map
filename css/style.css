@@ -1108,9 +1108,8 @@ body {
 
 .legend-loupe {
   position: absolute;
-  width: 260px;
-  max-width: 92%;
-  height: 132px;
+  width: 180px;
+  height: 180px;
   border-radius: 10px;
   border: 2px solid #ffffff;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.32), 0 0 0 1px rgba(26, 115, 232, 0.35);
