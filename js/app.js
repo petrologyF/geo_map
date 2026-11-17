@@ -104,7 +104,8 @@
       publisherLabel: '発行',
       regionLabel: '地域',
       linkDetail: '詳細情報',
-      linkPdf: '説明書PDF',
+      linkPdf: '説明書を見る',
+      linkFullPdf: '詳細版PDF',
       linkOriginal: '原図JPG',
       legendTitle: '地質凡例',
       legendOpen: '拡大',
@@ -147,7 +148,8 @@
       publisherLabel: 'Publisher',
       regionLabel: 'Region',
       linkDetail: 'Details',
-      linkPdf: 'PDF',
+      linkPdf: 'View Manual',
+      linkFullPdf: 'Full PDF',
       linkOriginal: 'Original JPG',
       legendTitle: 'Legend',
       legendOpen: 'Open',
@@ -307,12 +309,16 @@
     const downloads = props.downloads || {};
     const downloadEntries = Object.entries(downloads).filter(([, url]) => isSafeUrl(url));
     const lightPdfEntry = downloadEntries.find(([key, url]) =>
-      /light|軽量|low/i.test(key) || /_(?:l|light|low)\.pdf(?:$|\?)/i.test(url)
+      /light|軽量|low/i.test(key) || /_D-L\.pdf(?:$|\?)|_(?:l|light|low)\.pdf(?:$|\?)/i.test(url)
     );
     const normalPdfEntry = downloadEntries.find(([key, url]) =>
-      /^pdf$/i.test(key) || /\.pdf(?:$|\?)/i.test(url)
+      /^pdf$/i.test(key) || (/\.pdf(?:$|\?)/i.test(url) && !/_D-L\.pdf(?:$|\?)|_(?:l|light|low)\.pdf(?:$|\?)/i.test(url))
     );
-    const rawPdfUrl = lightPdfEntry?.[1] || downloads.pdf_light || downloads.pdf || downloads.PDF || normalPdfEntry?.[1] || '';
+
+    const desc = props.description || {};
+    const lightPdfUrl = [desc.light_pdf_url, lightPdfEntry?.[1], downloads.pdf_light].find((u) => isSafeUrl(u)) || '';
+    const fullPdfUrl = [desc.full_pdf_url, downloads.pdf, downloads.PDF, normalPdfEntry?.[1]].find((u) => isSafeUrl(u)) || '';
+    const preferredPdf = [desc.preferred_pdf, lightPdfUrl, fullPdfUrl].find((u) => isSafeUrl(u)) || '';
     const mapCode = props.map_code || props.layer_name || '';
     const scaleMatch = String(props.series_en || props.series_ja || mapNameEn || mapNameJa).match(/1\s*:\s*[\d,]+/);
     let scale = props.scale || (scaleMatch ? scaleMatch[0].replace(/\s+/g, '') : '');
@@ -361,7 +367,10 @@
       legendImageUrl: isSafeUrl(props.legend_image_url) ? props.legend_image_url : '',
       originalImageUrl: isSafeUrl(props.original_image_url) ? props.original_image_url : '',
       detailUrl,
-      pdfUrl: isSafeUrl(rawPdfUrl) ? rawPdfUrl : '',
+      lightPdfUrl,
+      fullPdfUrl,
+      preferredPdf,
+      pdfUrl: preferredPdf,
       searchTokensJa,
       searchTokensEn
     };
@@ -695,7 +704,8 @@
     dom.dominantInfoLinks.innerHTML = '';
     const linkDefs = [
       [dict.linkDetail, meta.detailUrl],
-      [dict.linkPdf, meta.pdfUrl],
+      [dict.linkPdf, meta.preferredPdf],
+      [dict.linkFullPdf, meta.fullPdfUrl],
       [dict.linkOriginal, meta.originalImageUrl]
     ];
     linkDefs.forEach(([label, url]) => {

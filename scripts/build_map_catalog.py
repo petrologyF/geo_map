@@ -119,6 +119,52 @@ def extract_original_image_url(metadata_url: str, soup: BeautifulSoup) -> str:
     return ""
 
 
+def check_url_exists(url: str) -> bool:
+    """HEADリクエストでURLが存在するか（HTTP 200系）確認する。"""
+    try:
+        response = requests.head(
+            url,
+            headers={"User-Agent": USER_AGENT},
+            allow_redirects=True,
+            timeout=5,
+        )
+        return response.status_code == 200
+    except Exception:
+        return False
+
+
+def build_description_metadata(downloads: dict[str, str]) -> dict[str, str]:
+    """downloads辞書から description (light_pdf_url / full_pdf_url / preferred_pdf) を構築する。"""
+    light_pdf_url = downloads.get("pdf_light", "")
+    full_pdf_url = ""
+
+    for key, url in downloads.items():
+        if key == "pdf_light":
+            continue
+        is_pdf_entry = key.upper() == "PDF" or url.lower().endswith(".pdf")
+        if not is_pdf_entry:
+            continue
+        if "軽量" in key or "light" in key.lower() or re.search(r"_D-L\.pdf$|_(?:l|light|low)\.pdf$", url, re.I):
+            if not light_pdf_url:
+                light_pdf_url = url
+        elif not full_pdf_url:
+            full_pdf_url = url
+
+    # _D.pdf がある場合に _D-L.pdf（軽量版）の存在も確認する
+    if full_pdf_url and not light_pdf_url and re.search(r"_D\.pdf$", full_pdf_url, re.I):
+        candidate_light = re.sub(r"_D\.pdf$", "_D-L.pdf", full_pdf_url, flags=re.I)
+        if check_url_exists(candidate_light):
+            light_pdf_url = candidate_light
+            downloads["pdf_light"] = candidate_light
+
+    preferred_pdf = light_pdf_url or full_pdf_url
+    return {
+        "light_pdf_url": light_pdf_url,
+        "full_pdf_url": full_pdf_url,
+        "preferred_pdf": preferred_pdf,
+    }
+
+
 def extract_related_links(metadata_url: str, soup: BeautifulSoup) -> dict[str, str]:
     """関連リソース（文献・シリーズ・Viewer）のリンクを抽出する。"""
     related: dict[str, str] = {}
@@ -266,6 +312,7 @@ def build_record(metadata_url: str, series_code: str = "g050") -> dict:
     default_zoom = center[2] if len(center) > 2 else 11
 
     downloads = extract_download_links(metadata_url, soup)
+    description = build_description_metadata(downloads)
     related = extract_related_links(metadata_url, soup)
     catalog_url = properties.get("map_catalogue_url", "")
     ja_meta = extract_japanese_metadata(catalog_url)
@@ -302,6 +349,7 @@ def build_record(metadata_url: str, series_code: str = "g050") -> dict:
         "legend_image_url": tilejson.get("legend", ""),
         "original_image_url": extract_original_image_url(metadata_url, soup),
         "section_images": [],
+        "description": description,
         "downloads": downloads,
         "related_resources": {
             "publication_uri": properties.get("map_uri", metadata_url),
