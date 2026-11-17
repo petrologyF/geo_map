@@ -100,6 +100,10 @@
     wmsOpacitySlider: document.getElementById('wms-opacity'),
     wmsOpacityValue: document.getElementById('wms-opacity-value'),
     legendSidebar: document.getElementById('legend-sidebar'),
+    dominantInfoTitle: document.getElementById('dominant-info-title'),
+    dominantInfoSubtitle: document.getElementById('dominant-info-subtitle'),
+    dominantInfoMeta: document.getElementById('dominant-info-meta'),
+    dominantInfoLinks: document.getElementById('dominant-info-links'),
     legendMapName: document.getElementById('legend-map-name'),
     legendOpenLink: document.getElementById('legend-open-link'),
     legendImage: document.getElementById('legend-image'),
@@ -389,15 +393,20 @@
   }
 
   /**
-   * 右サイドバーの地質凡例パネルの表示内容を更新する
+   * 右サイドバー（最広表示図幅の詳細情報 & 地質凡例）の表示内容を更新する
    * @param {Object|null} item - 表示対象の図幅アイテム（nullで非表示）
    */
   function renderLegendPanel(item) {
     const wasHidden = dom.legendSidebar.hidden;
 
-    if (!item || !item.meta.legendImageUrl) {
+    if (!item) {
       state.dominantLegendItem = null;
       dom.legendSidebar.hidden = true;
+      dom.dominantInfoTitle.textContent = '';
+      dom.dominantInfoSubtitle.textContent = '';
+      dom.dominantInfoSubtitle.hidden = true;
+      dom.dominantInfoMeta.innerHTML = '';
+      dom.dominantInfoLinks.innerHTML = '';
       dom.legendMapName.textContent = '';
       dom.legendImage.removeAttribute('src');
       dom.legendOpenLink.href = '#';
@@ -411,11 +420,74 @@
       return;
     }
 
+    const { meta } = item;
     state.dominantLegendItem = item;
-    dom.legendMapName.textContent = item.meta.mapNameJa;
-    dom.legendImage.src = item.meta.legendImageUrl;
-    dom.legendImage.alt = `${item.meta.mapNameJa} 凡例`;
-    dom.legendOpenLink.href = item.meta.legendImageUrl;
+
+    // 上段：詳細情報
+    dom.dominantInfoTitle.textContent = meta.mapNameJa;
+    if (meta.mapNameEn) {
+      dom.dominantInfoSubtitle.textContent = meta.mapNameEn;
+      dom.dominantInfoSubtitle.hidden = false;
+    } else {
+      dom.dominantInfoSubtitle.textContent = '';
+      dom.dominantInfoSubtitle.hidden = true;
+    }
+
+    dom.dominantInfoMeta.innerHTML = '';
+    const metaEntries = [
+      ['発行年', meta.publishedYear != null ? `${meta.publishedYear}年` : '不明'],
+      ['著者', meta.authorsJa]
+    ];
+    if (meta.publisher) {
+      metaEntries.push(['発行', meta.publisher]);
+    }
+    if (meta.prefectures) {
+      metaEntries.push(['地域', meta.prefectures]);
+    }
+
+    metaEntries.forEach(([label, value]) => {
+      const dt = document.createElement('dt');
+      dt.textContent = label;
+      const dd = document.createElement('dd');
+      dd.textContent = value;
+      dom.dominantInfoMeta.append(dt, dd);
+    });
+
+    dom.dominantInfoLinks.innerHTML = '';
+    const linkDefs = [
+      ['詳細情報', meta.detailUrl],
+      ['説明書PDF', meta.pdfUrl],
+      ['原図JPG', meta.originalImageUrl]
+    ];
+    linkDefs.forEach(([label, url]) => {
+      if (!url) {
+        return;
+      }
+      const a = document.createElement('a');
+      a.className = 'dominant-info-link';
+      a.href = url;
+      a.target = '_blank';
+      a.rel = 'noopener noreferrer';
+      a.textContent = label;
+      dom.dominantInfoLinks.appendChild(a);
+    });
+
+    // 下段：凡例画像
+    if (meta.legendImageUrl) {
+      dom.legendMapName.textContent = meta.mapNameJa;
+      dom.legendImage.src = meta.legendImageUrl;
+      dom.legendImage.alt = `${meta.mapNameJa} 凡例`;
+      dom.legendImage.hidden = false;
+      dom.legendOpenLink.href = meta.legendImageUrl;
+      dom.legendOpenLink.hidden = false;
+    } else {
+      dom.legendMapName.textContent = '凡例画像なし';
+      dom.legendImage.removeAttribute('src');
+      dom.legendImage.hidden = true;
+      dom.legendOpenLink.href = '#';
+      dom.legendOpenLink.hidden = true;
+    }
+
     dom.legendSidebar.hidden = false;
 
     if (wasHidden && state.map) {
@@ -424,7 +496,7 @@
   }
 
   /**
-   * 現在オーバーレイ表示されている地質図の中で最も広く表示されているものを特定し、右サイドバーの凡例を更新する
+   * 現在オーバーレイ表示されている地質図の中で最も広く表示されているものを特定し、右サイドバーを更新する
    */
   function updateDominantLegend() {
     if (!state.map || state.activeOverlays.length === 0) {
@@ -437,9 +509,6 @@
     let maxArea = 0;
 
     state.activeOverlays.forEach(({ item }) => {
-      if (!item.meta.legendImageUrl) {
-        return;
-      }
       const itemBounds = getItemBounds(item);
       const area = computeIntersectionArea(viewBounds, itemBounds);
       if (area > maxArea) {
@@ -448,7 +517,7 @@
       }
     });
 
-    renderLegendPanel(bestItem);
+    renderLegendPanel(bestItem || state.activeOverlays[state.activeOverlays.length - 1].item);
   }
 
   /**
@@ -628,12 +697,14 @@
     const overlayLayer = meta.overlayType === 'xyz'
       ? L.tileLayer(meta.overlayUrl, {
           ...commonOptions,
-          minZoom: meta.zoomMin,
-          maxZoom: meta.zoomMax
+          minZoom: CONFIG.MIN_ZOOM,
+          maxNativeZoom: meta.zoomMax,
+          maxZoom: CONFIG.MAX_ZOOM
         })
       : L.tileLayer.wms(meta.overlayUrl, {
           ...CONFIG.WMS_OPTIONS,
-          ...commonOptions
+          ...commonOptions,
+          maxZoom: CONFIG.MAX_ZOOM
         });
 
     let loadedTileCount = 0;

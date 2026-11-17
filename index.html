@@ -152,8 +152,24 @@
       <div id="map" aria-label="地質図幅検索マップ"></div>
     </main>
 
-    <!-- 右サイドバー：現在表示中の地質図のうち最も広い図幅の凡例 -->
-    <aside id="legend-sidebar" class="sidebar sidebar-right" aria-label="地質凡例" hidden>
+    <!-- 右サイドバー：現在表示中の地質図のうち最も広い図幅の詳細情報＆凡例 -->
+    <aside id="legend-sidebar" class="sidebar sidebar-right" aria-label="図幅詳細・地質凡例" hidden>
+      <!-- 上段：最も広く表示されている図幅の詳細情報 -->
+      <section id="dominant-info-section" class="dominant-info-section">
+        <div class="sidebar-header dominant-info-header">
+          <div class="legend-title-group">
+            <span class="dominant-info-eyebrow">表示中の図幅詳細</span>
+            <h2 id="dominant-info-title" class="legend-panel-title"></h2>
+            <p id="dominant-info-subtitle" class="dominant-info-subtitle" hidden></p>
+          </div>
+        </div>
+        <div class="dominant-info-body">
+          <dl id="dominant-info-meta" class="dominant-info-meta"></dl>
+          <div id="dominant-info-links" class="dominant-info-links"></div>
+        </div>
+      </section>
+
+      <!-- 下段：地質凡例 -->
       <div class="sidebar-header legend-sidebar-header">
         <div class="legend-title-group">
           <h2 class="legend-panel-title">地質凡例</h2>

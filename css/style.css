@@ -92,7 +92,7 @@ body {
 }
 
 .sidebar-right {
-  width: 300px;
+  width: 320px;
   border-left: 1px solid var(--color-border);
 }
 
@@ -744,10 +744,86 @@ body {
 }
 
 /* ==========================================================================
-   Right Legend Sidebar
+   Right Info & Legend Sidebar
    ========================================================================== */
+.dominant-info-section {
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.dominant-info-header {
+  padding: 12px 14px 8px;
+  border-bottom: none;
+}
+
+.dominant-info-eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-primary);
+}
+
+.dominant-info-subtitle {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: var(--color-text-secondary);
+}
+
+.dominant-info-subtitle[hidden] {
+  display: none;
+}
+
+.dominant-info-body {
+  padding: 0 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dominant-info-meta {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 3px 10px;
+  font-size: 12px;
+}
+
+.dominant-info-meta dt {
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.dominant-info-meta dd {
+  margin: 0;
+  color: var(--color-text);
+  word-break: break-word;
+}
+
+.dominant-info-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.dominant-info-link {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+
+.dominant-info-link:hover {
+  background-color: var(--color-primary-soft);
+  border-color: var(--color-primary);
+}
+
 .legend-sidebar-header {
-  padding: 12px 14px;
+  padding: 10px 14px;
 }
 
 .legend-title-group {
