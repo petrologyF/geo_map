@@ -152,6 +152,37 @@
           >
           <span id="wms-opacity-value" class="wms-opacity-value">85%</span>
         </div>
+
+        <!-- 凡例画像プレビュー（legend_image_url がある場合のみ表示） -->
+        <div id="legend-section" class="legend-section" hidden>
+          <div class="legend-header">
+            <button
+              type="button"
+              id="toggle-legend-btn"
+              class="legend-toggle-button"
+              aria-expanded="true"
+              aria-controls="legend-body"
+            >
+              <span>地質凡例</span>
+              <svg class="list-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+            <a
+              id="legend-open-link"
+              class="legend-external-link"
+              href="#"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="凡例を新しいタブで拡大表示"
+            >
+              拡大
+            </a>
+          </div>
+          <div id="legend-body" class="legend-body">
+            <img id="legend-image" class="legend-image" src="" alt="地質図凡例" loading="lazy">
+          </div>
+        </div>
       </div>
 
       <!-- 絞り込み結果リスト -->

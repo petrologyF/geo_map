@@ -8,12 +8,13 @@
     GEOJSON_URL: 'data/map_index.geojson',
     GSI_PALE_TILE_URL: 'https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',
     GSI_ATTRIBUTION: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer">地理院タイル</a>',
+    GSJ_ATTRIBUTION: '産業技術総合研究所 地質調査総合センター',
     INITIAL_CENTER: [36.2048, 138.2529],
     INITIAL_ZOOM: 5,
-    MIN_ZOOM: 4,
+    MIN_ZOOM: 2,
     MAX_ZOOM: 18,
     MAX_LIST_ITEMS: 100,
-    DEFAULT_WMS_OPACITY: 0.85,
+    DEFAULT_OVERLAY_OPACITY: 0.85,
     WMS_OPTIONS: {
       layers: 'geo_A',
       transparent: true,
@@ -53,9 +54,9 @@
     indexLayerGroup: null,
     allItems: [],
     filteredItems: [],
-    activeWmsLayer: null,
+    activeOverlayLayer: null,
     selectedItem: null,
-    wmsOpacity: CONFIG.DEFAULT_WMS_OPACITY
+    overlayOpacity: CONFIG.DEFAULT_OVERLAY_OPACITY
   };
 
   /**
@@ -76,6 +77,11 @@
     clearWmsBtn: document.getElementById('clear-wms-btn'),
     wmsOpacitySlider: document.getElementById('wms-opacity'),
     wmsOpacityValue: document.getElementById('wms-opacity-value'),
+    legendSection: document.getElementById('legend-section'),
+    toggleLegendBtn: document.getElementById('toggle-legend-btn'),
+    legendOpenLink: document.getElementById('legend-open-link'),
+    legendBody: document.getElementById('legend-body'),
+    legendImage: document.getElementById('legend-image'),
     resultListSection: document.getElementById('result-list-section'),
     toggleListBtn: document.getElementById('toggle-list-btn'),
     resultList: document.getElementById('result-list'),
@@ -100,7 +106,7 @@
   }
 
   /**
-   * WMS URLが安全なスキーム（http/https/相対パス）であるか検証する
+   * URLが安全なスキーム（http/https）であるか検証する
    * @param {string} url - 検証対象のURL
    * @returns {boolean} 有効なURLならtrue
    */
@@ -114,6 +120,67 @@
     } catch {
       return false;
     }
+  }
+
+  /**
+   * 推奨GeoJSONスキーマおよび従来スキーマの両方を統一フォーマットに正規化する
+   * @param {Object} props - Featureのproperties
+   * @returns {Object} 正規化されたメタデータ
+   */
+  function normalizeProperties(props = {}) {
+    const mapNameJa = props.map_name_ja || props.map_name || '名称不明';
+    const mapNameEn = props.map_name_en || '';
+    const authorsJa = Array.isArray(props.authors_ja)
+      ? props.authors_ja.join('・')
+      : (props.authors || '');
+    const authorsEn = Array.isArray(props.authors_en)
+      ? props.authors_en.join(', ')
+      : '';
+
+    const prefectures = Array.isArray(props.prefectures) && props.prefectures.length > 0
+      ? props.prefectures.join('・')
+      : (props.region || '');
+
+    const tile = props.tile || {};
+    const xyzUrl = tile.webp_template || tile.png_template || tile.xyz_template || '';
+    const canUseXyz = props.is_tile_available !== false && isSafeUrl(xyzUrl);
+
+    const wmsUrl = props.wms_url || '';
+    const canUseWms = !canUseXyz && props.is_wms_available !== false && isSafeUrl(wmsUrl);
+
+    const zoom = props.zoom || {};
+    const attribution = props.license?.attribution || CONFIG.GSJ_ATTRIBUTION;
+
+    const searchTokens = [
+      mapNameJa,
+      mapNameEn,
+      authorsJa,
+      authorsEn,
+      props.map_code || '',
+      prefectures
+    ].join(' ').toLowerCase();
+
+    return {
+      mapId: props.map_id ?? null,
+      mapCode: props.map_code || '',
+      mapNameJa,
+      mapNameEn,
+      authorsJa: authorsJa || '不明',
+      publishedYear: props.published_year ?? null,
+      publisher: props.publisher_ja || props.publisher_en || '',
+      prefectures,
+      bounds: Array.isArray(props.bounds) && props.bounds.length === 4 ? props.bounds : null,
+      zoomMin: typeof zoom.min === 'number' ? zoom.min : CONFIG.MIN_ZOOM,
+      zoomMax: typeof zoom.max === 'number' ? zoom.max : CONFIG.MAX_ZOOM,
+      overlayType: canUseXyz ? 'xyz' : (canUseWms ? 'wms' : null),
+      overlayUrl: canUseXyz ? xyzUrl : (canUseWms ? wmsUrl : ''),
+      attribution,
+      legendImageUrl: isSafeUrl(props.legend_image_url) ? props.legend_image_url : '',
+      originalImageUrl: isSafeUrl(props.original_image_url) ? props.original_image_url : '',
+      catalogUrl: isSafeUrl(props.related_resources?.catalog_url) ? props.related_resources.catalog_url : '',
+      pdfUrl: isSafeUrl(props.downloads?.pdf) ? props.downloads.pdf : '',
+      searchTokens
+    };
   }
 
   /**
@@ -185,49 +252,93 @@
 
   /**
    * ポップアップ用のHTMLコンテンツを生成する
-   * @param {Object} properties - GeoJSON Featureのproperties
+   * @param {Object} meta - normalizeProperties() の返却オブジェクト
    * @returns {string} ポップアップHTML文字列
    */
-  function buildPopupContent(properties) {
-    const mapName = escapeHtml(properties.map_name || '名称不明');
-    const publishedYear = properties.published_year != null
-      ? `${escapeHtml(properties.published_year)}年`
+  function buildPopupContent(meta) {
+    const title = escapeHtml(meta.mapNameJa);
+    const subtitle = meta.mapNameEn
+      ? `<p class="map-popup-subtitle">${escapeHtml(meta.mapNameEn)}</p>`
+      : '';
+    const publishedYear = meta.publishedYear != null
+      ? `${escapeHtml(meta.publishedYear)}年`
       : '不明';
-    const authors = escapeHtml(properties.authors || '不明');
+
+    const rows = [
+      `<dt>発行年</dt><dd>${publishedYear}</dd>`,
+      `<dt>著者</dt><dd>${escapeHtml(meta.authorsJa)}</dd>`
+    ];
+
+    if (meta.publisher) {
+      rows.push(`<dt>発行</dt><dd>${escapeHtml(meta.publisher)}</dd>`);
+    }
+    if (meta.prefectures) {
+      rows.push(`<dt>地域</dt><dd>${escapeHtml(meta.prefectures)}</dd>`);
+    }
+
+    const links = [];
+    if (meta.catalogUrl) {
+      links.push(`<a class="map-popup-link" href="${escapeHtml(meta.catalogUrl)}" target="_blank" rel="noopener noreferrer">詳細情報</a>`);
+    }
+    if (meta.pdfUrl) {
+      links.push(`<a class="map-popup-link" href="${escapeHtml(meta.pdfUrl)}" target="_blank" rel="noopener noreferrer">説明書PDF</a>`);
+    }
+    if (meta.originalImageUrl) {
+      links.push(`<a class="map-popup-link" href="${escapeHtml(meta.originalImageUrl)}" target="_blank" rel="noopener noreferrer">原図JPG</a>`);
+    }
+
+    const linksHtml = links.length > 0
+      ? `<div class="map-popup-links">${links.join('')}</div>`
+      : '';
 
     return `
       <div class="map-popup">
-        <h2 class="map-popup-title">${mapName}</h2>
+        <h2 class="map-popup-title">${title}</h2>
+        ${subtitle}
         <dl class="map-popup-meta">
-          <dt>発行年</dt>
-          <dd>${publishedYear}</dd>
-          <dt>著者</dt>
-          <dd>${authors}</dd>
+          ${rows.join('')}
         </dl>
+        ${linksHtml}
       </div>
     `;
   }
 
   /**
    * ホバーツールチップ用のテキストを生成する
-   * @param {Object} properties - GeoJSON Featureのproperties
+   * @param {Object} meta - normalizeProperties() の返却オブジェクト
    * @returns {string} ツールチップ文字列
    */
-  function buildTooltipText(properties) {
-    const mapName = escapeHtml(properties.map_name || '名称不明');
-    const yearSuffix = properties.published_year != null
-      ? ` (${escapeHtml(properties.published_year)})`
-      : '';
-    return `${mapName}${yearSuffix}`;
+  function buildTooltipText(meta) {
+    const yearSuffix = meta.publishedYear != null ? ` (${meta.publishedYear})` : '';
+    return `${meta.mapNameJa}${yearSuffix}`;
   }
 
   /**
-   * 選択中のWMSレイヤーおよびポリゴン強調を解除する
+   * 凡例プレビューセクションを更新する
+   * @param {string} legendUrl - 凡例画像のURL
+   * @param {string} mapName - 代替テキスト用の図幅名
    */
-  function clearActiveWmsLayer() {
-    if (state.activeWmsLayer && state.map) {
-      state.map.removeLayer(state.activeWmsLayer);
-      state.activeWmsLayer = null;
+  function updateLegendDisplay(legendUrl, mapName) {
+    if (!legendUrl) {
+      dom.legendSection.hidden = true;
+      dom.legendImage.removeAttribute('src');
+      dom.legendOpenLink.href = '#';
+      return;
+    }
+
+    dom.legendImage.src = legendUrl;
+    dom.legendImage.alt = `${mapName} 凡例`;
+    dom.legendOpenLink.href = legendUrl;
+    dom.legendSection.hidden = false;
+  }
+
+  /**
+   * 選択中の地質図オーバーレイおよびポリゴン強調を解除する
+   */
+  function clearActiveOverlayLayer() {
+    if (state.activeOverlayLayer && state.map) {
+      state.map.removeLayer(state.activeOverlayLayer);
+      state.activeOverlayLayer = null;
     }
     if (state.selectedItem) {
       state.selectedItem.layer.setStyle(CONFIG.POLYGON_STYLE.default);
@@ -236,74 +347,82 @@
     dom.wmsStatusDot.classList.remove('is-loading');
     dom.activeWmsBar.hidden = true;
     dom.activeWmsName.textContent = '';
+    updateLegendDisplay('', '');
     syncSelectedListItem();
   }
 
   /**
-   * 指定されたWMSエンドポイントURLで新たなWMSレイヤーを追加する
-   * @param {string} wmsUrl - WMSエンドポイントURL
-   * @param {string} mapName - 表示用の図幅名
+   * XYZタイル（優先）またはWMSで地質図オーバーレイレイヤーを追加する
+   * @param {Object} meta - normalizeProperties() の返却オブジェクト
    */
-  function updateWmsLayer(wmsUrl, mapName) {
-    if (state.activeWmsLayer && state.map) {
-      state.map.removeLayer(state.activeWmsLayer);
-      state.activeWmsLayer = null;
+  function updateOverlayLayer(meta) {
+    if (state.activeOverlayLayer && state.map) {
+      state.map.removeLayer(state.activeOverlayLayer);
+      state.activeOverlayLayer = null;
     }
 
-    if (!isSafeUrl(wmsUrl)) {
+    if (!meta.overlayType || !meta.overlayUrl) {
       dom.activeWmsBar.hidden = true;
-      setStatusMessage('この図幅には有効なWMS URLが設定されていません。');
+      updateLegendDisplay(meta.legendImageUrl, meta.mapNameJa);
+      setStatusMessage('この図幅には利用可能なタイルURLまたはWMS URLがありません。');
       return;
     }
 
     setStatusMessage('');
 
-    const wmsLayer = L.tileLayer.wms(wmsUrl, {
-      ...CONFIG.WMS_OPTIONS,
-      opacity: state.wmsOpacity,
-      attribution: '産総研 地質図幅WMS'
-    });
+    const layer = meta.overlayType === 'xyz'
+      ? L.tileLayer(meta.overlayUrl, {
+          minZoom: meta.zoomMin,
+          maxZoom: meta.zoomMax,
+          opacity: state.overlayOpacity,
+          attribution: meta.attribution
+        })
+      : L.tileLayer.wms(meta.overlayUrl, {
+          ...CONFIG.WMS_OPTIONS,
+          opacity: state.overlayOpacity,
+          attribution: meta.attribution
+        });
 
-    wmsLayer.on('loading', () => {
+    layer.on('loading', () => {
       dom.wmsStatusDot.classList.add('is-loading');
     });
 
-    wmsLayer.on('load', () => {
+    layer.on('load', () => {
       dom.wmsStatusDot.classList.remove('is-loading');
     });
 
-    wmsLayer.on('tileerror', () => {
+    layer.on('tileerror', () => {
       dom.wmsStatusDot.classList.remove('is-loading');
-      setStatusMessage(`「${mapName || '選択図幅'}」のWMSタイル取得中にエラーが発生しました。`);
+      setStatusMessage(`「${meta.mapNameJa}」の地質図タイル取得中にエラーが発生しました。`);
     });
 
-    state.activeWmsLayer = wmsLayer.addTo(state.map);
-    dom.activeWmsName.textContent = `表示中: ${mapName || '地質図'}`;
+    state.activeOverlayLayer = layer.addTo(state.map);
+    dom.activeWmsName.textContent = `表示中: ${meta.mapNameJa}`;
     dom.activeWmsBar.hidden = false;
+    updateLegendDisplay(meta.legendImageUrl, meta.mapNameJa);
   }
 
   /**
-   * 図幅アイテムを選択し、ポップアップ表示・WMSオーバーレイ・強調スタイルを適用する
-   * @param {Object} item - { layer, properties } オブジェクト
+   * 図幅アイテムを選択し、ポップアップ表示・タイルオーバーレイ・強調スタイルを適用する
+   * @param {Object} item - { layer, meta } オブジェクト
    * @param {L.LatLng} [latlng] - ポップアップ表示座標（省略時はポリゴン中心）
    */
   function selectMapItem(item, latlng) {
-    const { layer, properties } = item;
+    const { layer, meta } = item;
 
-    // 以前選択していたポリゴンのスタイルをリセット
     if (state.selectedItem && state.selectedItem !== item) {
       state.selectedItem.layer.setStyle(CONFIG.POLYGON_STYLE.default);
     }
 
     // A. クリック地点（または図郭中心）にポップアップを表示
     const popupLatLng = latlng || layer.getBounds().getCenter();
-    L.popup({ maxWidth: 280 })
+    L.popup({ maxWidth: 300 })
       .setLatLng(popupLatLng)
-      .setContent(buildPopupContent(properties))
+      .setContent(buildPopupContent(meta))
       .openOn(state.map);
 
-    // B. 既存WMSを削除し、新たなWMSレイヤーを追加
-    updateWmsLayer(properties.wms_url, properties.map_name);
+    // B. 既存レイヤーを削除し、新たなXYZ/WMSレイヤーを追加
+    updateOverlayLayer(meta);
 
     // 選択中ポリゴンを強調
     state.selectedItem = item;
@@ -312,16 +431,24 @@
   }
 
   /**
-   * 選択中の図幅の範囲へマップをズームする
-   * @param {Object} item - { layer, properties } オブジェクト
+   * 選択中の図幅の範囲（bounds優先）へマップをズームする
+   * @param {Object} item - { layer, meta } オブジェクト
    */
   function zoomToMapItem(item) {
-    if (!item || !item.layer.getBounds) {
+    if (!item) {
       return;
     }
-    const bounds = item.layer.getBounds();
-    if (bounds.isValid()) {
-      state.map.fitBounds(bounds, { padding: [48, 48], maxZoom: 12 });
+
+    let bounds = null;
+    if (item.meta.bounds) {
+      const [west, south, east, north] = item.meta.bounds;
+      bounds = L.latLngBounds([[south, west], [north, east]]);
+    } else if (item.layer.getBounds) {
+      bounds = item.layer.getBounds();
+    }
+
+    if (bounds && bounds.isValid()) {
+      state.map.fitBounds(bounds, { padding: [48, 48], maxZoom: item.meta.zoomMax });
     }
   }
 
@@ -349,7 +476,7 @@
     const displayItems = state.filteredItems.slice(0, CONFIG.MAX_LIST_ITEMS);
 
     displayItems.forEach((item) => {
-      const { properties } = item;
+      const { meta } = item;
       const li = document.createElement('li');
       const button = document.createElement('button');
       button.type = 'button';
@@ -363,17 +490,17 @@
 
       const nameSpan = document.createElement('span');
       nameSpan.className = 'result-item-name';
-      nameSpan.textContent = properties.map_name || '名称不明';
+      nameSpan.textContent = meta.mapNameJa;
 
       const authorSpan = document.createElement('span');
       authorSpan.className = 'result-item-author';
-      authorSpan.textContent = properties.authors || '著者不明';
+      authorSpan.textContent = meta.authorsJa;
 
       mainSpan.append(nameSpan, authorSpan);
 
       const yearSpan = document.createElement('span');
       yearSpan.className = 'result-item-year';
-      yearSpan.textContent = properties.published_year != null ? `${properties.published_year}` : '';
+      yearSpan.textContent = meta.publishedYear != null ? `${meta.publishedYear}` : '';
 
       button.append(mainSpan, yearSpan);
       button.addEventListener('click', () => {
@@ -410,15 +537,15 @@
     const geoJsonLayer = L.geoJSON(geojsonData, {
       style: () => CONFIG.POLYGON_STYLE.default,
       onEachFeature: (feature, layer) => {
-        const props = feature.properties || {};
-        const item = { layer, properties: props };
+        const meta = normalizeProperties(feature.properties);
+        const item = { layer, meta };
 
-        if (typeof props.published_year === 'number' && !Number.isNaN(props.published_year)) {
-          years.push(props.published_year);
+        if (typeof meta.publishedYear === 'number' && !Number.isNaN(meta.publishedYear)) {
+          years.push(meta.publishedYear);
         }
 
         // ホバー時の図幅名ツールチップ
-        layer.bindTooltip(buildTooltipText(props), {
+        layer.bindTooltip(buildTooltipText(meta), {
           sticky: true,
           direction: 'top',
           offset: [0, -6],
@@ -453,7 +580,7 @@
     // GeoJSONのバウンディングボックスがあれば初期表示領域に合わせる
     const bounds = geoJsonLayer.getBounds();
     if (bounds.isValid()) {
-      state.map.fitBounds(bounds, { padding: [24, 24] });
+      state.map.fitBounds(bounds, { padding: [48, 48], maxZoom: 11 });
     }
 
     // 発行年入力のプレースホルダーにデータの最小・最大年を反映
@@ -483,16 +610,14 @@
     const nextFiltered = [];
 
     state.allItems.forEach((item) => {
-      const { layer, properties } = item;
-      const mapName = String(properties.map_name || '').toLowerCase();
-      const authors = String(properties.authors || '').toLowerCase();
-      const year = Number(properties.published_year);
+      const { layer, meta } = item;
+      const year = Number(meta.publishedYear);
 
-      // テキスト一致判定（図幅名または著者）
-      const matchesText = !query || mapName.includes(query) || authors.includes(query);
+      // テキスト一致判定（図幅名・著者名・図幅コード・地域）
+      const matchesText = !query || meta.searchTokens.includes(query);
 
       // 発行年範囲判定
-      const hasValidYear = !Number.isNaN(year);
+      const hasValidYear = meta.publishedYear !== null && !Number.isNaN(year);
       const matchesMinYear = minYear === null || (hasValidYear && year >= minYear);
       const matchesMaxYear = maxYear === null || (hasValidYear && year <= maxYear);
 
@@ -549,15 +674,24 @@
   }
 
   /**
-   * WMSレイヤーの不透明度を更新する
+   * 凡例プレビューの開閉を切り替える
+   */
+  function toggleLegend() {
+    const willExpand = dom.legendBody.hidden;
+    dom.legendBody.hidden = !willExpand;
+    dom.toggleLegendBtn.setAttribute('aria-expanded', String(willExpand));
+  }
+
+  /**
+   * オーバーレイレイヤーの不透明度を更新する
    */
   function handleOpacityChange() {
     const percent = Number(dom.wmsOpacitySlider.value);
-    state.wmsOpacity = percent / 100;
+    state.overlayOpacity = percent / 100;
     dom.wmsOpacityValue.textContent = `${percent}%`;
 
-    if (state.activeWmsLayer) {
-      state.activeWmsLayer.setOpacity(state.wmsOpacity);
+    if (state.activeOverlayLayer) {
+      state.activeOverlayLayer.setOpacity(state.overlayOpacity);
     }
   }
 
@@ -597,7 +731,8 @@
     dom.resetFiltersBtn.addEventListener('click', resetFilters);
     dom.togglePanelBtn.addEventListener('click', togglePanel);
     dom.toggleListBtn.addEventListener('click', toggleResultList);
-    dom.clearWmsBtn.addEventListener('click', clearActiveWmsLayer);
+    dom.toggleLegendBtn.addEventListener('click', toggleLegend);
+    dom.clearWmsBtn.addEventListener('click', clearActiveOverlayLayer);
     dom.zoomWmsBtn.addEventListener('click', () => zoomToMapItem(state.selectedItem));
     dom.wmsOpacitySlider.addEventListener('input', handleOpacityChange);
     document.addEventListener('keydown', handleGlobalKeydown);

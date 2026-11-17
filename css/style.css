@@ -438,6 +438,80 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+.legend-section {
+  border-top: 1px solid rgba(25, 103, 210, 0.14);
+  padding-top: 6px;
+}
+
+.legend-section[hidden] {
+  display: none;
+}
+
+.legend-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.legend-toggle-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: #1967d2;
+  cursor: pointer;
+}
+
+.legend-toggle-button:hover {
+  background-color: rgba(25, 103, 210, 0.1);
+}
+
+.legend-toggle-button[aria-expanded="true"] .list-chevron {
+  transform: rotate(180deg);
+}
+
+.legend-external-link {
+  font-size: 11px;
+  font-weight: 500;
+  color: #1967d2;
+  text-decoration: none;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.legend-external-link:hover {
+  background-color: rgba(25, 103, 210, 0.1);
+  text-decoration: underline;
+}
+
+.legend-body {
+  margin-top: 6px;
+  max-height: 220px;
+  overflow: auto;
+  border-radius: 6px;
+  background-color: #ffffff;
+  border: 1px solid rgba(25, 103, 210, 0.15);
+  padding: 4px;
+}
+
+.legend-body[hidden] {
+  display: none;
+}
+
+.legend-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 4px;
+}
+
 .icon-button {
   display: inline-flex;
   align-items: center;
@@ -669,12 +743,45 @@ body {
 }
 
 .map-popup-title {
-  margin: 0 0 8px;
+  margin: 0 0 2px;
   font-size: 14px;
   font-weight: 700;
   color: var(--color-text);
+}
+
+.map-popup-subtitle {
+  margin: 0 0 8px;
+  font-size: 11px;
+  color: var(--color-text-secondary);
   border-bottom: 1px solid #eef0f2;
   padding-bottom: 6px;
+}
+
+.map-popup-links {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid #eef0f2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.map-popup-link {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background-color 0.12s ease;
+}
+
+.map-popup-link:hover {
+  background-color: var(--color-primary-soft);
+  border-color: var(--color-primary);
 }
 
 .map-popup-meta {
