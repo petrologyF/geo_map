@@ -734,12 +734,15 @@
     if (!item) {
       return null;
     }
-    if (item.meta.bounds) {
-      const [west, south, east, north] = item.meta.bounds;
-      return L.latLngBounds([[south, west], [north, east]]);
+    if (Array.isArray(item.meta.bounds) && item.meta.bounds.length === 4) {
+      const [west, south, east, north] = item.meta.bounds.map(Number);
+      if (!Number.isNaN(west) && !Number.isNaN(south) && !Number.isNaN(east) && !Number.isNaN(north) && west < east && south < north) {
+        return L.latLngBounds([[south, west], [north, east]]);
+      }
     }
     if (item.layer && typeof item.layer.getBounds === 'function') {
-      return item.layer.getBounds();
+      const b = item.layer.getBounds();
+      return b && b.isValid() ? b : null;
     }
     return null;
   }
@@ -1051,25 +1054,38 @@
       return;
     }
 
+    const viewBounds = state.map.getBounds();
+
     if (state.activeOverlays.length === 0) {
-      renderLegendPanel(state.selectedItem);
+      if (state.selectedItem && computeIntersectionArea(viewBounds, getItemBounds(state.selectedItem)) > 0) {
+        renderLegendPanel(state.selectedItem);
+      } else {
+        renderLegendPanel(null);
+      }
       return;
     }
 
-    const viewBounds = state.map.getBounds();
     let bestItem = null;
-    let maxArea = 0;
+    let bestScore = 0;
 
     state.activeOverlays.forEach(({ item }) => {
       const itemBounds = getItemBounds(item);
       const area = computeIntersectionArea(viewBounds, itemBounds);
-      if (area > maxArea) {
-        maxArea = area;
+      if (area <= 0) {
+        return;
+      }
+      const totalArea = computeIntersectionArea(itemBounds, itemBounds);
+      const weight = item.meta.geometryModel === 'continuous_polygon' && totalArea > 0
+        ? 1 / Math.sqrt(totalArea)
+        : 1;
+      const score = area * weight;
+      if (score >= bestScore) {
+        bestScore = score;
         bestItem = item;
       }
     });
 
-    renderLegendPanel(bestItem || state.activeOverlays[state.activeOverlays.length - 1].item);
+    renderLegendPanel(bestItem);
   }
 
   /**
@@ -1264,6 +1280,9 @@
       }
     }
     if (state.map && removed.layer) {
+      if (typeof removed.layer.off === 'function') {
+        removed.layer.off();
+      }
       state.map.removeLayer(removed.layer);
     }
     if (state.selectedItem === item) {
@@ -1284,6 +1303,9 @@
   function clearAllOverlays() {
     state.activeOverlays.forEach(({ item, layer }) => {
       if (state.map && layer) {
+        if (typeof layer.off === 'function') {
+          layer.off();
+        }
         state.map.removeLayer(layer);
       }
       if (item.layer) {
@@ -1303,7 +1325,7 @@
   }
 
   /**
-   * display.tile_type（xyz / wms）に応じて Leaflet レイヤーを生成する
+   * display.tile_type（xyz / wms / raster）に応じて Leaflet レイヤーを生成する
    * @param {Object} meta - normalizeProperties() の返却オブジェクト
    * @param {L.LatLngBounds|null} [layerBounds] - 表示範囲制限
    * @param {number} [zIndex] - レイヤー重ね順
@@ -1335,6 +1357,8 @@
         ...CONFIG.WMS_OPTIONS,
         layers: meta.wmsLayers || CONFIG.WMS_OPTIONS.layers,
         ...commonOptions,
+        minZoom: CONFIG.MIN_ZOOM,
+        maxNativeZoom: meta.zoomMax,
         maxZoom: CONFIG.MAX_ZOOM
       });
     }
@@ -1342,7 +1366,8 @@
     if (meta.overlayType === 'raster' && meta.rasterImageUrl && layerBounds && layerBounds.isValid()) {
       return L.imageOverlay(meta.rasterImageUrl, layerBounds, {
         opacity: state.overlayOpacity,
-        attribution: meta.attribution
+        attribution: meta.attribution,
+        zIndex
       });
     }
 
@@ -1506,6 +1531,14 @@
   function renderResultList() {
     const dict = t();
     dom.resultList.innerHTML = '';
+
+    // リスト再描画時にホバー中だったポリゴンのハイライト残留をリセット
+    state.allItems.forEach((item) => {
+      if (!isItemOverlayed(item) && item.layer) {
+        item.layer.setStyle(styleByScale(item.meta.scaleDenominator, item.meta.mapType));
+      }
+    });
+
     const fragment = document.createDocumentFragment();
     const displayItems = state.filteredItems.slice(0, CONFIG.MAX_LIST_ITEMS);
 
@@ -2186,6 +2219,9 @@
    * @param {KeyboardEvent} event - キーダウンイベント
    */
   function handleSearchKeydown(event) {
+    if (event.isComposing || event.keyCode === 229) {
+      return;
+    }
     if (dom.searchSuggestions.hidden || state.currentSuggestions.length === 0) {
       return;
     }
@@ -2501,6 +2537,9 @@
    * @param {KeyboardEvent} event - キーダウンイベント
    */
   function handleGlobalKeydown(event) {
+    if (event.isComposing || event.keyCode === 229) {
+      return;
+    }
     const activeEl = document.activeElement;
     const isInputFocused = ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl?.tagName);
     const hasModifier = event.ctrlKey || event.metaKey || event.altKey;
@@ -2713,6 +2752,14 @@
     dom.legendZoomWrapper.addEventListener('mouseenter', updateLegendLoupe);
     dom.legendZoomWrapper.addEventListener('mousemove', updateLegendLoupe);
     dom.legendZoomWrapper.addEventListener('mouseleave', hideLegendLoupe);
+    dom.legendImage.addEventListener('error', () => {
+      hideLegendLoupe();
+      dom.legendImage.hidden = true;
+      dom.legendOpenLink.hidden = true;
+      dom.legendMapName.textContent = t().legendNone;
+    });
+    dom.legendSidebar.addEventListener('scroll', hideLegendLoupe, true);
+    window.addEventListener('resize', hideLegendLoupe);
 
     dom.tabLegendBtn.addEventListener('click', () => switchVisualMode('legend'));
     dom.tabSectionBtn.addEventListener('click', () => switchVisualMode('section'));
@@ -2744,6 +2791,9 @@
       const records = await response.json();
       if (Array.isArray(records) && records.length > 0) {
         state.seamlessMeta = normalizeProperties(records[0]);
+        if (state.allItems.length > 0) {
+          renderMapTypeChips();
+        }
       }
     } catch (error) {
       console.warn('Seamless 200k provider config load skipped:', error);
