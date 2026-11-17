@@ -23,6 +23,13 @@
 </head>
 <body>
   <div class="app-layout">
+    <!-- モバイル用パネル切替バー（720px以下で表示） -->
+    <nav id="mobile-nav-bar" class="mobile-nav-bar" aria-label="表示パネル切り替え">
+      <button type="button" class="mobile-nav-btn is-active" data-mobile-view="map">地図</button>
+      <button type="button" class="mobile-nav-btn" data-mobile-view="search">検索・一覧</button>
+      <button type="button" id="mobile-legend-tab" class="mobile-nav-btn" data-mobile-view="legend" hidden>詳細・凡例</button>
+    </nav>
+
     <!-- 左サイドバー：検索・年代マルチセレクト・表示中図幅・該当図幅一覧 -->
     <aside id="left-sidebar" class="sidebar sidebar-left" aria-label="図幅検索・フィルタ">
       <div class="sidebar-header">

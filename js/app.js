@@ -239,6 +239,9 @@
    * DOM要素のキャッシュ
    */
   const dom = {
+    appLayout: document.querySelector('.app-layout'),
+    mobileNavButtons: document.querySelectorAll('.mobile-nav-btn[data-mobile-view]'),
+    mobileLegendTab: document.getElementById('mobile-legend-tab'),
     appTitle: document.getElementById('app-title'),
     langButtons: document.querySelectorAll('.segmented-btn[data-lang]'),
     fitAllBtn: document.getElementById('fit-all-btn'),
@@ -701,6 +704,20 @@
   }
 
   /**
+   * モバイル表示時のアクティブパネル（地図 / 検索・一覧 / 詳細・凡例）を切り替える
+   * @param {'map'|'search'|'legend'} view
+   */
+  function switchMobileView(view) {
+    dom.appLayout.dataset.mobileView = view;
+    dom.mobileNavButtons.forEach((btn) => {
+      btn.classList.toggle('is-active', btn.dataset.mobileView === view);
+    });
+    if (view === 'map' && state.map) {
+      setTimeout(() => state.map.invalidateSize(), 50);
+    }
+  }
+
+  /**
    * 凡例画像の拡大鏡（ルーペ）を非表示にする
    */
   function hideLegendLoupe() {
@@ -765,6 +782,10 @@
       state.dominantLegendItem = null;
       hideLegendLoupe();
       dom.legendSidebar.hidden = true;
+      dom.mobileLegendTab.hidden = true;
+      if (dom.appLayout.dataset.mobileView === 'legend') {
+        switchMobileView('map');
+      }
       dom.dominantInfoTitle.textContent = '';
       dom.dominantInfoSubtitle.textContent = '';
       dom.dominantInfoSubtitle.hidden = true;
@@ -872,6 +893,7 @@
     }
 
     dom.legendSidebar.hidden = false;
+    dom.mobileLegendTab.hidden = false;
 
     if (wasHidden && state.map) {
       state.map.invalidateSize();
@@ -918,7 +940,34 @@
   }
 
   /**
-   * 左サイドバーの「表示中の地質図（最大4件）」リストを描画する
+   * activeOverlays の配列順に応じて全レイヤーの zIndex を同期する（末尾が最前面）
+   */
+  function syncOverlayZIndices() {
+    state.activeOverlays.forEach((entry, idx) => {
+      if (entry.layer && typeof entry.layer.setZIndex === 'function') {
+        entry.layer.setZIndex(300 + idx);
+      }
+    });
+  }
+
+  /**
+   * オーバーレイの重ね順を上下に入れ替える
+   * @param {number} index - state.activeOverlays 内の現在インデックス
+   * @param {number} delta - +1 で前面へ、-1 で背面へ
+   */
+  function moveOverlayOrder(index, delta) {
+    const targetIndex = index + delta;
+    if (targetIndex < 0 || targetIndex >= state.activeOverlays.length) {
+      return;
+    }
+    const [moved] = state.activeOverlays.splice(index, 1);
+    state.activeOverlays.splice(targetIndex, 0, moved);
+    syncOverlayZIndices();
+    renderActiveOverlayList();
+  }
+
+  /**
+   * 左サイドバーの「表示中の地質図（最大4件）」リストを描画する（上が最前面）
    */
   function renderActiveOverlayList() {
     dom.activeOverlayList.innerHTML = '';
@@ -935,7 +984,10 @@
 
     const fragment = document.createDocumentFragment();
 
-    state.activeOverlays.forEach(({ item }) => {
+    // 最前面（配列末尾）をリストの一番上に表示
+    for (let i = state.activeOverlays.length - 1; i >= 0; i -= 1) {
+      const entry = state.activeOverlays[i];
+      const { item, layer } = entry;
       const { meta } = item;
       const loc = getLocalizedMeta(meta);
       const li = document.createElement('li');
@@ -953,6 +1005,24 @@
       const btns = document.createElement('div');
       btns.className = 'active-overlay-btns';
 
+      const upBtn = document.createElement('button');
+      upBtn.type = 'button';
+      upBtn.className = 'icon-button';
+      upBtn.title = '前面へ';
+      upBtn.disabled = i === state.activeOverlays.length - 1;
+      upBtn.setAttribute('aria-label', `${loc.title} move up`);
+      upBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
+      upBtn.addEventListener('click', () => moveOverlayOrder(i, 1));
+
+      const downBtn = document.createElement('button');
+      downBtn.type = 'button';
+      downBtn.className = 'icon-button';
+      downBtn.title = '背面へ';
+      downBtn.disabled = i === 0;
+      downBtn.setAttribute('aria-label', `${loc.title} move down`);
+      downBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+      downBtn.addEventListener('click', () => moveOverlayOrder(i, -1));
+
       const zoomBtn = document.createElement('button');
       zoomBtn.type = 'button';
       zoomBtn.className = 'icon-button';
@@ -969,8 +1039,36 @@
       removeBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
       removeBtn.addEventListener('click', () => removeOverlayByItem(item));
 
-      btns.append(zoomBtn, removeBtn);
+      btns.append(upBtn, downBtn, zoomBtn, removeBtn);
       topRow.append(label, btns);
+
+      // 個別透過度スライダー行
+      const opacityRow = document.createElement('div');
+      opacityRow.className = 'overlay-item-opacity';
+      const currentPct = Math.round((entry.opacity ?? state.overlayOpacity) * 100);
+
+      const itemSlider = document.createElement('input');
+      itemSlider.type = 'range';
+      itemSlider.className = 'range-slider';
+      itemSlider.min = '0';
+      itemSlider.max = '100';
+      itemSlider.value = String(currentPct);
+      itemSlider.setAttribute('aria-label', `${loc.title} opacity`);
+
+      const itemVal = document.createElement('span');
+      itemVal.className = 'overlay-item-opacity-val';
+      itemVal.textContent = `${currentPct}%`;
+
+      itemSlider.addEventListener('input', () => {
+        const pct = Number(itemSlider.value);
+        entry.opacity = pct / 100;
+        itemVal.textContent = `${pct}%`;
+        if (layer && typeof layer.setOpacity === 'function') {
+          layer.setOpacity(entry.opacity);
+        }
+      });
+
+      opacityRow.append(itemSlider, itemVal);
 
       const metaRow = document.createElement('div');
       metaRow.className = 'active-overlay-meta';
@@ -989,19 +1087,19 @@
         metaRow.appendChild(detailLink);
       }
 
-      if (meta.pdfUrl) {
+      if (meta.preferredPdf) {
         const pdfLink = document.createElement('a');
         pdfLink.className = 'active-overlay-link';
-        pdfLink.href = meta.pdfUrl;
+        pdfLink.href = meta.preferredPdf;
         pdfLink.target = '_blank';
         pdfLink.rel = 'noopener noreferrer';
         pdfLink.textContent = dict.linkPdf;
         metaRow.appendChild(pdfLink);
       }
 
-      li.append(topRow, metaRow);
+      li.append(topRow, opacityRow, metaRow);
       fragment.appendChild(li);
-    });
+    }
 
     dom.activeOverlayList.appendChild(fragment);
   }
@@ -1164,6 +1262,7 @@
         existing.layer.bringToFront();
       }
       state.activeOverlays.push(...state.activeOverlays.splice(state.activeOverlays.indexOf(existing), 1));
+      syncOverlayZIndices();
       renderActiveOverlayList();
       syncSelectedListItem();
       updateDominantLegend();
@@ -1190,7 +1289,7 @@
       removeOverlayByItem(state.activeOverlays[0].item);
     }
 
-    const overlayEntry = { item, layer: overlayLayer, isLoading: false };
+    const overlayEntry = { item, layer: overlayLayer, isLoading: false, opacity: state.overlayOpacity };
     let loadedTileCount = 0;
     let errorTileCount = 0;
 
@@ -1227,6 +1326,7 @@
 
     overlayLayer.addTo(state.map);
     state.activeOverlays.push(overlayEntry);
+    syncOverlayZIndices();
     if (item.layer) {
       item.layer.setStyle(CONFIG.POLYGON_STYLE.selected);
     }
@@ -1475,7 +1575,11 @@
       btn.setAttribute('aria-pressed', String(isSelected));
 
       btn.addEventListener('click', () => {
-        state.selectedMapType = typeKey;
+        if (state.selectedMapType !== typeKey) {
+          state.selectedMapType = typeKey;
+          state.selectedScales.clear();
+          renderScaleChips();
+        }
         dom.mapTypeChips.querySelectorAll('.decade-chip').forEach((c) => {
           c.classList.remove('is-selected');
           c.setAttribute('aria-pressed', 'false');
@@ -1832,6 +1936,26 @@
     applyFilters();
 
     if ((suggestion.type === 'map' || suggestion.type === 'volcano') && suggestion.item) {
+      // 現在の詳細フィルタ・種別フィルタで非表示になっていれば自動調整して確実に表示する
+      if (!state.filteredItems.includes(suggestion.item)) {
+        state.selectedMapType = suggestion.item.meta.mapType || 'all';
+        renderMapTypeChips();
+        state.selectedScales.clear();
+        state.selectedRegions.clear();
+        state.selectedAuthors.clear();
+        state.selectedPublishers.clear();
+        state.selectedResourceFlags.clear();
+        state.yearRange.currentMin = state.yearRange.minBound;
+        state.yearRange.currentMax = state.yearRange.maxBound;
+        dom.yearRangeMin.value = String(state.yearRange.minBound);
+        dom.yearRangeMax.value = String(state.yearRange.maxBound);
+        updateYearSliderUI();
+        renderScaleChips();
+        renderRegionChips();
+        renderAuthorChips();
+        renderOtherChips();
+        applyFilters();
+      }
       zoomToMapItem(suggestion.item);
       addOverlayForItem(suggestion.item);
     } else {
@@ -2069,11 +2193,14 @@
       state.seamlessLayer.setOpacity(state.overlayOpacity);
     }
 
-    state.activeOverlays.forEach(({ layer }) => {
-      if (layer && typeof layer.setOpacity === 'function') {
-        layer.setOpacity(state.overlayOpacity);
+    state.activeOverlays.forEach((entry) => {
+      entry.opacity = state.overlayOpacity;
+      if (entry.layer && typeof entry.layer.setOpacity === 'function') {
+        entry.layer.setOpacity(state.overlayOpacity);
       }
     });
+
+    renderActiveOverlayList();
   }
 
   /**
@@ -2214,6 +2341,10 @@
       btn.addEventListener('click', () => switchLanguage(btn.dataset.lang));
     });
 
+    dom.mobileNavButtons.forEach((btn) => {
+      btn.addEventListener('click', () => switchMobileView(btn.dataset.mobileView));
+    });
+
     document.addEventListener('keydown', handleGlobalKeydown);
   }
 
@@ -2239,6 +2370,7 @@
    * アプリケーションのエントリポイント
    */
   async function init() {
+    switchMobileView('map');
     state.map = initMap();
     initEventListeners();
     loadSeamlessProvider();
