@@ -272,6 +272,7 @@
     loadingLayerCount: 0,
     seamlessLayer: null,
     seamlessMeta: null,
+    seamlessVirtualItem: null,
     dominantLegendItem: null,
     visualMode: 'legend',
     activeSectionIndex: 0,
@@ -1059,6 +1060,8 @@
     if (state.activeOverlays.length === 0) {
       if (state.selectedItem && computeIntersectionArea(viewBounds, getItemBounds(state.selectedItem)) > 0) {
         renderLegendPanel(state.selectedItem);
+      } else if (state.seamlessLayer && state.seamlessVirtualItem) {
+        renderLegendPanel(state.seamlessVirtualItem);
       } else {
         renderLegendPanel(null);
       }
@@ -1385,9 +1388,13 @@
 
     if (!enabled) {
       if (state.seamlessLayer) {
+        if (typeof state.seamlessLayer.off === 'function') {
+          state.seamlessLayer.off();
+        }
         state.map.removeLayer(state.seamlessLayer);
         state.seamlessLayer = null;
       }
+      updateDominantLegend();
       return;
     }
 
@@ -1403,6 +1410,7 @@
         state.seamlessLayer.addTo(state.map);
       }
     }
+    updateDominantLegend();
   }
 
   /**
@@ -2791,6 +2799,7 @@
       const records = await response.json();
       if (Array.isArray(records) && records.length > 0) {
         state.seamlessMeta = normalizeProperties(records[0]);
+        state.seamlessVirtualItem = { layer: null, meta: state.seamlessMeta };
         if (state.allItems.length > 0) {
           renderMapTypeChips();
         }

@@ -41,9 +41,23 @@ def is_valid_bounds(bounds) -> bool:
 
 def validate_common_record(record: dict) -> None:
     """共通スキーマの必須属性・型・座標整合性を検証する。"""
-    m = record.get("map", {})
-    disp = record.get("display", {})
-    docs = record.get("documents", {})
+    src = record.get("source")
+    m = record.get("map")
+    disp = record.get("display")
+    docs = record.get("documents")
+
+    if not isinstance(src, dict) or not isinstance(m, dict) or not isinstance(disp, dict) or not isinstance(docs, dict):
+        raise ValueError("source / map / display / documents はすべて辞書である必要があります")
+
+    for src_key in ("provider_id", "provider_name_ja", "license", "attribution"):
+        val = src.get(src_key)
+        if not isinstance(val, str) or not val.strip():
+            raise ValueError(f"source.{src_key} が未設定または空文字です")
+
+    for map_key in ("map_id", "theme"):
+        val = m.get(map_key)
+        if not isinstance(val, str) or not val.strip():
+            raise ValueError(f"map.{map_key} が未設定または空文字です")
 
     if m.get("map_type") not in MAP_TYPES:
         raise ValueError(f"不正な map_type: {m.get('map_type')}")
@@ -59,12 +73,19 @@ def validate_common_record(record: dict) -> None:
         raise ValueError(f"不正な map.published_year（int または None のみ許容）: {pub_year}")
 
     for key in ("tile_type", "tile_url", "wms_url", "raster_image_url"):
-        if key not in disp:
-            raise ValueError(f"display.{key} がありません")
+        if key not in disp or not isinstance(disp.get(key), str):
+            raise ValueError(f"display.{key} がないか文字列ではありません")
 
     tile_type = disp.get("tile_type")
     if tile_type not in TILE_TYPES:
         raise ValueError(f"不正な display.tile_type: {tile_type}")
+
+    if tile_type == "xyz" and not disp.get("tile_url", "").strip():
+        raise ValueError("tile_type == 'xyz' の場合は display.tile_url が必須です")
+    if tile_type == "wms" and not disp.get("wms_url", "").strip():
+        raise ValueError("tile_type == 'wms' の場合は display.wms_url が必須です")
+    if tile_type == "raster" and not disp.get("raster_image_url", "").strip():
+        raise ValueError("tile_type == 'raster' の場合は display.raster_image_url が必須です")
 
     bounds = m.get("bounds")
     if bounds:
@@ -74,5 +95,5 @@ def validate_common_record(record: dict) -> None:
         raise ValueError("tile_type == 'raster' の場合は有効な map.bounds（4要素）が必須です")
 
     for key in ("light_pdf_url", "full_pdf_url"):
-        if key not in docs:
-            raise ValueError(f"documents.{key} がありません")
+        if key not in docs or not isinstance(docs.get(key), str):
+            raise ValueError(f"documents.{key} がないか文字列ではありません")

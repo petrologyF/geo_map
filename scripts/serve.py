@@ -4,13 +4,18 @@
 """
 
 import http.server
+import mimetypes
 import os
+import sys
 import threading
 import webbrowser
 from pathlib import Path
 
 DEFAULT_PORT = 8000
 MAX_PORT_TRIES = 20
+
+mimetypes.add_type("application/geo+json", ".geojson")
+mimetypes.add_type("image/webp", ".webp")
 
 
 def create_server(host: str = "127.0.0.1") -> tuple[http.server.ThreadingHTTPServer, int]:
@@ -27,6 +32,9 @@ def create_server(host: str = "127.0.0.1") -> tuple[http.server.ThreadingHTTPSer
 
 
 def main() -> None:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
     project_root = Path(__file__).resolve().parent.parent
     os.chdir(project_root)
 

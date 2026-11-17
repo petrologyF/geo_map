@@ -32,7 +32,10 @@ def is_similar_sheet_name(name_a: str, name_b: str) -> bool:
     if key_a == key_b:
         return True
     shorter, longer = sorted((key_a, key_b), key=len)
-    return len(shorter) >= 2 and longer.startswith(shorter)
+    if not longer.startswith(shorter):
+        return False
+    suffix = longer[len(shorter):]
+    return suffix in ("岳", "山", "地方", "地域", "周辺")
 
 
 def is_same_spatial_sheet(bounds_a, bounds_b, threshold_deg: float = 0.05) -> bool:
@@ -40,6 +43,10 @@ def is_same_spatial_sheet(bounds_a, bounds_b, threshold_deg: float = 0.05) -> bo
     if not (isinstance(bounds_a, list) and len(bounds_a) == 4):
         return False
     if not (isinstance(bounds_b, list) and len(bounds_b) == 4):
+        return False
+    if not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in bounds_a):
+        return False
+    if not all(isinstance(v, (int, float)) and not isinstance(v, bool) for v in bounds_b):
         return False
 
     lon_a = (bounds_a[0] + bounds_a[2]) / 2.0
@@ -142,7 +149,7 @@ def merge_without_duplicates(gsj_records: list[dict], hro_records: list[dict]) -
     """GSJカタログを優先し、空間・識別子・名称/発行年で重複する北海道総研レコードを除外して結合する。"""
     merged = list(gsj_records)
     for hro_rec in hro_records:
-        if any(is_duplicate_record(gsj_rec, hro_rec) for gsj_rec in gsj_records):
+        if any(is_duplicate_record(existing_rec, hro_rec) for existing_rec in merged):
             continue
         merged.append(hro_rec)
 
