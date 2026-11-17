@@ -330,6 +330,12 @@ body {
   border-color: transparent;
 }
 
+.suggestion-badge.is-volcano {
+  background-color: #fce8e6;
+  color: #c5221f;
+  border-color: transparent;
+}
+
 /* ==========================================================================
    Quick Toggles & Dual Range Slider
    ========================================================================== */

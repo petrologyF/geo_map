@@ -30,6 +30,9 @@ def normalize_hro_eeg(raw: dict) -> dict:
             "layer_name": raw.get("layer_name", ""),
             "map_name_ja": raw.get("map_name_ja", ""),
             "map_name_en": raw.get("map_name_en", ""),
+            "map_type": raw.get("map_type", "geological_map_sheet"),
+            "theme": raw.get("theme", "geology"),
+            "geometry_model": raw.get("geometry_model", "map_sheet"),
             "scale_denominator": raw.get("scale_denominator", 50000),
             "series": raw.get("series", "5万分の1地質図幅（北海道）"),
             "published_year": raw.get("published_year"),
@@ -51,6 +54,7 @@ def normalize_hro_eeg(raw: dict) -> dict:
             "tile_url": raw.get("tile_url", ""),
             "wms_url": raw.get("wms_url", ""),
             "wms_layers": raw.get("wms_layers", ""),
+            "raster_image_url": raw.get("raster_image_url", ""),
             "opacity": 0.85,
         },
         "documents": {

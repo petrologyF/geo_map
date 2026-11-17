@@ -17,6 +17,9 @@ def build_seamless_200k_record() -> dict:
             "layer_name": "geology",
             "map_name_ja": "20万分の1日本シームレス地質図V2",
             "map_name_en": "Seamless Digital Geological Map of Japan (1:200,000) V2",
+            "map_type": "seamless_geological_map",
+            "theme": "geology",
+            "geometry_model": "continuous_polygon",
             "scale_denominator": 200000,
             "series": "20万分の1日本シームレス地質図",
             "published_year": 2023,
@@ -42,6 +45,7 @@ def build_seamless_200k_record() -> dict:
             "tile_url": "",
             "wms_url": "https://ows.gsj.jp/ows/seamlessgeologicmapv2",
             "wms_layers": "geology",
+            "raster_image_url": "",
             "opacity": 0.75,
         },
         "documents": {

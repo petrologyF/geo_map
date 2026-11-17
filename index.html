@@ -82,6 +82,12 @@
           <ul id="search-suggestions" class="search-suggestions" role="listbox" hidden></ul>
         </div>
 
+        <!-- 第一階層フィルター：地図種別 (map_type) -->
+        <div class="filter-group">
+          <span id="map-type-label" class="filter-label">地図種別</span>
+          <div id="map-type-chips" class="decade-chips" role="group" aria-label="地図種別フィルタ"></div>
+        </div>
+
         <!-- クイック表示オプション（地図範囲連動・図郭枠表示・全国シームレス） -->
         <div class="quick-toggles">
           <label class="toggle-chip-label">
@@ -153,6 +159,12 @@
             <div class="filter-group">
               <span id="scale-filter-label" class="filter-label">縮尺・シリーズ</span>
               <div id="scale-chips" class="decade-chips" role="group" aria-label="縮尺フィルタ"></div>
+            </div>
+
+            <!-- 地域・都道府県マルチセレクト -->
+            <div class="filter-group">
+              <span id="region-filter-label" class="filter-label">地域（複数選択可）</span>
+              <div id="region-chips" class="decade-chips" role="group" aria-label="地域フィルタ"></div>
             </div>
 
             <!-- 著者マルチセレクト -->

@@ -47,7 +47,10 @@
         "min": 2,
         "max": 14,
         "default": 11
-      }
+      },
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet"
     },
     "geometry": {
       "type": "Polygon",
@@ -81,7 +84,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_028yatsuo/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85
+      "opacity": 0.85,
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_501_org_501.jpg"
     },
     "documents": {
       "light_pdf_url": "",
@@ -159,7 +163,10 @@
         "min": 2,
         "max": 14,
         "default": 11
-      }
+      },
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet"
     },
     "geometry": {
       "type": "Polygon",
@@ -193,7 +200,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_029gohyakkoku/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85
+      "opacity": 0.85,
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_502_org_502.jpg"
     },
     "documents": {
       "light_pdf_url": "",
@@ -280,7 +288,10 @@
         "min": 2,
         "max": 14,
         "default": 11
-      }
+      },
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet"
     },
     "geometry": {
       "type": "Polygon",
@@ -314,7 +325,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_030tateyama/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85
+      "opacity": 0.85,
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_503_org_503.jpg"
     },
     "documents": {
       "light_pdf_url": "",
@@ -398,7 +410,10 @@
         "min": 2,
         "max": 14,
         "default": 11
-      }
+      },
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet"
     },
     "geometry": {
       "type": "Polygon",
@@ -432,7 +447,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_031omachi/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85
+      "opacity": 0.85,
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_504_org_504.jpg"
     },
     "documents": {
       "light_pdf_url": "",
@@ -516,7 +532,10 @@
         "min": 2,
         "max": 14,
         "default": 11
-      }
+      },
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet"
     },
     "geometry": {
       "type": "Polygon",
@@ -550,7 +569,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_035shirokimine/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85
+      "opacity": 0.85,
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_505_org_505.jpg"
     },
     "documents": {
       "light_pdf_url": "",
@@ -628,7 +648,10 @@
         "min": 2,
         "max": 14,
         "default": 11
-      }
+      },
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet"
     },
     "geometry": {
       "type": "Polygon",
@@ -662,7 +685,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_036higashimozumi/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85
+      "opacity": 0.85,
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_506_org_506.jpg"
     },
     "documents": {
       "light_pdf_url": "",
@@ -749,7 +773,10 @@
         "min": 2,
         "max": 14,
         "default": 11
-      }
+      },
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet"
     },
     "geometry": {
       "type": "Polygon",
@@ -783,7 +810,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_037yarigatake/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85
+      "opacity": 0.85,
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_507_org_507.jpg"
     },
     "documents": {
       "light_pdf_url": "",
@@ -861,7 +889,10 @@
         "min": 2,
         "max": 14,
         "default": 11
-      }
+      },
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet"
     },
     "geometry": {
       "type": "Polygon",
@@ -895,7 +926,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_038shinanoikeda/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85
+      "opacity": 0.85,
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_508_org_508.jpg"
     },
     "documents": {
       "light_pdf_url": "",
@@ -976,7 +1008,10 @@
         "min": 2,
         "max": 14,
         "default": 11
-      }
+      },
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet"
     },
     "geometry": {
       "type": "Polygon",
@@ -1010,7 +1045,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_043hidafurukawa/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85
+      "opacity": 0.85,
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_509_org_509.jpg"
     },
     "documents": {
       "light_pdf_url": "",
@@ -1088,7 +1124,10 @@
         "min": 2,
         "max": 14,
         "default": 11
-      }
+      },
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet"
     },
     "geometry": {
       "type": "Polygon",
@@ -1122,7 +1161,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_044funatsu/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85
+      "opacity": 0.85,
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_510_org_510.jpg"
     },
     "documents": {
       "light_pdf_url": "",
@@ -1197,7 +1237,10 @@
         "min": 2,
         "max": 14,
         "default": 11
-      }
+      },
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet"
     },
     "geometry": {
       "type": "Polygon",
@@ -1231,7 +1274,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_045kamikochi/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85
+      "opacity": 0.85,
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_511_org_511.jpg"
     },
     "documents": {
       "light_pdf_url": "",
@@ -1306,7 +1350,10 @@
         "min": 2,
         "max": 14,
         "default": 11
-      }
+      },
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet"
     },
     "geometry": {
       "type": "Polygon",
@@ -1340,7 +1387,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_051mikkamachi/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85
+      "opacity": 0.85,
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_512_org_512.jpg"
     },
     "documents": {
       "light_pdf_url": "",
@@ -1424,7 +1472,10 @@
         "min": 2,
         "max": 14,
         "default": 11
-      }
+      },
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet"
     },
     "geometry": {
       "type": "Polygon",
@@ -1458,7 +1509,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_08_057Ogawara/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85
+      "opacity": 0.85,
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_1911_org_1854.jpg"
     },
     "documents": {
       "light_pdf_url": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_08057_2025_D-L.pdf",

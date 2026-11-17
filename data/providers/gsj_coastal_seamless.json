@@ -1,0 +1,303 @@
+[
+  {
+    "source": {
+      "provider_id": "gsj_coastal_seamless",
+      "provider_name_ja": "産業技術総合研究所 地質調査総合センター",
+      "provider_url": "https://www.gsj.jp/researches/project/coastal-geology/results/index.html",
+      "license": "政府標準利用規約（第2.0版）準拠",
+      "attribution": "産業技術総合研究所 地質調査総合センター（海陸シームレス地質図）"
+    },
+    "map": {
+      "map_id": "gsj_coastal_toyama_bay",
+      "local_id": "toyama_bay",
+      "layer_name": "",
+      "map_name_ja": "富山湾沿岸域 海陸シームレス地質図",
+      "map_name_en": "Seamless Geological Map of Toyama Bay Coastal Zone",
+      "map_type": "seamless_geological_map",
+      "theme": "coastal_seamless",
+      "geometry_model": "continuous_polygon",
+      "scale_denominator": 200000,
+      "series": "海陸シームレス地質図",
+      "published_year": 2021,
+      "authors": [
+        "産業技術総合研究所 地質調査総合センター"
+      ],
+      "authors_ja": [
+        "産業技術総合研究所 地質調査総合センター"
+      ],
+      "authors_en": [
+        "Geological Survey of Japan, AIST"
+      ],
+      "publisher": "産業技術総合研究所 地質調査総合センター",
+      "publisher_ja": "産業技術総合研究所 地質調査総合センター",
+      "publisher_en": "Geological Survey of Japan, AIST",
+      "region": "富山県・石川県",
+      "prefectures": [
+        "富山県",
+        "石川県"
+      ],
+      "bounds": [
+        136.85,
+        36.65,
+        137.65,
+        37.35
+      ],
+      "center": [
+        137.25,
+        37.0
+      ],
+      "zoom": {
+        "min": 6,
+        "max": 14,
+        "default": 10
+      }
+    },
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            136.85,
+            36.65
+          ],
+          [
+            137.65,
+            36.65
+          ],
+          [
+            137.65,
+            37.35
+          ],
+          [
+            136.85,
+            37.35
+          ],
+          [
+            136.85,
+            36.65
+          ]
+        ]
+      ]
+    },
+    "display": {
+      "tile_type": "none",
+      "tile_url": "",
+      "wms_url": "",
+      "wms_layers": "",
+      "raster_image_url": "",
+      "opacity": 0.8
+    },
+    "documents": {
+      "light_pdf_url": "",
+      "full_pdf_url": "",
+      "preferred_pdf": "",
+      "legend_image_url": "",
+      "original_image_url": "",
+      "section_images": []
+    },
+    "downloads": {},
+    "related_resources": {
+      "catalog_url": "https://www.gsj.jp/researches/project/coastal-geology/results/index.html"
+    }
+  },
+  {
+    "source": {
+      "provider_id": "gsj_coastal_seamless",
+      "provider_name_ja": "産業技術総合研究所 地質調査総合センター",
+      "provider_url": "https://www.gsj.jp/researches/project/coastal-geology/results/index.html",
+      "license": "政府標準利用規約（第2.0版）準拠",
+      "attribution": "産業技術総合研究所 地質調査総合センター（海陸シームレス地質図）"
+    },
+    "map": {
+      "map_id": "gsj_coastal_ishikari_south",
+      "local_id": "ishikari_south",
+      "layer_name": "",
+      "map_name_ja": "石狩低地帯南部沿岸域 海陸シームレス地質図",
+      "map_name_en": "Seamless Geological Map of Southern Ishikari Lowland Coastal Zone",
+      "map_type": "seamless_geological_map",
+      "theme": "coastal_seamless",
+      "geometry_model": "continuous_polygon",
+      "scale_denominator": 200000,
+      "series": "海陸シームレス地質図",
+      "published_year": 2018,
+      "authors": [
+        "産業技術総合研究所 地質調査総合センター"
+      ],
+      "authors_ja": [
+        "産業技術総合研究所 地質調査総合センター"
+      ],
+      "authors_en": [
+        "Geological Survey of Japan, AIST"
+      ],
+      "publisher": "産業技術総合研究所 地質調査総合センター",
+      "publisher_ja": "産業技術総合研究所 地質調査総合センター",
+      "publisher_en": "Geological Survey of Japan, AIST",
+      "region": "北海道",
+      "prefectures": [
+        "北海道"
+      ],
+      "bounds": [
+        141.15,
+        42.35,
+        142.05,
+        42.85
+      ],
+      "center": [
+        141.6,
+        42.6
+      ],
+      "zoom": {
+        "min": 6,
+        "max": 14,
+        "default": 10
+      }
+    },
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            141.15,
+            42.35
+          ],
+          [
+            142.05,
+            42.35
+          ],
+          [
+            142.05,
+            42.85
+          ],
+          [
+            141.15,
+            42.85
+          ],
+          [
+            141.15,
+            42.35
+          ]
+        ]
+      ]
+    },
+    "display": {
+      "tile_type": "none",
+      "tile_url": "",
+      "wms_url": "",
+      "wms_layers": "",
+      "raster_image_url": "",
+      "opacity": 0.8
+    },
+    "documents": {
+      "light_pdf_url": "",
+      "full_pdf_url": "",
+      "preferred_pdf": "",
+      "legend_image_url": "",
+      "original_image_url": "",
+      "section_images": []
+    },
+    "downloads": {},
+    "related_resources": {
+      "catalog_url": "https://www.gsj.jp/researches/project/coastal-geology/results/index.html"
+    }
+  },
+  {
+    "source": {
+      "provider_id": "gsj_coastal_seamless",
+      "provider_name_ja": "産業技術総合研究所 地質調査総合センター",
+      "provider_url": "https://www.gsj.jp/researches/project/coastal-geology/results/index.html",
+      "license": "政府標準利用規約（第2.0版）準拠",
+      "attribution": "産業技術総合研究所 地質調査総合センター（海陸シームレス地質図）"
+    },
+    "map": {
+      "map_id": "gsj_coastal_fukuoka_coastal",
+      "local_id": "fukuoka_coastal",
+      "layer_name": "",
+      "map_name_ja": "福岡沿岸域 海陸シームレス地質図",
+      "map_name_en": "Seamless Geological Map of Fukuoka Coastal Zone",
+      "map_type": "seamless_geological_map",
+      "theme": "coastal_seamless",
+      "geometry_model": "continuous_polygon",
+      "scale_denominator": 200000,
+      "series": "海陸シームレス地質図",
+      "published_year": 2016,
+      "authors": [
+        "産業技術総合研究所 地質調査総合センター"
+      ],
+      "authors_ja": [
+        "産業技術総合研究所 地質調査総合センター"
+      ],
+      "authors_en": [
+        "Geological Survey of Japan, AIST"
+      ],
+      "publisher": "産業技術総合研究所 地質調査総合センター",
+      "publisher_ja": "産業技術総合研究所 地質調査総合センター",
+      "publisher_en": "Geological Survey of Japan, AIST",
+      "region": "福岡県",
+      "prefectures": [
+        "福岡県"
+      ],
+      "bounds": [
+        130.0,
+        33.45,
+        130.65,
+        33.95
+      ],
+      "center": [
+        130.325,
+        33.7
+      ],
+      "zoom": {
+        "min": 6,
+        "max": 14,
+        "default": 10
+      }
+    },
+    "geometry": {
+      "type": "Polygon",
+      "coordinates": [
+        [
+          [
+            130.0,
+            33.45
+          ],
+          [
+            130.65,
+            33.45
+          ],
+          [
+            130.65,
+            33.95
+          ],
+          [
+            130.0,
+            33.95
+          ],
+          [
+            130.0,
+            33.45
+          ]
+        ]
+      ]
+    },
+    "display": {
+      "tile_type": "none",
+      "tile_url": "",
+      "wms_url": "",
+      "wms_layers": "",
+      "raster_image_url": "",
+      "opacity": 0.8
+    },
+    "documents": {
+      "light_pdf_url": "",
+      "full_pdf_url": "",
+      "preferred_pdf": "",
+      "legend_image_url": "",
+      "original_image_url": "",
+      "section_images": []
+    },
+    "downloads": {},
+    "related_resources": {
+      "catalog_url": "https://www.gsj.jp/researches/project/coastal-geology/results/index.html"
+    }
+  }
+]

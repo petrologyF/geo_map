@@ -78,14 +78,18 @@
             "min": 2,
             "max": 14,
             "default": 11
-          }
+          },
+          "map_type": "geological_map_sheet",
+          "theme": "geology",
+          "geometry_model": "map_sheet"
         },
         "display": {
           "tile_type": "xyz",
           "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_028yatsuo/{z}/{x}/{y}.webp",
           "wms_url": "",
           "wms_layers": "",
-          "opacity": 0.85
+          "opacity": 0.85,
+          "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_501_org_501.jpg"
         },
         "documents": {
           "light_pdf_url": "",
@@ -193,14 +197,18 @@
             "min": 2,
             "max": 14,
             "default": 11
-          }
+          },
+          "map_type": "geological_map_sheet",
+          "theme": "geology",
+          "geometry_model": "map_sheet"
         },
         "display": {
           "tile_type": "xyz",
           "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_029gohyakkoku/{z}/{x}/{y}.webp",
           "wms_url": "",
           "wms_layers": "",
-          "opacity": 0.85
+          "opacity": 0.85,
+          "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_502_org_502.jpg"
         },
         "documents": {
           "light_pdf_url": "",
@@ -317,14 +325,18 @@
             "min": 2,
             "max": 14,
             "default": 11
-          }
+          },
+          "map_type": "geological_map_sheet",
+          "theme": "geology",
+          "geometry_model": "map_sheet"
         },
         "display": {
           "tile_type": "xyz",
           "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_030tateyama/{z}/{x}/{y}.webp",
           "wms_url": "",
           "wms_layers": "",
-          "opacity": 0.85
+          "opacity": 0.85,
+          "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_503_org_503.jpg"
         },
         "documents": {
           "light_pdf_url": "",
@@ -438,14 +450,18 @@
             "min": 2,
             "max": 14,
             "default": 11
-          }
+          },
+          "map_type": "geological_map_sheet",
+          "theme": "geology",
+          "geometry_model": "map_sheet"
         },
         "display": {
           "tile_type": "xyz",
           "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_031omachi/{z}/{x}/{y}.webp",
           "wms_url": "",
           "wms_layers": "",
-          "opacity": 0.85
+          "opacity": 0.85,
+          "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_504_org_504.jpg"
         },
         "documents": {
           "light_pdf_url": "",
@@ -559,14 +575,18 @@
             "min": 2,
             "max": 14,
             "default": 11
-          }
+          },
+          "map_type": "geological_map_sheet",
+          "theme": "geology",
+          "geometry_model": "map_sheet"
         },
         "display": {
           "tile_type": "xyz",
           "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_035shirokimine/{z}/{x}/{y}.webp",
           "wms_url": "",
           "wms_layers": "",
-          "opacity": 0.85
+          "opacity": 0.85,
+          "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_505_org_505.jpg"
         },
         "documents": {
           "light_pdf_url": "",
@@ -674,14 +694,18 @@
             "min": 2,
             "max": 14,
             "default": 11
-          }
+          },
+          "map_type": "geological_map_sheet",
+          "theme": "geology",
+          "geometry_model": "map_sheet"
         },
         "display": {
           "tile_type": "xyz",
           "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_036higashimozumi/{z}/{x}/{y}.webp",
           "wms_url": "",
           "wms_layers": "",
-          "opacity": 0.85
+          "opacity": 0.85,
+          "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_506_org_506.jpg"
         },
         "documents": {
           "light_pdf_url": "",
@@ -798,14 +822,18 @@
             "min": 2,
             "max": 14,
             "default": 11
-          }
+          },
+          "map_type": "geological_map_sheet",
+          "theme": "geology",
+          "geometry_model": "map_sheet"
         },
         "display": {
           "tile_type": "xyz",
           "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_037yarigatake/{z}/{x}/{y}.webp",
           "wms_url": "",
           "wms_layers": "",
-          "opacity": 0.85
+          "opacity": 0.85,
+          "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_507_org_507.jpg"
         },
         "documents": {
           "light_pdf_url": "",
@@ -913,14 +941,18 @@
             "min": 2,
             "max": 14,
             "default": 11
-          }
+          },
+          "map_type": "geological_map_sheet",
+          "theme": "geology",
+          "geometry_model": "map_sheet"
         },
         "display": {
           "tile_type": "xyz",
           "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_038shinanoikeda/{z}/{x}/{y}.webp",
           "wms_url": "",
           "wms_layers": "",
-          "opacity": 0.85
+          "opacity": 0.85,
+          "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_508_org_508.jpg"
         },
         "documents": {
           "light_pdf_url": "",
@@ -1031,14 +1063,18 @@
             "min": 2,
             "max": 14,
             "default": 11
-          }
+          },
+          "map_type": "geological_map_sheet",
+          "theme": "geology",
+          "geometry_model": "map_sheet"
         },
         "display": {
           "tile_type": "xyz",
           "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_043hidafurukawa/{z}/{x}/{y}.webp",
           "wms_url": "",
           "wms_layers": "",
-          "opacity": 0.85
+          "opacity": 0.85,
+          "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_509_org_509.jpg"
         },
         "documents": {
           "light_pdf_url": "",
@@ -1146,14 +1182,18 @@
             "min": 2,
             "max": 14,
             "default": 11
-          }
+          },
+          "map_type": "geological_map_sheet",
+          "theme": "geology",
+          "geometry_model": "map_sheet"
         },
         "display": {
           "tile_type": "xyz",
           "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_044funatsu/{z}/{x}/{y}.webp",
           "wms_url": "",
           "wms_layers": "",
-          "opacity": 0.85
+          "opacity": 0.85,
+          "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_510_org_510.jpg"
         },
         "documents": {
           "light_pdf_url": "",
@@ -1258,14 +1298,18 @@
             "min": 2,
             "max": 14,
             "default": 11
-          }
+          },
+          "map_type": "geological_map_sheet",
+          "theme": "geology",
+          "geometry_model": "map_sheet"
         },
         "display": {
           "tile_type": "xyz",
           "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_045kamikochi/{z}/{x}/{y}.webp",
           "wms_url": "",
           "wms_layers": "",
-          "opacity": 0.85
+          "opacity": 0.85,
+          "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_511_org_511.jpg"
         },
         "documents": {
           "light_pdf_url": "",
@@ -1370,14 +1414,18 @@
             "min": 2,
             "max": 14,
             "default": 11
-          }
+          },
+          "map_type": "geological_map_sheet",
+          "theme": "geology",
+          "geometry_model": "map_sheet"
         },
         "display": {
           "tile_type": "xyz",
           "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_051mikkamachi/{z}/{x}/{y}.webp",
           "wms_url": "",
           "wms_layers": "",
-          "opacity": 0.85
+          "opacity": 0.85,
+          "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_512_org_512.jpg"
         },
         "documents": {
           "light_pdf_url": "",
@@ -1491,14 +1539,18 @@
             "min": 2,
             "max": 14,
             "default": 11
-          }
+          },
+          "map_type": "geological_map_sheet",
+          "theme": "geology",
+          "geometry_model": "map_sheet"
         },
         "display": {
           "tile_type": "xyz",
           "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_08_057Ogawara/{z}/{x}/{y}.webp",
           "wms_url": "",
           "wms_layers": "",
-          "opacity": 0.85
+          "opacity": 0.85,
+          "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_1911_org_1854.jpg"
         },
         "documents": {
           "light_pdf_url": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_08057_2025_D-L.pdf",
@@ -1522,6 +1574,652 @@
           "catalog_url": "https://www.gsj.jp/Map/JP/docs/5man_doc/08/08_057.htm",
           "metadata_url": "https://gbank.gsj.jp/ld/resource/publication/map/g050/map01486.html",
           "tilejson_url": "https://gbank.gsj.jp/geonavi/maptile/v2/getTileJson/G50_08_057Ogawara.json"
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              137.54,
+              36.18
+            ],
+            [
+              137.65,
+              36.18
+            ],
+            [
+              137.65,
+              36.27
+            ],
+            [
+              137.54,
+              36.27
+            ],
+            [
+              137.54,
+              36.18
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "source": {
+          "provider_id": "gsj_volcanic",
+          "provider_name_ja": "産業技術総合研究所 地質調査総合センター",
+          "provider_url": "https://www.gsj.jp/Map/JP/volcano.html",
+          "license": "政府標準利用規約（第2.0版）準拠",
+          "attribution": "産業技術総合研究所 地質調査総合センター（火山地質図）"
+        },
+        "map": {
+          "map_id": "gsj_volcanic_v_yakedake",
+          "local_id": "v_yakedake",
+          "layer_name": "",
+          "map_name_ja": "焼岳火山地質図",
+          "map_name_en": "Geological Map of Yakedake Volcano",
+          "volcano_name_ja": "焼岳",
+          "volcano_name_en": "Yakedake",
+          "map_type": "volcanic_geological_map",
+          "theme": "volcano",
+          "geometry_model": "map_sheet",
+          "scale_denominator": 25000,
+          "series": "火山地質図",
+          "published_year": 2016,
+          "authors": [
+            "及川 輝樹"
+          ],
+          "authors_ja": [
+            "及川 輝樹"
+          ],
+          "authors_en": [
+            "OIKAWA Teruki"
+          ],
+          "publisher": "産業技術総合研究所 地質調査総合センター",
+          "publisher_ja": "産業技術総合研究所 地質調査総合センター",
+          "publisher_en": "Geological Survey of Japan, AIST",
+          "region": "長野県・岐阜県",
+          "prefectures": [
+            "長野県",
+            "岐阜県"
+          ],
+          "bounds": [
+            137.54,
+            36.18,
+            137.65,
+            36.27
+          ],
+          "center": [
+            137.595,
+            36.225
+          ],
+          "zoom": {
+            "min": 6,
+            "max": 14,
+            "default": 11
+          }
+        },
+        "display": {
+          "tile_type": "none",
+          "tile_url": "",
+          "wms_url": "",
+          "wms_layers": "",
+          "raster_image_url": "",
+          "opacity": 0.85
+        },
+        "documents": {
+          "light_pdf_url": "",
+          "full_pdf_url": "",
+          "preferred_pdf": "",
+          "legend_image_url": "",
+          "original_image_url": "",
+          "section_images": []
+        },
+        "downloads": {},
+        "related_resources": {
+          "catalog_url": "https://www.gsj.jp/Map/JP/volcano.html"
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              137.38,
+              35.8
+            ],
+            [
+              137.6,
+              35.8
+            ],
+            [
+              137.6,
+              35.98
+            ],
+            [
+              137.38,
+              35.98
+            ],
+            [
+              137.38,
+              35.8
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "source": {
+          "provider_id": "gsj_volcanic",
+          "provider_name_ja": "産業技術総合研究所 地質調査総合センター",
+          "provider_url": "https://www.gsj.jp/Map/JP/volcano.html",
+          "license": "政府標準利用規約（第2.0版）準拠",
+          "attribution": "産業技術総合研究所 地質調査総合センター（火山地質図）"
+        },
+        "map": {
+          "map_id": "gsj_volcanic_v_ontake",
+          "local_id": "v_ontake",
+          "layer_name": "",
+          "map_name_ja": "御嶽山火山地質図",
+          "map_name_en": "Geological Map of Ontake Volcano",
+          "volcano_name_ja": "御嶽山",
+          "volcano_name_en": "Ontake",
+          "map_type": "volcanic_geological_map",
+          "theme": "volcano",
+          "geometry_model": "map_sheet",
+          "scale_denominator": 50000,
+          "series": "火山地質図",
+          "published_year": 2016,
+          "authors": [
+            "及川 輝樹",
+            "石塚 吉浩",
+            "竹内 晋吾",
+            "松本 哲一"
+          ],
+          "authors_ja": [
+            "及川 輝樹",
+            "石塚 吉浩",
+            "竹内 晋吾",
+            "松本 哲一"
+          ],
+          "authors_en": [
+            "OIKAWA Teruki",
+            "ISHIZUKA Yoshihiro",
+            "TAKEUCHI Shingo",
+            "MATSUMOTO Akikazu"
+          ],
+          "publisher": "産業技術総合研究所 地質調査総合センター",
+          "publisher_ja": "産業技術総合研究所 地質調査総合センター",
+          "publisher_en": "Geological Survey of Japan, AIST",
+          "region": "長野県・岐阜県",
+          "prefectures": [
+            "長野県",
+            "岐阜県"
+          ],
+          "bounds": [
+            137.38,
+            35.8,
+            137.6,
+            35.98
+          ],
+          "center": [
+            137.49,
+            35.89
+          ],
+          "zoom": {
+            "min": 6,
+            "max": 14,
+            "default": 11
+          }
+        },
+        "display": {
+          "tile_type": "none",
+          "tile_url": "",
+          "wms_url": "",
+          "wms_layers": "",
+          "raster_image_url": "",
+          "opacity": 0.85
+        },
+        "documents": {
+          "light_pdf_url": "",
+          "full_pdf_url": "",
+          "preferred_pdf": "",
+          "legend_image_url": "",
+          "original_image_url": "",
+          "section_images": []
+        },
+        "downloads": {},
+        "related_resources": {
+          "catalog_url": "https://www.gsj.jp/Map/JP/volcano.html"
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              138.58,
+              35.24
+            ],
+            [
+              138.92,
+              35.24
+            ],
+            [
+              138.92,
+              35.52
+            ],
+            [
+              138.58,
+              35.52
+            ],
+            [
+              138.58,
+              35.24
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "source": {
+          "provider_id": "gsj_volcanic",
+          "provider_name_ja": "産業技術総合研究所 地質調査総合センター",
+          "provider_url": "https://www.gsj.jp/Map/JP/volcano.html",
+          "license": "政府標準利用規約（第2.0版）準拠",
+          "attribution": "産業技術総合研究所 地質調査総合センター（火山地質図）"
+        },
+        "map": {
+          "map_id": "gsj_volcanic_v_fuji",
+          "local_id": "v_fuji",
+          "layer_name": "",
+          "map_name_ja": "富士火山地質図（第2版）",
+          "map_name_en": "Geological Map of Fuji Volcano (2nd Edition)",
+          "volcano_name_ja": "富士山",
+          "volcano_name_en": "Fuji",
+          "map_type": "volcanic_geological_map",
+          "theme": "volcano",
+          "geometry_model": "map_sheet",
+          "scale_denominator": 50000,
+          "series": "火山地質図",
+          "published_year": 2016,
+          "authors": [
+            "高田 亮",
+            "山元 孝広",
+            "石塚 吉浩",
+            "中野 俊"
+          ],
+          "authors_ja": [
+            "高田 亮",
+            "山元 孝広",
+            "石塚 吉浩",
+            "中野 俊"
+          ],
+          "authors_en": [
+            "TAKADA Akira",
+            "YAMAMOTO Takahiro",
+            "ISHIZUKA Yoshihiro",
+            "NAKANO Shun"
+          ],
+          "publisher": "産業技術総合研究所 地質調査総合センター",
+          "publisher_ja": "産業技術総合研究所 地質調査総合センター",
+          "publisher_en": "Geological Survey of Japan, AIST",
+          "region": "山梨県・静岡県",
+          "prefectures": [
+            "山梨県",
+            "静岡県"
+          ],
+          "bounds": [
+            138.58,
+            35.24,
+            138.92,
+            35.52
+          ],
+          "center": [
+            138.75,
+            35.38
+          ],
+          "zoom": {
+            "min": 6,
+            "max": 14,
+            "default": 11
+          }
+        },
+        "display": {
+          "tile_type": "none",
+          "tile_url": "",
+          "wms_url": "",
+          "wms_layers": "",
+          "raster_image_url": "",
+          "opacity": 0.85
+        },
+        "documents": {
+          "light_pdf_url": "",
+          "full_pdf_url": "",
+          "preferred_pdf": "",
+          "legend_image_url": "",
+          "original_image_url": "",
+          "section_images": []
+        },
+        "downloads": {},
+        "related_resources": {
+          "catalog_url": "https://www.gsj.jp/Map/JP/volcano.html"
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              136.85,
+              36.65
+            ],
+            [
+              137.65,
+              36.65
+            ],
+            [
+              137.65,
+              37.35
+            ],
+            [
+              136.85,
+              37.35
+            ],
+            [
+              136.85,
+              36.65
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "source": {
+          "provider_id": "gsj_coastal_seamless",
+          "provider_name_ja": "産業技術総合研究所 地質調査総合センター",
+          "provider_url": "https://www.gsj.jp/researches/project/coastal-geology/results/index.html",
+          "license": "政府標準利用規約（第2.0版）準拠",
+          "attribution": "産業技術総合研究所 地質調査総合センター（海陸シームレス地質図）"
+        },
+        "map": {
+          "map_id": "gsj_coastal_toyama_bay",
+          "local_id": "toyama_bay",
+          "layer_name": "",
+          "map_name_ja": "富山湾沿岸域 海陸シームレス地質図",
+          "map_name_en": "Seamless Geological Map of Toyama Bay Coastal Zone",
+          "map_type": "seamless_geological_map",
+          "theme": "coastal_seamless",
+          "geometry_model": "continuous_polygon",
+          "scale_denominator": 200000,
+          "series": "海陸シームレス地質図",
+          "published_year": 2021,
+          "authors": [
+            "産業技術総合研究所 地質調査総合センター"
+          ],
+          "authors_ja": [
+            "産業技術総合研究所 地質調査総合センター"
+          ],
+          "authors_en": [
+            "Geological Survey of Japan, AIST"
+          ],
+          "publisher": "産業技術総合研究所 地質調査総合センター",
+          "publisher_ja": "産業技術総合研究所 地質調査総合センター",
+          "publisher_en": "Geological Survey of Japan, AIST",
+          "region": "富山県・石川県",
+          "prefectures": [
+            "富山県",
+            "石川県"
+          ],
+          "bounds": [
+            136.85,
+            36.65,
+            137.65,
+            37.35
+          ],
+          "center": [
+            137.25,
+            37.0
+          ],
+          "zoom": {
+            "min": 6,
+            "max": 14,
+            "default": 10
+          }
+        },
+        "display": {
+          "tile_type": "none",
+          "tile_url": "",
+          "wms_url": "",
+          "wms_layers": "",
+          "raster_image_url": "",
+          "opacity": 0.8
+        },
+        "documents": {
+          "light_pdf_url": "",
+          "full_pdf_url": "",
+          "preferred_pdf": "",
+          "legend_image_url": "",
+          "original_image_url": "",
+          "section_images": []
+        },
+        "downloads": {},
+        "related_resources": {
+          "catalog_url": "https://www.gsj.jp/researches/project/coastal-geology/results/index.html"
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              141.15,
+              42.35
+            ],
+            [
+              142.05,
+              42.35
+            ],
+            [
+              142.05,
+              42.85
+            ],
+            [
+              141.15,
+              42.85
+            ],
+            [
+              141.15,
+              42.35
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "source": {
+          "provider_id": "gsj_coastal_seamless",
+          "provider_name_ja": "産業技術総合研究所 地質調査総合センター",
+          "provider_url": "https://www.gsj.jp/researches/project/coastal-geology/results/index.html",
+          "license": "政府標準利用規約（第2.0版）準拠",
+          "attribution": "産業技術総合研究所 地質調査総合センター（海陸シームレス地質図）"
+        },
+        "map": {
+          "map_id": "gsj_coastal_ishikari_south",
+          "local_id": "ishikari_south",
+          "layer_name": "",
+          "map_name_ja": "石狩低地帯南部沿岸域 海陸シームレス地質図",
+          "map_name_en": "Seamless Geological Map of Southern Ishikari Lowland Coastal Zone",
+          "map_type": "seamless_geological_map",
+          "theme": "coastal_seamless",
+          "geometry_model": "continuous_polygon",
+          "scale_denominator": 200000,
+          "series": "海陸シームレス地質図",
+          "published_year": 2018,
+          "authors": [
+            "産業技術総合研究所 地質調査総合センター"
+          ],
+          "authors_ja": [
+            "産業技術総合研究所 地質調査総合センター"
+          ],
+          "authors_en": [
+            "Geological Survey of Japan, AIST"
+          ],
+          "publisher": "産業技術総合研究所 地質調査総合センター",
+          "publisher_ja": "産業技術総合研究所 地質調査総合センター",
+          "publisher_en": "Geological Survey of Japan, AIST",
+          "region": "北海道",
+          "prefectures": [
+            "北海道"
+          ],
+          "bounds": [
+            141.15,
+            42.35,
+            142.05,
+            42.85
+          ],
+          "center": [
+            141.6,
+            42.6
+          ],
+          "zoom": {
+            "min": 6,
+            "max": 14,
+            "default": 10
+          }
+        },
+        "display": {
+          "tile_type": "none",
+          "tile_url": "",
+          "wms_url": "",
+          "wms_layers": "",
+          "raster_image_url": "",
+          "opacity": 0.8
+        },
+        "documents": {
+          "light_pdf_url": "",
+          "full_pdf_url": "",
+          "preferred_pdf": "",
+          "legend_image_url": "",
+          "original_image_url": "",
+          "section_images": []
+        },
+        "downloads": {},
+        "related_resources": {
+          "catalog_url": "https://www.gsj.jp/researches/project/coastal-geology/results/index.html"
+        }
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              130.0,
+              33.45
+            ],
+            [
+              130.65,
+              33.45
+            ],
+            [
+              130.65,
+              33.95
+            ],
+            [
+              130.0,
+              33.95
+            ],
+            [
+              130.0,
+              33.45
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "source": {
+          "provider_id": "gsj_coastal_seamless",
+          "provider_name_ja": "産業技術総合研究所 地質調査総合センター",
+          "provider_url": "https://www.gsj.jp/researches/project/coastal-geology/results/index.html",
+          "license": "政府標準利用規約（第2.0版）準拠",
+          "attribution": "産業技術総合研究所 地質調査総合センター（海陸シームレス地質図）"
+        },
+        "map": {
+          "map_id": "gsj_coastal_fukuoka_coastal",
+          "local_id": "fukuoka_coastal",
+          "layer_name": "",
+          "map_name_ja": "福岡沿岸域 海陸シームレス地質図",
+          "map_name_en": "Seamless Geological Map of Fukuoka Coastal Zone",
+          "map_type": "seamless_geological_map",
+          "theme": "coastal_seamless",
+          "geometry_model": "continuous_polygon",
+          "scale_denominator": 200000,
+          "series": "海陸シームレス地質図",
+          "published_year": 2016,
+          "authors": [
+            "産業技術総合研究所 地質調査総合センター"
+          ],
+          "authors_ja": [
+            "産業技術総合研究所 地質調査総合センター"
+          ],
+          "authors_en": [
+            "Geological Survey of Japan, AIST"
+          ],
+          "publisher": "産業技術総合研究所 地質調査総合センター",
+          "publisher_ja": "産業技術総合研究所 地質調査総合センター",
+          "publisher_en": "Geological Survey of Japan, AIST",
+          "region": "福岡県",
+          "prefectures": [
+            "福岡県"
+          ],
+          "bounds": [
+            130.0,
+            33.45,
+            130.65,
+            33.95
+          ],
+          "center": [
+            130.325,
+            33.7
+          ],
+          "zoom": {
+            "min": 6,
+            "max": 14,
+            "default": 10
+          }
+        },
+        "display": {
+          "tile_type": "none",
+          "tile_url": "",
+          "wms_url": "",
+          "wms_layers": "",
+          "raster_image_url": "",
+          "opacity": 0.8
+        },
+        "documents": {
+          "light_pdf_url": "",
+          "full_pdf_url": "",
+          "preferred_pdf": "",
+          "legend_image_url": "",
+          "original_image_url": "",
+          "section_images": []
+        },
+        "downloads": {},
+        "related_resources": {
+          "catalog_url": "https://www.gsj.jp/researches/project/coastal-geology/results/index.html"
         }
       }
     }

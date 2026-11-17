@@ -71,13 +71,28 @@
   const I18N = {
     ja: {
       appTitle: '地質図検索',
-      searchPlaceholder: '図幅名または著者で検索',
+      searchPlaceholder: '図幅名・火山名・著者で検索',
+      mapTypeLabel: '地図種別',
+      mapTypeAll: 'すべて',
+      mapTypes: {
+        geological_map_sheet: '地質図幅',
+        seamless_geological_map: 'シームレス地質図',
+        volcanic_geological_map: '火山地質図',
+        marine_geological_map: '海洋地質図',
+        active_fault_strip_map: '活断層図',
+        large_pyroclastic_flow_map: '大規模火砕流分布図',
+        hydrogeological_map: '水文地質図',
+        geophysical_map: '地球物理図',
+        geochemical_map: '地球化学図',
+        resource_map: '鉱物・エネルギー資源図'
+      },
       viewportOnlyLabel: '表示範囲内のみ',
       showIndexLabel: '図郭枠を表示',
       seamless200kLabel: '20万分の1 シームレス (全国WMS)',
       filterAccordionLabel: '詳細フィルター',
       decadeLabel: '発行年',
       scaleFilterLabel: '縮尺・シリーズ',
+      regionFilterLabel: '地域（複数選択可）',
       authorFilterLabel: '著者（複数選択可）',
       otherFilterLabel: 'その他（発行機関・資料）',
       flagPdf: '説明書PDFあり',
@@ -96,8 +111,11 @@
       noMatch: '条件に一致する図幅がありません',
       moreItems: (n) => `ほか ${n} 件（検索で絞り込めます）`,
       badgeMap: '図幅',
+      badgeVolcano: '火山',
       badgeAuthor: '著者',
       eyebrow: '表示中の図幅詳細',
+      mapTypeFieldLabel: '種別',
+      volcanoLabel: '火山名',
       yearLabel: '発行年',
       yearSuffix: '年',
       yearUnknown: '不明',
@@ -117,13 +135,28 @@
     },
     en: {
       appTitle: 'GeoMap Search',
-      searchPlaceholder: 'Search by map name or author',
+      searchPlaceholder: 'Search map, volcano, or author',
+      mapTypeLabel: 'Map Type',
+      mapTypeAll: 'All',
+      mapTypes: {
+        geological_map_sheet: 'Geological Map Sheet',
+        seamless_geological_map: 'Seamless Geological Map',
+        volcanic_geological_map: 'Volcanic Geological Map',
+        marine_geological_map: 'Marine Geological Map',
+        active_fault_strip_map: 'Active Fault Map',
+        large_pyroclastic_flow_map: 'Pyroclastic Flow Map',
+        hydrogeological_map: 'Hydrogeological Map',
+        geophysical_map: 'Geophysical Map',
+        geochemical_map: 'Geochemical Map',
+        resource_map: 'Resource Map'
+      },
       viewportOnlyLabel: 'In map view only',
       showIndexLabel: 'Show map frames',
       seamless200kLabel: '1:200K Seamless (WMS)',
       filterAccordionLabel: 'Filters',
       decadeLabel: 'Published Year',
       scaleFilterLabel: 'Scale / Series',
+      regionFilterLabel: 'Region (Multi-select)',
       authorFilterLabel: 'Authors (Multi-select)',
       otherFilterLabel: 'Other (Publisher / Resources)',
       flagPdf: 'Has PDF',
@@ -142,8 +175,11 @@
       noMatch: 'No matching maps found',
       moreItems: (n) => `${n} more (refine search)`,
       badgeMap: 'Map',
+      badgeVolcano: 'Volcano',
       badgeAuthor: 'Author',
       eyebrow: 'Active Map Details',
+      mapTypeFieldLabel: 'Type',
+      volcanoLabel: 'Volcano',
       yearLabel: 'Year',
       yearSuffix: '',
       yearUnknown: 'Unknown',
@@ -181,7 +217,9 @@
     },
     viewportOnly: false,
     showIndexFrames: true,
+    selectedMapType: 'all',
     selectedScales: new Set(),
+    selectedRegions: new Set(),
     selectedAuthors: new Set(),
     selectedPublishers: new Set(),
     selectedResourceFlags: new Set(),
@@ -204,6 +242,8 @@
     fitAllBtn: document.getElementById('fit-all-btn'),
     searchInput: document.getElementById('search-input'),
     searchSuggestions: document.getElementById('search-suggestions'),
+    mapTypeLabel: document.getElementById('map-type-label'),
+    mapTypeChips: document.getElementById('map-type-chips'),
     viewportOnlyToggle: document.getElementById('viewport-only-toggle'),
     viewportOnlyLabel: document.getElementById('viewport-only-label'),
     showIndexToggle: document.getElementById('show-index-toggle'),
@@ -221,6 +261,8 @@
     yearRangeMax: document.getElementById('year-range-max'),
     scaleFilterLabel: document.getElementById('scale-filter-label'),
     scaleChips: document.getElementById('scale-chips'),
+    regionFilterLabel: document.getElementById('region-filter-label'),
+    regionChips: document.getElementById('region-chips'),
     authorFilterLabel: document.getElementById('author-filter-label'),
     authorChips: document.getElementById('author-chips'),
     otherFilterLabel: document.getElementById('other-filter-label'),
@@ -304,6 +346,11 @@
     const prefectures = Array.isArray(m.prefectures) && m.prefectures.length > 0
       ? m.prefectures.join('・')
       : (m.region || '');
+    const regionList = Array.isArray(m.prefectures) && m.prefectures.length > 0
+      ? m.prefectures.map((r) => String(r).trim()).filter(Boolean)
+      : (typeof m.region === 'string' && m.region.trim()
+        ? m.region.split(/[・,、]/).map((r) => r.trim()).filter(Boolean)
+        : []);
 
     const tile = props.tile || {};
     const xyzUrl = disp.tile_type === 'xyz'
@@ -314,6 +361,12 @@
     const wmsUrl = disp.tile_type === 'wms' ? (disp.wms_url || '') : (props.wms_url || '');
     const wmsLayers = disp.wms_layers || CONFIG.WMS_OPTIONS.layers;
     const canUseWms = !canUseXyz && (disp.tile_type === 'wms' || props.is_wms_available !== false) && isSafeUrl(wmsUrl);
+
+    const rasterImageUrl = [disp.raster_image_url, docs.original_image_url, props.original_image_url].find((u) => isSafeUrl(u)) || '';
+    const canUseRaster = !canUseXyz && !canUseWms && disp.tile_type === 'raster' && Boolean(rasterImageUrl);
+
+    const overlayType = canUseXyz ? 'xyz' : (canUseWms ? 'wms' : (canUseRaster ? 'raster' : null));
+    const overlayUrl = canUseXyz ? xyzUrl : (canUseWms ? wmsUrl : (canUseRaster ? rasterImageUrl : ''));
 
     const zoom = m.zoom || {};
     const zoomMin = typeof zoom.min === 'number'
@@ -367,11 +420,17 @@
       props.related_resources?.catalog_url
     ].find((url) => isSafeUrl(url)) || '';
 
-    const legendImageUrl = [docs.legend_image_url, props.legend_image_url].find((u) => isSafeUrl(u)) || '';
-    const originalImageUrl = [docs.original_image_url, props.original_image_url].find((u) => isSafeUrl(u)) || '';
+    const mapType = m.map_type || 'geological_map_sheet';
+    const theme = m.theme || 'geology';
+    const geometryModel = m.geometry_model || 'map_sheet';
+    const volcanoNameJa = m.volcano_name_ja || '';
+    const volcanoNameEn = m.volcano_name_en || '';
 
-    const searchTokensJa = [mapNameJa, authorsJa, mapCode, prefectures, scale, providerNameJa].join(' ').toLowerCase();
-    const searchTokensEn = [mapNameEn, authorsEn, mapCode, prefectures, scale, providerNameJa].join(' ').toLowerCase();
+    const legendImageUrl = [docs.legend_image_url, props.legend_image_url].find((u) => isSafeUrl(u)) || '';
+    const originalImageUrl = [docs.original_image_url, props.original_image_url, disp.raster_image_url].find((u) => isSafeUrl(u)) || '';
+
+    const searchTokensJa = [mapNameJa, volcanoNameJa, authorsJa, mapCode, prefectures, scale, providerNameJa].join(' ').toLowerCase();
+    const searchTokensEn = [mapNameEn, volcanoNameEn, authorsEn, mapCode, prefectures, scale, providerNameJa].join(' ').toLowerCase();
 
     return {
       providerId,
@@ -379,6 +438,11 @@
       mapId,
       localId,
       mapCode,
+      mapType,
+      theme,
+      geometryModel,
+      volcanoNameJa,
+      volcanoNameEn,
       scaleDenominator: scaleDenominator || (scale === '1:50,000' ? 50000 : (scale === '1:200,000' ? 200000 : null)),
       scale,
       mapNameJa,
@@ -391,12 +455,14 @@
       publisherJa: m.publisher_ja || m.publisher || m.publisher_en || '',
       publisherEn: m.publisher_en || m.publisher || m.publisher_ja || '',
       prefectures,
+      regionList,
       bounds: rawBounds,
       zoomMin,
       zoomMax,
-      overlayType: canUseXyz ? 'xyz' : (canUseWms ? 'wms' : null),
-      overlayUrl: canUseXyz ? xyzUrl : (canUseWms ? wmsUrl : ''),
+      overlayType,
+      overlayUrl,
       wmsLayers,
+      rasterImageUrl,
       defaultOpacity: typeof disp.opacity === 'number' ? disp.opacity : CONFIG.DEFAULT_OVERLAY_OPACITY,
       attribution,
       legendImageUrl,
@@ -412,12 +478,16 @@
   }
 
   /**
-   * 縮尺分母に応じた図郭ポリゴンのデフォルトスタイルを返す
-   * @param {number|null} scaleDenominator - 縮尺分母（50000, 200000 など）
+   * 地図種別と縮尺分母に応じた図郭ポリゴンのデフォルトスタイルを返す
+   * @param {number|null} scaleDenominator - 縮尺分母
+   * @param {string} [mapType='geological_map_sheet'] - 地図種別
    * @returns {Object} Leaflet Path オプション
    */
-  function styleByScale(scaleDenominator) {
-    if (scaleDenominator === 200000) {
+  function styleByScale(scaleDenominator, mapType = 'geological_map_sheet') {
+    if (mapType === 'volcanic_geological_map') {
+      return { ...CONFIG.POLYGON_STYLE.default, color: '#d93025', fillColor: '#d93025' };
+    }
+    if (mapType === 'seamless_geological_map' || scaleDenominator === 200000) {
       return { ...CONFIG.POLYGON_STYLE.default, color: '#00796b', fillColor: '#00796b' };
     }
     if (scaleDenominator && scaleDenominator !== 50000) {
@@ -729,10 +799,19 @@
     const yearValue = meta.publishedYear != null
       ? `${meta.publishedYear}${dict.yearSuffix}`
       : dict.yearUnknown;
+    const mapTypeLabel = dict.mapTypes?.[meta.mapType] || meta.mapType;
+    const volcanoName = state.lang === 'en'
+      ? (meta.volcanoNameEn || meta.volcanoNameJa)
+      : (meta.volcanoNameJa || meta.volcanoNameEn);
+
     const metaEntries = [
+      [dict.mapTypeFieldLabel, mapTypeLabel],
       [dict.yearLabel, yearValue],
       [dict.authorsLabel, loc.authors]
     ];
+    if (volcanoName) {
+      metaEntries.splice(1, 0, [dict.volcanoLabel, volcanoName]);
+    }
     if (meta.scale) {
       metaEntries.push([dict.scaleLabel, meta.scale]);
     }
@@ -935,7 +1014,7 @@
       state.map.removeLayer(removed.layer);
     }
     if (removed.item.layer) {
-      removed.item.layer.setStyle(styleByScale(removed.item.meta.scaleDenominator));
+      removed.item.layer.setStyle(styleByScale(removed.item.meta.scaleDenominator, removed.item.meta.mapType));
     }
 
     renderActiveOverlayList();
@@ -952,7 +1031,7 @@
         state.map.removeLayer(layer);
       }
       if (item.layer) {
-        item.layer.setStyle(styleByScale(item.meta.scaleDenominator));
+        item.layer.setStyle(styleByScale(item.meta.scaleDenominator, item.meta.mapType));
       }
     });
     state.activeOverlays = [];
@@ -996,6 +1075,13 @@
         layers: meta.wmsLayers || CONFIG.WMS_OPTIONS.layers,
         ...commonOptions,
         maxZoom: CONFIG.MAX_ZOOM
+      });
+    }
+
+    if (meta.overlayType === 'raster' && meta.rasterImageUrl && layerBounds && layerBounds.isValid()) {
+      return L.imageOverlay(meta.rasterImageUrl, layerBounds, {
+        opacity: state.overlayOpacity,
+        attribution: meta.attribution
       });
     }
 
@@ -1052,10 +1138,6 @@
 
     const layerBounds = getItemBounds(item);
     const overlayLayer = createGeologicalLayer(meta, layerBounds, 300);
-    if (!overlayLayer) {
-      setStatusMessage(`「${meta.mapNameJa}」には利用可能なタイルURLまたはWMS URLがありません。`);
-      return;
-    }
 
     setStatusMessage('');
 
@@ -1064,31 +1146,34 @@
       removeOverlayByItem(state.activeOverlays[0].item);
     }
 
-    let loadedTileCount = 0;
-    let errorTileCount = 0;
+    if (overlayLayer) {
+      let loadedTileCount = 0;
+      let errorTileCount = 0;
 
-    overlayLayer.on('loading', () => {
-      loadedTileCount = 0;
-      errorTileCount = 0;
-      dom.wmsStatusDot.classList.add('is-loading');
-    });
+      overlayLayer.on('loading', () => {
+        loadedTileCount = 0;
+        errorTileCount = 0;
+        dom.wmsStatusDot.classList.add('is-loading');
+      });
 
-    overlayLayer.on('tileload', () => {
-      loadedTileCount += 1;
-    });
+      overlayLayer.on('tileload', () => {
+        loadedTileCount += 1;
+      });
 
-    overlayLayer.on('tileerror', () => {
-      errorTileCount += 1;
-    });
+      overlayLayer.on('tileerror', () => {
+        errorTileCount += 1;
+      });
 
-    overlayLayer.on('load', () => {
-      dom.wmsStatusDot.classList.remove('is-loading');
-      if (loadedTileCount === 0 && errorTileCount > 0) {
-        setStatusMessage(`「${meta.mapNameJa}」の地質図タイル取得中にエラーが発生しました。`);
-      }
-    });
+      overlayLayer.on('load', () => {
+        dom.wmsStatusDot.classList.remove('is-loading');
+        if (loadedTileCount === 0 && errorTileCount > 0) {
+          setStatusMessage(`「${meta.mapNameJa}」の地質図タイル取得中にエラーが発生しました。`);
+        }
+      });
 
-    overlayLayer.addTo(state.map);
+      overlayLayer.addTo(state.map);
+    }
+
     state.activeOverlays.push({ item, layer: overlayLayer });
     item.layer.setStyle(CONFIG.POLYGON_STYLE.selected);
 
@@ -1164,7 +1249,7 @@
       });
       button.addEventListener('mouseleave', () => {
         if (!isItemOverlayed(item) && state.showIndexFrames) {
-          item.layer.setStyle(styleByScale(item.meta.scaleDenominator));
+          item.layer.setStyle(styleByScale(item.meta.scaleDenominator, item.meta.mapType));
         }
       });
       button.addEventListener('click', () => {
@@ -1300,6 +1385,98 @@
   }
 
   /**
+   * 第一階層フィルター：地図種別 (map_type) チップを生成する
+   */
+  function renderMapTypeChips() {
+    const dict = t();
+    const presentTypes = new Set();
+    state.allItems.forEach(({ meta }) => {
+      if (meta.mapType) {
+        presentTypes.add(meta.mapType);
+      }
+    });
+    if (state.seamlessMeta?.mapType) {
+      presentTypes.add(state.seamlessMeta.mapType);
+    }
+
+    const orderedKeys = [
+      'geological_map_sheet',
+      'seamless_geological_map',
+      'volcanic_geological_map',
+      ...[...presentTypes].filter(
+        (k) => !['geological_map_sheet', 'seamless_geological_map', 'volcanic_geological_map'].includes(k)
+      )
+    ].filter((k) => presentTypes.has(k));
+
+    dom.mapTypeChips.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+
+    const options = [['all', dict.mapTypeAll], ...orderedKeys.map((k) => [k, dict.mapTypes[k] || k])];
+    options.forEach(([typeKey, label]) => {
+      const isSelected = state.selectedMapType === typeKey;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = isSelected ? 'decade-chip is-selected' : 'decade-chip';
+      btn.textContent = label;
+      btn.setAttribute('aria-pressed', String(isSelected));
+
+      btn.addEventListener('click', () => {
+        state.selectedMapType = typeKey;
+        dom.mapTypeChips.querySelectorAll('.decade-chip').forEach((c) => {
+          c.classList.remove('is-selected');
+          c.setAttribute('aria-pressed', 'false');
+        });
+        btn.classList.add('is-selected');
+        btn.setAttribute('aria-pressed', 'true');
+        applyFilters();
+      });
+
+      fragment.appendChild(btn);
+    });
+
+    dom.mapTypeChips.appendChild(fragment);
+  }
+
+  /**
+   * 第二階層フィルター：地域・都道府県マルチセレクトチップを生成する
+   */
+  function renderRegionChips() {
+    const regionsSet = new Set();
+    state.allItems.forEach(({ meta }) => {
+      meta.regionList.forEach((r) => regionsSet.add(r));
+    });
+
+    dom.regionChips.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+
+    [...regionsSet].sort((a, b) => a.localeCompare(b, state.lang)).forEach((region) => {
+      const isSelected = state.selectedRegions.has(region);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = isSelected ? 'decade-chip is-selected' : 'decade-chip';
+      btn.textContent = region;
+      btn.setAttribute('aria-pressed', String(isSelected));
+
+      btn.addEventListener('click', () => {
+        if (state.selectedRegions.has(region)) {
+          state.selectedRegions.delete(region);
+          btn.classList.remove('is-selected');
+          btn.setAttribute('aria-pressed', 'false');
+        } else {
+          state.selectedRegions.add(region);
+          btn.classList.add('is-selected');
+          btn.setAttribute('aria-pressed', 'true');
+        }
+        applyFilters();
+      });
+
+      fragment.appendChild(btn);
+    });
+
+    dom.regionChips.appendChild(fragment);
+  }
+
+  /**
    * 現在の言語の著者一覧からマルチセレクトチップを生成する
    */
   function renderAuthorChips() {
@@ -1423,6 +1600,7 @@
     const count =
       (hasYearFilter ? 1 : 0) +
       state.selectedScales.size +
+      state.selectedRegions.size +
       state.selectedAuthors.size +
       state.selectedPublishers.size +
       state.selectedResourceFlags.size;
@@ -1451,7 +1629,10 @@
    */
   function renderGeoJsonFeatures(geojsonData) {
     const geoJsonLayer = L.geoJSON(geojsonData, {
-      style: (feature) => styleByScale(feature?.properties?.map?.scale_denominator ?? null),
+      style: (feature) => styleByScale(
+        feature?.properties?.map?.scale_denominator ?? null,
+        feature?.properties?.map?.map_type ?? 'geological_map_sheet'
+      ),
       onEachFeature: (feature, layer) => {
         const meta = normalizeProperties(feature.properties);
         const item = { layer, meta };
@@ -1473,7 +1654,7 @@
 
         layer.on('mouseout', () => {
           if (!isItemOverlayed(item)) {
-            layer.setStyle(styleByScale(meta.scaleDenominator));
+            layer.setStyle(styleByScale(meta.scaleDenominator, meta.mapType));
           }
         });
 
@@ -1495,8 +1676,10 @@
       state.map.fitBounds(bounds, { padding: [48, 48], maxZoom: 11 });
     }
 
+    renderMapTypeChips();
     initYearSlider();
     renderScaleChips();
+    renderRegionChips();
     renderAuthorChips();
     renderOtherChips();
     updateActiveFilterBadge();
@@ -1527,6 +1710,23 @@
           searchText: `${loc.title} ${meta.mapCode}`.toLowerCase(),
           item
         });
+      }
+
+      const volcanoName = state.lang === 'en'
+        ? (meta.volcanoNameEn || meta.volcanoNameJa)
+        : (meta.volcanoNameJa || meta.volcanoNameEn);
+      if (volcanoName) {
+        const volcanoKey = `volcano:${volcanoName}`;
+        if (!seenKeys.has(volcanoKey)) {
+          seenKeys.add(volcanoKey);
+          pool.push({
+            type: 'volcano',
+            label: volcanoName,
+            badge: dict.badgeVolcano,
+            searchText: `${meta.volcanoNameJa} ${meta.volcanoNameEn}`.toLowerCase(),
+            item
+          });
+        }
       }
 
       loc.authorList.forEach((author) => {
@@ -1570,7 +1770,7 @@
     hideSuggestions();
     applyFilters();
 
-    if (suggestion.type === 'map' && suggestion.item) {
+    if ((suggestion.type === 'map' || suggestion.type === 'volcano') && suggestion.item) {
       zoomToMapItem(suggestion.item);
       addOverlayForItem(suggestion.item);
     } else {
@@ -1610,7 +1810,10 @@
       textSpan.textContent = entry.label;
 
       const badgeSpan = document.createElement('span');
-      badgeSpan.className = `suggestion-badge ${entry.type === 'map' ? 'is-map' : 'is-author'}`;
+      const badgeClass = entry.type === 'map'
+        ? 'is-map'
+        : (entry.type === 'volcano' ? 'is-volcano' : 'is-author');
+      badgeSpan.className = `suggestion-badge ${badgeClass}`;
       badgeSpan.textContent = entry.badge;
 
       li.append(textSpan, badgeSpan);
@@ -1699,8 +1902,10 @@
   function applyFilters() {
     const query = dom.searchInput.value.trim().toLowerCase();
     const { minBound, maxBound, currentMin, currentMax } = state.yearRange;
+    const hasMapTypeFilter = state.selectedMapType !== 'all';
     const hasYearFilter = currentMin > minBound || currentMax < maxBound;
     const hasScaleFilter = state.selectedScales.size > 0;
+    const hasRegionFilter = state.selectedRegions.size > 0;
     const hasAuthorFilter = state.selectedAuthors.size > 0;
     const hasPublisherFilter = state.selectedPublishers.size > 0;
     const hasFlagFilter = state.selectedResourceFlags.size > 0;
@@ -1713,9 +1918,11 @@
       const year = Number(meta.publishedYear);
       const hasValidYear = meta.publishedYear !== null && !Number.isNaN(year);
 
+      const matchesMapType = !hasMapTypeFilter || meta.mapType === state.selectedMapType;
       const matchesText = !query || loc.searchTokens.includes(query);
       const matchesYear = !hasYearFilter || (hasValidYear && year >= currentMin && year <= currentMax);
       const matchesScale = !hasScaleFilter || state.selectedScales.has(meta.scale);
+      const matchesRegion = !hasRegionFilter || meta.regionList.some((r) => state.selectedRegions.has(r));
       const matchesAuthor = !hasAuthorFilter || loc.authorList.some((a) => state.selectedAuthors.has(a));
       const matchesPublisher = !hasPublisherFilter || state.selectedPublishers.has(loc.publisher);
       const matchesViewport = !viewBounds || computeIntersectionArea(viewBounds, getItemBounds(item)) > 0;
@@ -1734,9 +1941,11 @@
       }
 
       const isVisible =
+        matchesMapType &&
         matchesText &&
         matchesYear &&
         matchesScale &&
+        matchesRegion &&
         matchesAuthor &&
         matchesPublisher &&
         matchesFlags &&
@@ -1763,6 +1972,9 @@
    */
   function resetFilters() {
     dom.searchInput.value = '';
+    state.selectedMapType = 'all';
+    renderMapTypeChips();
+
     state.viewportOnly = false;
     dom.viewportOnlyToggle.checked = false;
 
@@ -1773,10 +1985,11 @@
     updateYearSliderUI();
 
     state.selectedScales.clear();
+    state.selectedRegions.clear();
     state.selectedAuthors.clear();
     state.selectedPublishers.clear();
     state.selectedResourceFlags.clear();
-    document.querySelectorAll('.decade-chip.is-selected').forEach((chip) => {
+    dom.filterPanelBody.querySelectorAll('.decade-chip.is-selected').forEach((chip) => {
       chip.classList.remove('is-selected');
       chip.setAttribute('aria-pressed', 'false');
     });
@@ -1842,12 +2055,14 @@
     dom.appTitle.textContent = dict.appTitle;
     dom.searchInput.placeholder = dict.searchPlaceholder;
     dom.searchInput.setAttribute('aria-label', dict.searchPlaceholder);
+    dom.mapTypeLabel.textContent = dict.mapTypeLabel;
     dom.viewportOnlyLabel.textContent = dict.viewportOnlyLabel;
     dom.showIndexLabel.textContent = dict.showIndexLabel;
     dom.seamless200kLabel.textContent = dict.seamless200kLabel;
     dom.filterAccordionLabel.textContent = dict.filterAccordionLabel;
     dom.decadeLabel.textContent = dict.decadeLabel;
     dom.scaleFilterLabel.textContent = dict.scaleFilterLabel;
+    dom.regionFilterLabel.textContent = dict.regionFilterLabel;
     dom.authorFilterLabel.textContent = dict.authorFilterLabel;
     dom.otherFilterLabel.textContent = dict.otherFilterLabel;
     dom.resetFiltersBtn.textContent = dict.reset;
@@ -1881,8 +2096,10 @@
     hideSuggestions();
     state.selectedAuthors.clear();
     state.selectedPublishers.clear();
+    renderMapTypeChips();
     updateYearSliderUI();
     renderScaleChips();
+    renderRegionChips();
     renderAuthorChips();
     renderOtherChips();
     buildSuggestionPool();

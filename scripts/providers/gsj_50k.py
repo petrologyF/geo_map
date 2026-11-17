@@ -47,6 +47,9 @@ def normalize_gsj_50k(raw: dict) -> dict:
             "layer_name": raw.get("layer_name", ""),
             "map_name_ja": raw.get("map_name_ja", ""),
             "map_name_en": raw.get("map_name_en", ""),
+            "map_type": "geological_map_sheet",
+            "theme": "geology",
+            "geometry_model": "map_sheet",
             "scale_denominator": 50000,
             "series": raw.get("series_ja") or raw.get("series_en") or "地域地質研究報告（5万分の1地質図幅）",
             "published_year": raw.get("published_year"),
@@ -72,6 +75,7 @@ def normalize_gsj_50k(raw: dict) -> dict:
             "tile_url": tile_url,
             "wms_url": "",
             "wms_layers": "",
+            "raster_image_url": raw.get("original_image_url", ""),
             "opacity": 0.85,
         },
         "documents": {
