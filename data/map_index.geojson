@@ -33,13 +33,20 @@
       "properties": {
         "map_id": 501,
         "layer_name": "G50_10_028yatsuo",
+        "map_name_ja": "5万分の1地質図幅「八尾」",
         "map_name_en": "1:50K GeoMap 'Yatsuo' (1960)",
+        "series_ja": "5万分の1地質図幅",
         "series_en": "Geological Map, 1:50,000",
+        "authors_ja": [
+          "野沢 保",
+          "坂本 亨"
+        ],
         "authors_en": [
           "SAKAMOTO Toru",
           "NOZAWA Tamotsu"
         ],
         "published_year": 1960,
+        "publisher_ja": "地質調査所（現 産総研 地質調査総合センター）",
         "publisher_en": "Geological Survey of Japan",
         "volume": "10 Kanazawa, 28, 77, 1 sheet",
         "metadata_url": "https://gbank.gsj.jp/ld/resource/publication/map/g050/map00501.html",
@@ -141,13 +148,20 @@
       "properties": {
         "map_id": 502,
         "layer_name": "G50_10_029gohyakkoku",
+        "map_name_ja": "5万分の1地質図幅「五百石」",
         "map_name_en": "1:50K GeoMap 'Gohyakkoku' (1960)",
+        "series_ja": "5万分の1地質図幅",
         "series_en": "Geological Map, 1:50,000",
+        "authors_ja": [
+          "野沢 保",
+          "坂本 亨"
+        ],
         "authors_en": [
           "NOZAWA Tamotsu",
           "SAKAMOTO Toru"
         ],
         "published_year": 1960,
+        "publisher_ja": "地質調査所（現 産総研 地質調査総合センター）",
         "publisher_en": "Geological Survey of Japan",
         "volume": "10 Kanazawa, 29, 78,1 sheet",
         "metadata_url": "https://gbank.gsj.jp/ld/resource/publication/map/g050/map00502.html",
@@ -249,8 +263,17 @@
       "properties": {
         "map_id": 503,
         "layer_name": "G50_10_030tateyama",
+        "map_name_ja": "5万分の1地質図幅「立山」",
         "map_name_en": "1:50K GeoMap 'Tateyama' (2000)",
+        "series_ja": "5万分の1地質図幅",
         "series_en": "Quadrangle Series, Scale 1:50,000",
+        "authors_ja": [
+          "原山 智",
+          "高橋 浩",
+          "中野 俊",
+          "苅谷愛彦",
+          "駒澤正夫"
+        ],
         "authors_en": [
           "HARAYAMA Satoru",
           "TAKAHASHI Yutaka",
@@ -259,6 +282,7 @@
           "KOMAZAWA Masao"
         ],
         "published_year": 2000,
+        "publisher_ja": "地質調査所（現 産総研 地質調査総合センター）",
         "publisher_en": "Geological Survey of Japan",
         "volume": "10 Kanazawa, 30, 218, 1 sheet",
         "metadata_url": "https://gbank.gsj.jp/ld/resource/publication/map/g050/map00503.html",
@@ -360,8 +384,16 @@
       "properties": {
         "map_id": 504,
         "layer_name": "G50_10_031omachi",
+        "map_name_ja": "5万分の1地質図幅「大町」",
         "map_name_en": "1:50K GeoMap 'Omachi' (1989)",
+        "series_ja": "5万分の1地質図幅",
         "series_en": "Quadrangle Series, Scale 1:50,000",
+        "authors_ja": [
+          "加藤碵一",
+          "佐藤岱生",
+          "三村弘二",
+          "滝沢文教"
+        ],
         "authors_en": [
           "KATO Hirokazu",
           "SATO Taisei",
@@ -369,6 +401,7 @@
           "TAKIZAWA Fuminori"
         ],
         "published_year": 1989,
+        "publisher_ja": "地質調査所（現 産総研 地質調査総合センター）",
         "publisher_en": "Geological Survey of Japan",
         "volume": "10 Kanazawa, 31, 103, 1 sheet",
         "metadata_url": "https://gbank.gsj.jp/ld/resource/publication/map/g050/map00504.html",
@@ -469,8 +502,16 @@
       "properties": {
         "map_id": 505,
         "layer_name": "G50_10_035shirokimine",
+        "map_name_ja": "5万分の1地質図幅「白木峰」",
         "map_name_en": "1:50K GeoMap 'Shirokimine' (1981)",
+        "series_ja": "5万分の1地質図幅",
         "series_en": "Quadrangle Series, Scale 1:50,000",
+        "authors_ja": [
+          "野沢 保",
+          "坂本 亨",
+          "加納 隆",
+          "稲月恒夫"
+        ],
         "authors_en": [
           "NOZAWA Tamotsu",
           "SAKAMOTO Toru",
@@ -478,6 +519,7 @@
           "INAZUKI Tsuneo"
         ],
         "published_year": 1981,
+        "publisher_ja": "地質調査所（現 産総研 地質調査総合センター）",
         "publisher_en": "Geological Survey of Japan",
         "volume": "10 Kanazawa, 35, 85,1 sheet",
         "metadata_url": "https://gbank.gsj.jp/ld/resource/publication/map/g050/map00505.html",
@@ -580,13 +622,20 @@
       "properties": {
         "map_id": 506,
         "layer_name": "G50_10_036higashimozumi",
+        "map_name_ja": "5万分の1地質図幅「東茂住」",
         "map_name_en": "1:50K GeoMap 'Higashimozumi' (1959)",
+        "series_ja": "5万分の1地質図幅",
         "series_en": "Geological Map, 1:50,000",
+        "authors_ja": [
+          "河合正虎",
+          "野沢 保"
+        ],
         "authors_en": [
           "KAWAI Masatora",
           "NOZAWA Tamotsu"
         ],
         "published_year": 1958,
+        "publisher_ja": "地質調査所（現 産総研 地質調査総合センター）",
         "publisher_en": "Geological Survey of Japan",
         "volume": "10 Kanazawa, 36, 86, 1 sheet",
         "metadata_url": "https://gbank.gsj.jp/ld/resource/publication/map/g050/map00506.html",
@@ -688,8 +737,17 @@
       "properties": {
         "map_id": 507,
         "layer_name": "G50_10_037yarigatake",
+        "map_name_ja": "5万分の1地質図幅「槍ヶ岳」",
         "map_name_en": "1:50K GeoMap 'Yarigatake' (1991)",
+        "series_ja": "5万分の1地質図幅",
         "series_en": "Quadrangle Series, Scale 1:50,000",
+        "authors_ja": [
+          "原山 智",
+          "竹内 誠",
+          "中野 俊",
+          "佐藤岱生",
+          "滝沢文教"
+        ],
         "authors_en": [
           "HARAYAMA Satoru",
           "TAKEUCHI Makoto",
@@ -698,6 +756,7 @@
           "TAKIZAWA Fuminori"
         ],
         "published_year": 1991,
+        "publisher_ja": "地質調査所（現 産総研 地質調査総合センター）",
         "publisher_en": "Geological Survey of Japan",
         "volume": "10 Kanazawa, 37, 190, 1 sheet",
         "metadata_url": "https://gbank.gsj.jp/ld/resource/publication/map/g050/map00507.html",
@@ -800,13 +859,20 @@
       "properties": {
         "map_id": 508,
         "layer_name": "G50_10_038shinanoikeda",
+        "map_name_ja": "5万分の1地質図幅「信濃池田」",
         "map_name_en": "1:50K GeoMap 'Shinano-Ikeda' (1983)",
+        "series_ja": "5万分の1地質図幅",
         "series_en": "Quadrangle Series, Scale 1:50,000",
+        "authors_ja": [
+          "加藤碵一",
+          "佐藤岱生"
+        ],
         "authors_en": [
           "KATO Hirokazu",
           "SATO Taisei"
         ],
         "published_year": 1983,
+        "publisher_ja": "地質調査所（現 産総研 地質調査総合センター）",
         "publisher_en": "Geological Survey of Japan",
         "volume": "10 Kanazawa, 38, 93, 1 sheet",
         "metadata_url": "https://gbank.gsj.jp/ld/resource/publication/map/g050/map00508.html",
@@ -909,14 +975,22 @@
       "properties": {
         "map_id": 509,
         "layer_name": "G50_10_043hidafurukawa",
+        "map_name_ja": "5万分の1地質図幅「飛騨古川」",
         "map_name_en": "1:50K GeoMap 'Hida-Furukawa' (1975)",
+        "series_ja": "5万分の1地質図幅",
         "series_en": "Quadrangle Series, Scale 1:50,000",
+        "authors_ja": [
+          "野沢 保",
+          "河田清雄",
+          "河合正虎"
+        ],
         "authors_en": [
           "NOZAWA Tamotsu",
           "KAWATA Kiyoo",
           "KAWAI Masatora"
         ],
         "published_year": 1975,
+        "publisher_ja": "地質調査所（現 産総研 地質調査総合センター）",
         "publisher_en": "Geological Survey of Japan",
         "volume": "10 Kanazawa, 43, 2,89,1 sheet",
         "metadata_url": "https://gbank.gsj.jp/ld/resource/publication/map/g050/map00509.html",
@@ -1021,13 +1095,20 @@
       "properties": {
         "map_id": 510,
         "layer_name": "G50_10_044funatsu",
+        "map_name_ja": "5万分の1地質図幅「船津」",
         "map_name_en": "1:50K GeoMap 'Funatsu' (1957)",
+        "series_ja": "5万分の1地質図幅",
         "series_en": "Geological Map, 1:50,000",
+        "authors_ja": [
+          "野沢 保",
+          "礒見 博"
+        ],
         "authors_en": [
           "ISOMI Hiroshi",
           "NOZAWA Tamotsu"
         ],
         "published_year": 1957,
+        "publisher_ja": "地質調査所（現 産総研 地質調査総合センター）",
         "publisher_en": "Geological Survey of Japan",
         "volume": "10 Kanazawa, 44, 51, 1 sheet",
         "metadata_url": "https://gbank.gsj.jp/ld/resource/publication/map/g050/map00510.html",
@@ -1129,12 +1210,18 @@
       "properties": {
         "map_id": 511,
         "layer_name": "G50_10_045kamikochi",
+        "map_name_ja": "5万分の1地質図幅「上高地」",
         "map_name_en": "1:50K GeoMap 'Kamikochi' (1990)",
+        "series_ja": "5万分の1地質図幅",
         "series_en": "Quadrangle Series, Scale 1:50,000",
+        "authors_ja": [
+          "原山 智"
+        ],
         "authors_en": [
           "HARAYAMA Satoru"
         ],
         "published_year": 1990,
+        "publisher_ja": "地質調査所（現 産総研 地質調査総合センター）",
         "publisher_en": "Geological Survey of Japan",
         "volume": "10 Kanazawa, 45, 175, 1 sheet",
         "metadata_url": "https://gbank.gsj.jp/ld/resource/publication/map/g050/map00511.html",
@@ -1237,12 +1324,18 @@
       "properties": {
         "map_id": 512,
         "layer_name": "G50_10_051mikkamachi",
+        "map_name_ja": "5万分の1地質図幅「三日町」",
         "map_name_en": "1:50K GeoMap 'Mikkamachi' (1982)",
+        "series_ja": "5万分の1地質図幅",
         "series_en": "Quadrangle Series, Scale 1:50,000",
+        "authors_ja": [
+          "河田清雄"
+        ],
         "authors_en": [
           "KAWADA Kiyoo"
         ],
         "published_year": 1982,
+        "publisher_ja": "地質調査所（現 産総研 地質調査総合センター）",
         "publisher_en": "Geological Survey of Japan",
         "volume": "10 Kanazawa, 51, 72, 1 sheet",
         "metadata_url": "https://gbank.gsj.jp/ld/resource/publication/map/g050/map00512.html",

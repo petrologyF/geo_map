@@ -30,6 +30,7 @@
     MAX_ZOOM: 18,
     MAX_LIST_ITEMS: 100,
     MAX_SUGGESTIONS: 10,
+    MAX_OVERLAYS: 4,
     DEFAULT_OVERLAY_OPACITY: 0.85,
     WMS_OPTIONS: {
       layers: 'geo_A',
@@ -74,8 +75,7 @@
     suggestionPool: [],
     currentSuggestions: [],
     activeSuggestionIndex: -1,
-    activeOverlayLayer: null,
-    selectedItem: null,
+    activeOverlays: [],
     dominantLegendItem: null,
     overlayOpacity: CONFIG.DEFAULT_OVERLAY_OPACITY
   };
@@ -97,7 +97,7 @@
     activeWmsBar: document.getElementById('active-wms-bar'),
     wmsStatusDot: document.getElementById('wms-status-dot'),
     activeWmsName: document.getElementById('active-wms-name'),
-    zoomWmsBtn: document.getElementById('zoom-wms-btn'),
+    activeOverlayList: document.getElementById('active-overlay-list'),
     clearWmsBtn: document.getElementById('clear-wms-btn'),
     wmsOpacitySlider: document.getElementById('wms-opacity'),
     wmsOpacityValue: document.getElementById('wms-opacity-value'),
@@ -225,6 +225,7 @@
       mapNameJa,
       mapNameEn,
       authorsJa: authorsJa || '不明',
+      authorsEn,
       authorList: cleanAuthorList,
       publishedYear: props.published_year ?? null,
       publisher: props.publisher_ja || props.publisher_en || '',
@@ -490,10 +491,19 @@
   }
 
   /**
-   * 現在の地図表示範囲内で最も広く表示されている地質図を特定し、右手の凡例パネルを更新する
+   * 指定した図幅アイテムが現在オーバーレイ表示中か判定する
+   * @param {Object} item - 図幅アイテム
+   * @returns {boolean} 表示中ならtrue
+   */
+  function isItemOverlayed(item) {
+    return state.activeOverlays.some((entry) => entry.item === item);
+  }
+
+  /**
+   * 現在オーバーレイ表示されている地質図の中で最も広く表示されているものを特定し、右手の凡例パネルを更新する
    */
   function updateDominantLegend() {
-    if (!state.map || state.filteredItems.length === 0) {
+    if (!state.map || state.activeOverlays.length === 0) {
       renderLegendPanel(null);
       return;
     }
@@ -502,7 +512,7 @@
     let bestItem = null;
     let maxArea = 0;
 
-    state.filteredItems.forEach((item) => {
+    state.activeOverlays.forEach(({ item }) => {
       if (!item.meta.legendImageUrl) {
         return;
       }
@@ -518,55 +528,138 @@
   }
 
   /**
-   * 選択中の地質図オーバーレイおよびポリゴン強調を解除する
+   * 左パネルの「表示中の地質図（最大4件）」リストを描画する
    */
-  function clearActiveOverlayLayer() {
-    if (state.activeOverlayLayer && state.map) {
-      state.map.removeLayer(state.activeOverlayLayer);
-      state.activeOverlayLayer = null;
+  function renderActiveOverlayList() {
+    dom.activeOverlayList.innerHTML = '';
+
+    if (state.activeOverlays.length === 0) {
+      dom.activeWmsBar.hidden = true;
+      dom.activeWmsName.textContent = '';
+      return;
     }
-    if (state.selectedItem) {
-      state.selectedItem.layer.setStyle(CONFIG.POLYGON_STYLE.default);
-      state.selectedItem = null;
-    }
-    dom.wmsStatusDot.classList.remove('is-loading');
-    dom.activeWmsBar.hidden = true;
-    dom.activeWmsName.textContent = '';
-    syncSelectedListItem();
+
+    dom.activeWmsBar.hidden = false;
+    dom.activeWmsName.textContent = `表示中の地質図 (${state.activeOverlays.length}/${CONFIG.MAX_OVERLAYS})`;
+
+    const fragment = document.createDocumentFragment();
+
+    state.activeOverlays.forEach(({ item }) => {
+      const li = document.createElement('li');
+      li.className = 'active-overlay-item';
+
+      const label = document.createElement('span');
+      label.className = 'active-overlay-label';
+      label.textContent = item.meta.mapNameJa;
+      label.title = `${item.meta.mapNameJa} にズーム`;
+      label.addEventListener('click', () => zoomToMapItem(item));
+
+      const btns = document.createElement('div');
+      btns.className = 'active-overlay-btns';
+
+      const zoomBtn = document.createElement('button');
+      zoomBtn.type = 'button';
+      zoomBtn.className = 'icon-button';
+      zoomBtn.title = 'この図幅にズーム';
+      zoomBtn.setAttribute('aria-label', `${item.meta.mapNameJa} にズーム`);
+      zoomBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>';
+      zoomBtn.addEventListener('click', () => zoomToMapItem(item));
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'icon-button';
+      removeBtn.title = 'この地質図を閉じる';
+      removeBtn.setAttribute('aria-label', `${item.meta.mapNameJa} を閉じる`);
+      removeBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+      removeBtn.addEventListener('click', () => removeOverlayByItem(item));
+
+      btns.append(zoomBtn, removeBtn);
+      li.append(label, btns);
+      fragment.appendChild(li);
+    });
+
+    dom.activeOverlayList.appendChild(fragment);
   }
 
   /**
-   * XYZタイル（優先）またはWMSで地質図オーバーレイレイヤーを追加する
-   * @param {Object} meta - normalizeProperties() の返却オブジェクト
-   * @param {L.LatLngBounds} [fallbackBounds] - meta.bounds が無い場合のフォールバック範囲
+   * 指定された図幅のオーバーレイを解除する
+   * @param {Object} item - 解除対象の図幅アイテム
    */
-  function updateOverlayLayer(meta, fallbackBounds) {
-    if (state.activeOverlayLayer && state.map) {
-      state.map.removeLayer(state.activeOverlayLayer);
-      state.activeOverlayLayer = null;
+  function removeOverlayByItem(item) {
+    const idx = state.activeOverlays.findIndex((entry) => entry.item === item);
+    if (idx === -1) {
+      return;
+    }
+
+    const [removed] = state.activeOverlays.splice(idx, 1);
+    if (state.map && removed.layer) {
+      state.map.removeLayer(removed.layer);
+    }
+    if (removed.item.layer) {
+      removed.item.layer.setStyle(CONFIG.POLYGON_STYLE.default);
+    }
+
+    renderActiveOverlayList();
+    syncSelectedListItem();
+    updateDominantLegend();
+  }
+
+  /**
+   * 選択中のすべての地質図オーバーレイおよびポリゴン強調を解除する
+   */
+  function clearAllOverlays() {
+    state.activeOverlays.forEach(({ item, layer }) => {
+      if (state.map && layer) {
+        state.map.removeLayer(layer);
+      }
+      if (item.layer) {
+        item.layer.setStyle(CONFIG.POLYGON_STYLE.default);
+      }
+    });
+    state.activeOverlays = [];
+    dom.wmsStatusDot.classList.remove('is-loading');
+    renderActiveOverlayList();
+    syncSelectedListItem();
+    updateDominantLegend();
+  }
+
+  /**
+   * XYZタイル（優先）またはWMSで地質図オーバーレイレイヤーを追加する（最大4図幅まで保持）
+   * @param {Object} item - { layer, meta } オブジェクト
+   */
+  function addOverlayForItem(item) {
+    const { meta } = item;
+
+    // すでに表示中の場合は最前面へ移動して終了
+    const existing = state.activeOverlays.find((entry) => entry.item === item);
+    if (existing) {
+      if (typeof existing.layer.bringToFront === 'function') {
+        existing.layer.bringToFront();
+      }
+      updateDominantLegend();
+      return;
     }
 
     if (!meta.overlayType || !meta.overlayUrl) {
-      dom.activeWmsBar.hidden = true;
-      setStatusMessage('この図幅には利用可能なタイルURLまたはWMS URLがありません。');
+      setStatusMessage(`「${meta.mapNameJa}」には利用可能なタイルURLまたはWMS URLがありません。`);
       return;
     }
 
     setStatusMessage('');
 
-    let layerBounds = fallbackBounds || null;
-    if (meta.bounds) {
-      const [west, south, east, north] = meta.bounds;
-      layerBounds = L.latLngBounds([[south, west], [north, east]]);
+    // 最大4図幅に達している場合、最も古いオーバーレイを1つ外す
+    if (state.activeOverlays.length >= CONFIG.MAX_OVERLAYS) {
+      removeOverlayByItem(state.activeOverlays[0].item);
     }
 
+    const layerBounds = getItemBounds(item);
     const commonOptions = {
       opacity: state.overlayOpacity,
       attribution: meta.attribution,
       ...(layerBounds && layerBounds.isValid() ? { bounds: layerBounds } : {})
     };
 
-    const layer = meta.overlayType === 'xyz'
+    const overlayLayer = meta.overlayType === 'xyz'
       ? L.tileLayer(meta.overlayUrl, {
           ...commonOptions,
           minZoom: meta.zoomMin,
@@ -580,43 +673,43 @@
     let loadedTileCount = 0;
     let errorTileCount = 0;
 
-    layer.on('loading', () => {
+    overlayLayer.on('loading', () => {
       loadedTileCount = 0;
       errorTileCount = 0;
       dom.wmsStatusDot.classList.add('is-loading');
     });
 
-    layer.on('tileload', () => {
+    overlayLayer.on('tileload', () => {
       loadedTileCount += 1;
     });
 
-    layer.on('tileerror', () => {
+    overlayLayer.on('tileerror', () => {
       errorTileCount += 1;
     });
 
-    layer.on('load', () => {
+    overlayLayer.on('load', () => {
       dom.wmsStatusDot.classList.remove('is-loading');
       if (loadedTileCount === 0 && errorTileCount > 0) {
         setStatusMessage(`「${meta.mapNameJa}」の地質図タイル取得中にエラーが発生しました。`);
       }
     });
 
-    state.activeOverlayLayer = layer.addTo(state.map);
-    dom.activeWmsName.textContent = `表示中: ${meta.mapNameJa}`;
-    dom.activeWmsBar.hidden = false;
+    overlayLayer.addTo(state.map);
+    state.activeOverlays.push({ item, layer: overlayLayer });
+    item.layer.setStyle(CONFIG.POLYGON_STYLE.selected);
+
+    renderActiveOverlayList();
+    syncSelectedListItem();
+    updateDominantLegend();
   }
 
   /**
-   * 図幅アイテムを選択し、ポップアップ表示・タイルオーバーレイ・強調スタイルを適用する
+   * 図幅アイテムを選択し、ポップアップ表示・タイルオーバーレイ（最大4件）・強調スタイルを適用する
    * @param {Object} item - { layer, meta } オブジェクト
    * @param {L.LatLng} [latlng] - ポップアップ表示座標（省略時はポリゴン中心）
    */
   function selectMapItem(item, latlng) {
     const { layer, meta } = item;
-
-    if (state.selectedItem && state.selectedItem !== item) {
-      state.selectedItem.layer.setStyle(CONFIG.POLYGON_STYLE.default);
-    }
 
     // A. クリック地点（または図郭中心）にポップアップを表示
     const popupLatLng = latlng || layer.getBounds().getCenter();
@@ -625,14 +718,8 @@
       .setContent(buildPopupContent(meta))
       .openOn(state.map);
 
-    // B. 既存レイヤーを削除し、新たなXYZ/WMSレイヤーを追加
-    const fallbackBounds = layer.getBounds ? layer.getBounds() : null;
-    updateOverlayLayer(meta, fallbackBounds);
-
-    // 選択中ポリゴンを強調
-    state.selectedItem = item;
-    layer.setStyle(CONFIG.POLYGON_STYLE.selected);
-    syncSelectedListItem();
+    // B. タイル/WMSレイヤーを追加（最大4つまで同時比較可能）
+    addOverlayForItem(item);
   }
 
   /**
@@ -664,7 +751,7 @@
     const buttons = dom.resultList.querySelectorAll('.result-list-item');
     buttons.forEach((btn, idx) => {
       const targetItem = state.filteredItems[idx];
-      btn.classList.toggle('is-selected', targetItem === state.selectedItem);
+      btn.classList.toggle('is-selected', isItemOverlayed(targetItem));
     });
   }
 
@@ -686,7 +773,7 @@
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'result-list-item';
-      if (item === state.selectedItem) {
+      if (isItemOverlayed(item)) {
         button.classList.add('is-selected');
       }
 
@@ -759,13 +846,13 @@
 
         // ホバー時のハイライト
         layer.on('mouseover', () => {
-          if (state.selectedItem !== item) {
+          if (!isItemOverlayed(item)) {
             layer.setStyle(CONFIG.POLYGON_STYLE.hover);
           }
         });
 
         layer.on('mouseout', () => {
-          if (state.selectedItem !== item) {
+          if (!isItemOverlayed(item)) {
             layer.setStyle(CONFIG.POLYGON_STYLE.default);
           }
         });
@@ -1063,9 +1150,11 @@
     state.overlayOpacity = percent / 100;
     dom.wmsOpacityValue.textContent = `${percent}%`;
 
-    if (state.activeOverlayLayer) {
-      state.activeOverlayLayer.setOpacity(state.overlayOpacity);
-    }
+    state.activeOverlays.forEach(({ layer }) => {
+      if (layer && typeof layer.setOpacity === 'function') {
+        layer.setOpacity(state.overlayOpacity);
+      }
+    });
   }
 
   /**
@@ -1116,8 +1205,7 @@
     dom.togglePanelBtn.addEventListener('click', togglePanel);
     dom.toggleListBtn.addEventListener('click', toggleResultList);
     dom.toggleLegendBtn.addEventListener('click', toggleLegend);
-    dom.clearWmsBtn.addEventListener('click', clearActiveOverlayLayer);
-    dom.zoomWmsBtn.addEventListener('click', () => zoomToMapItem(state.selectedItem));
+    dom.clearWmsBtn.addEventListener('click', clearAllOverlays);
     dom.wmsOpacitySlider.addEventListener('input', handleOpacityChange);
 
     dom.basemapButtons.forEach((btn) => {

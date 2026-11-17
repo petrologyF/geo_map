@@ -132,6 +132,53 @@ def extract_related_links(metadata_url: str, soup: BeautifulSoup) -> dict[str, s
     return related
 
 
+def extract_japanese_metadata(catalog_url: str) -> dict:
+    """GSJ日本語カタログページから図幅名・著者名・発行者（日本語）を抽出する。"""
+    result = {
+        "map_name_ja": "",
+        "authors_ja": [],
+        "publisher_ja": "",
+        "series_ja": "",
+    }
+    if not catalog_url:
+        return result
+
+    try:
+        html = fetch_text(catalog_url)
+        soup = BeautifulSoup(html, "html.parser")
+    except Exception:
+        return result
+
+    kv: dict[str, str] = {}
+    for row in soup.find_all("tr"):
+        cells = row.find_all(["th", "td"])
+        if len(cells) >= 2:
+            key = re.sub(r"\s+", "", clean_text(cells[0]))
+            val = clean_text(cells[1])
+            if key and val and key not in kv:
+                kv[key] = val
+
+    raw_title = kv.get("図名", "")
+    if raw_title:
+        # 例: "槍ヶ岳　YARIGATAKE" -> 日本語名部分を抽出
+        ja_part = re.sub(r"[\s　]+[A-Za-z0-9'\-\s,()]+$", "", raw_title).strip()
+        map_title = ja_part or raw_title
+        result["map_name_ja"] = f"5万分の1地質図幅「{map_title}」"
+
+    raw_authors = kv.get("著者", "")
+    if raw_authors:
+        authors = [
+            re.sub(r"[\s　]+", " ", a).strip()
+            for a in re.split(r"[・,、]", raw_authors)
+            if a.strip()
+        ]
+        result["authors_ja"] = authors
+
+    result["publisher_ja"] = kv.get("発行者", "")
+    result["series_ja"] = kv.get("シリーズ名", "")
+    return result
+
+
 def build_record(metadata_url: str) -> dict:
     """メタデータHTMLとTileJSONを取得し、カタログレコード辞書を構築する。"""
     metadata_html = fetch_text(metadata_url)
@@ -190,14 +237,20 @@ def build_record(metadata_url: str) -> dict:
 
     downloads = extract_download_links(metadata_url, soup)
     related = extract_related_links(metadata_url, soup)
+    catalog_url = properties.get("map_catalogue_url", "")
+    ja_meta = extract_japanese_metadata(catalog_url)
 
     return {
         "map_id": map_id,
         "layer_name": layer_name,
+        "map_name_ja": ja_meta["map_name_ja"],
         "map_name_en": map_name_en,
+        "series_ja": ja_meta["series_ja"],
         "series_en": series_en,
+        "authors_ja": ja_meta["authors_ja"],
         "authors_en": authors_en,
         "published_year": int(published_year) if published_year.isdigit() else published_year,
+        "publisher_ja": ja_meta["publisher_ja"],
         "publisher_en": publisher_en,
         "volume": volume,
         "metadata_url": metadata_url,
