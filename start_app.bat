@@ -1,41 +1,49 @@
 @echo off
-chcp 65001 >nul
 setlocal
-
 cd /d "%~dp0"
-set "PORT=8000"
-set "URL=http://localhost:%PORT%"
 
-echo ==================================================
-echo  5万分の1地質図幅検索 WebGIS を起動します
-echo  URL: %URL%
-echo  終了するにはこのウィンドウを閉じるか Ctrl+C を押してください
-echo ==================================================
+echo Starting GeoMap WebGIS...
 echo.
 
-where python >nul 2>&1
+python -c "import http.server" >nul 2>&1
 if %errorlevel%==0 (
-    start "" "%URL%"
-    python -m http.server %PORT%
+    python scripts\serve.py
+    if errorlevel 1 pause
+    goto :end
+)
+
+if exist "%USERPROFILE%\miniconda3\python.exe" (
+    "%USERPROFILE%\miniconda3\python.exe" scripts\serve.py
+    if errorlevel 1 pause
+    goto :end
+)
+
+if exist "%USERPROFILE%\anaconda3\python.exe" (
+    "%USERPROFILE%\anaconda3\python.exe" scripts\serve.py
+    if errorlevel 1 pause
     goto :end
 )
 
 where py >nul 2>&1
 if %errorlevel%==0 (
-    start "" "%URL%"
-    py -3 -m http.server %PORT%
-    goto :end
+    py -3 -c "import http.server" >nul 2>&1
+    if %errorlevel%==0 (
+        py -3 scripts\serve.py
+        if errorlevel 1 pause
+        goto :end
+    )
 )
 
 where npx >nul 2>&1
 if %errorlevel%==0 (
-    start "" "%URL%"
-    npx --yes serve . -l %PORT%
+    start "" "http://localhost:8000"
+    npx --yes serve . -l 8000
+    if errorlevel 1 pause
     goto :end
 )
 
-echo [エラー] Python または Node.js (npx) が見つかりませんでした。
-echo いずれかをインストールした上で再度お試しください。
+echo [ERROR] Python or Node.js (npx) was not found.
+echo Please install Python 3 or Node.js and try again.
 pause
 
 :end
