@@ -64,9 +64,84 @@
   };
 
   /**
+   * UIテキスト多言語辞書
+   */
+  const I18N = {
+    ja: {
+      appTitle: '5万分の1地質図幅',
+      searchPlaceholder: '図幅名または著者で検索',
+      decadeLabel: '発行年（複数選択可）',
+      decadeUnit: '年代',
+      reset: 'リセット',
+      basemapLabel: '背景地図',
+      basemapPale: '淡色',
+      basemapStd: '標準',
+      basemapPhoto: '航空写真',
+      activeMapsTitle: (n, max) => `表示中の地質図 (${n}/${max})`,
+      clearAll: 'すべて閉じる',
+      opacity: '透過度',
+      resultListLabel: '該当図幅一覧',
+      resultCount: (v, t) => `${v} / ${t} 件`,
+      noMatch: '条件に一致する図幅がありません',
+      moreItems: (n) => `ほか ${n} 件（検索で絞り込めます）`,
+      badgeMap: '図幅',
+      badgeAuthor: '著者',
+      eyebrow: '表示中の図幅詳細',
+      yearLabel: '発行年',
+      yearSuffix: '年',
+      yearUnknown: '不明',
+      authorsLabel: '著者',
+      publisherLabel: '発行',
+      regionLabel: '地域',
+      linkDetail: '詳細情報',
+      linkPdf: '説明書PDF',
+      linkOriginal: '原図JPG',
+      legendTitle: '地質凡例',
+      legendOpen: '拡大',
+      legendNone: '凡例画像なし',
+      unknownAuthor: '不明'
+    },
+    en: {
+      appTitle: '1:50K GeoMap',
+      searchPlaceholder: 'Search by map name or author',
+      decadeLabel: 'Published Decade (Multi-select)',
+      decadeUnit: 's',
+      reset: 'Reset',
+      basemapLabel: 'Basemap',
+      basemapPale: 'Pale',
+      basemapStd: 'Std',
+      basemapPhoto: 'Photo',
+      activeMapsTitle: (n, max) => `Active Maps (${n}/${max})`,
+      clearAll: 'Clear all',
+      opacity: 'Opacity',
+      resultListLabel: 'Matching Maps',
+      resultCount: (v, t) => `${v} / ${t} maps`,
+      noMatch: 'No matching maps found',
+      moreItems: (n) => `${n} more (refine search)`,
+      badgeMap: 'Map',
+      badgeAuthor: 'Author',
+      eyebrow: 'Active Map Details',
+      yearLabel: 'Year',
+      yearSuffix: '',
+      yearUnknown: 'Unknown',
+      authorsLabel: 'Authors',
+      publisherLabel: 'Publisher',
+      regionLabel: 'Region',
+      linkDetail: 'Details',
+      linkPdf: 'PDF',
+      linkOriginal: 'Original JPG',
+      legendTitle: 'Legend',
+      legendOpen: 'Open',
+      legendNone: 'No legend image',
+      unknownAuthor: 'Unknown'
+    }
+  };
+
+  /**
    * アプリケーション状態
    */
   const state = {
+    lang: 'ja',
     map: null,
     activeBaseLayer: null,
     indexLayerGroup: null,
@@ -85,11 +160,15 @@
    * DOM要素のキャッシュ
    */
   const dom = {
+    appTitle: document.getElementById('app-title'),
+    langButtons: document.querySelectorAll('.segmented-btn[data-lang]'),
     fitAllBtn: document.getElementById('fit-all-btn'),
     searchInput: document.getElementById('search-input'),
     searchSuggestions: document.getElementById('search-suggestions'),
+    decadeLabel: document.getElementById('decade-label'),
     decadeChips: document.getElementById('decade-chips'),
     resetFiltersBtn: document.getElementById('reset-filters'),
+    basemapLabel: document.getElementById('basemap-label'),
     basemapButtons: document.querySelectorAll('.segmented-btn[data-basemap]'),
     resultCount: document.getElementById('result-count'),
     activeWmsBar: document.getElementById('active-wms-bar'),
@@ -97,16 +176,20 @@
     activeWmsName: document.getElementById('active-wms-name'),
     activeOverlayList: document.getElementById('active-overlay-list'),
     clearWmsBtn: document.getElementById('clear-wms-btn'),
+    opacityLabel: document.getElementById('opacity-label'),
     wmsOpacitySlider: document.getElementById('wms-opacity'),
     wmsOpacityValue: document.getElementById('wms-opacity-value'),
     legendSidebar: document.getElementById('legend-sidebar'),
+    dominantInfoEyebrow: document.getElementById('dominant-info-eyebrow'),
     dominantInfoTitle: document.getElementById('dominant-info-title'),
     dominantInfoSubtitle: document.getElementById('dominant-info-subtitle'),
     dominantInfoMeta: document.getElementById('dominant-info-meta'),
     dominantInfoLinks: document.getElementById('dominant-info-links'),
+    legendPanelTitle: document.getElementById('legend-panel-title'),
     legendMapName: document.getElementById('legend-map-name'),
     legendOpenLink: document.getElementById('legend-open-link'),
     legendImage: document.getElementById('legend-image'),
+    resultListLabel: document.getElementById('result-list-label'),
     resultList: document.getElementById('result-list'),
     statusMessage: document.getElementById('status-message')
   };
@@ -135,13 +218,18 @@
    */
   function normalizeProperties(props = {}) {
     const mapNameJa = props.map_name_ja || props.map_name || props.map_name_en || '名称不明';
-    const mapNameEn = (props.map_name_ja || props.map_name) ? (props.map_name_en || '') : '';
-    const authorsJa = Array.isArray(props.authors_ja) && props.authors_ja.length > 0
-      ? props.authors_ja.join('・')
-      : (props.authors || (Array.isArray(props.authors_en) ? props.authors_en.join(', ') : ''));
-    const authorsEn = Array.isArray(props.authors_en)
-      ? props.authors_en.join(', ')
-      : '';
+    const mapNameEn = props.map_name_en || props.map_name_ja || props.map_name || 'Untitled';
+    const authorsJaList = Array.isArray(props.authors_ja)
+      ? props.authors_ja.map((a) => String(a).trim()).filter(Boolean)
+      : (typeof props.authors === 'string' && props.authors.trim()
+        ? props.authors.split(/[・,、]/).map((a) => a.trim()).filter(Boolean)
+        : []);
+    const authorsEnList = Array.isArray(props.authors_en)
+      ? props.authors_en.map((a) => String(a).trim()).filter(Boolean)
+      : [];
+
+    const authorsJa = authorsJaList.join('・');
+    const authorsEn = authorsEnList.join(', ');
 
     const prefectures = Array.isArray(props.prefectures) && props.prefectures.length > 0
       ? props.prefectures.join('・')
@@ -180,36 +268,21 @@
       props.related_resources?.catalog_url
     ].find((url) => isSafeUrl(url)) || '';
 
-    const authorList = [];
-    if (Array.isArray(props.authors_ja)) {
-      authorList.push(...props.authors_ja);
-    } else if (typeof props.authors === 'string' && props.authors.trim()) {
-      authorList.push(...props.authors.split(/[・,、]/));
-    }
-    if (Array.isArray(props.authors_en)) {
-      authorList.push(...props.authors_en);
-    }
-    const cleanAuthorList = [...new Set(authorList.map((a) => String(a).trim()).filter(Boolean))];
-
-    const searchTokens = [
-      mapNameJa,
-      mapNameEn,
-      authorsJa,
-      authorsEn,
-      mapCode,
-      prefectures
-    ].join(' ').toLowerCase();
+    const searchTokensJa = [mapNameJa, authorsJa, mapCode, prefectures].join(' ').toLowerCase();
+    const searchTokensEn = [mapNameEn, authorsEn, mapCode, prefectures].join(' ').toLowerCase();
 
     return {
       mapId,
       mapCode,
       mapNameJa,
       mapNameEn,
-      authorsJa: authorsJa || '不明',
+      authorsJa,
       authorsEn,
-      authorList: cleanAuthorList,
+      authorsJaList,
+      authorsEnList,
       publishedYear: props.published_year ?? null,
-      publisher: props.publisher_ja || props.publisher_en || '',
+      publisherJa: props.publisher_ja || props.publisher_en || '',
+      publisherEn: props.publisher_en || props.publisher_ja || '',
       prefectures,
       bounds: rawBounds,
       zoomMin,
@@ -221,8 +294,38 @@
       originalImageUrl: isSafeUrl(props.original_image_url) ? props.original_image_url : '',
       detailUrl,
       pdfUrl: isSafeUrl(rawPdfUrl) ? rawPdfUrl : '',
-      searchTokens
+      searchTokensJa,
+      searchTokensEn
     };
+  }
+
+  /**
+   * 現在の言語に対応するUI辞書を返す
+   */
+  function t() {
+    return I18N[state.lang] || I18N.ja;
+  }
+
+  /**
+   * 現在の言語に応じた図幅タイトル・著者・発行者・検索トークンを返す
+   * @param {Object} meta - normalizeProperties() の返却オブジェクト
+   */
+  function getLocalizedMeta(meta) {
+    const isEn = state.lang === 'en';
+    const title = isEn ? meta.mapNameEn : meta.mapNameJa;
+    const subtitle = isEn
+      ? (meta.mapNameJa !== meta.mapNameEn ? meta.mapNameJa : '')
+      : (meta.mapNameEn !== meta.mapNameJa ? meta.mapNameEn : '');
+    const authors = isEn
+      ? (meta.authorsEn || meta.authorsJa || t().unknownAuthor)
+      : (meta.authorsJa || meta.authorsEn || t().unknownAuthor);
+    const authorList = isEn
+      ? (meta.authorsEnList.length > 0 ? meta.authorsEnList : meta.authorsJaList)
+      : (meta.authorsJaList.length > 0 ? meta.authorsJaList : meta.authorsEnList);
+    const publisher = isEn ? meta.publisherEn : meta.publisherJa;
+    const searchTokens = isEn ? meta.searchTokensEn : meta.searchTokensJa;
+
+    return { title, subtitle, authors, authorList, publisher, searchTokens };
   }
 
   /**
@@ -245,7 +348,7 @@
    * @param {number} totalCount - 全図幅件数
    */
   function updateResultCount(visibleCount, totalCount) {
-    dom.resultCount.textContent = `${visibleCount} / ${totalCount} 件`;
+    dom.resultCount.textContent = t().resultCount(visibleCount, totalCount);
   }
 
   /**
@@ -348,8 +451,9 @@
    * @returns {string} ツールチップ文字列
    */
   function buildTooltipText(meta) {
+    const loc = getLocalizedMeta(meta);
     const yearSuffix = meta.publishedYear != null ? ` (${meta.publishedYear})` : '';
-    return `${meta.mapNameJa}${yearSuffix}`;
+    return `${loc.title}${yearSuffix}`;
   }
 
   /**
@@ -396,8 +500,9 @@
    * 右サイドバー（最広表示図幅の詳細情報 & 地質凡例）の表示内容を更新する
    * @param {Object|null} item - 表示対象の図幅アイテム（nullで非表示）
    */
-  function renderLegendPanel(item) {
+  function renderLegendPanel(item, forceUpdate = false) {
     const wasHidden = dom.legendSidebar.hidden;
+    const dict = t();
 
     if (!item) {
       state.dominantLegendItem = null;
@@ -416,17 +521,18 @@
       return;
     }
 
-    if (state.dominantLegendItem === item && !dom.legendSidebar.hidden) {
+    if (!forceUpdate && state.dominantLegendItem === item && !dom.legendSidebar.hidden) {
       return;
     }
 
     const { meta } = item;
+    const loc = getLocalizedMeta(meta);
     state.dominantLegendItem = item;
 
     // 上段：詳細情報
-    dom.dominantInfoTitle.textContent = meta.mapNameJa;
-    if (meta.mapNameEn) {
-      dom.dominantInfoSubtitle.textContent = meta.mapNameEn;
+    dom.dominantInfoTitle.textContent = loc.title;
+    if (loc.subtitle) {
+      dom.dominantInfoSubtitle.textContent = loc.subtitle;
       dom.dominantInfoSubtitle.hidden = false;
     } else {
       dom.dominantInfoSubtitle.textContent = '';
@@ -434,15 +540,18 @@
     }
 
     dom.dominantInfoMeta.innerHTML = '';
+    const yearValue = meta.publishedYear != null
+      ? `${meta.publishedYear}${dict.yearSuffix}`
+      : dict.yearUnknown;
     const metaEntries = [
-      ['発行年', meta.publishedYear != null ? `${meta.publishedYear}年` : '不明'],
-      ['著者', meta.authorsJa]
+      [dict.yearLabel, yearValue],
+      [dict.authorsLabel, loc.authors]
     ];
-    if (meta.publisher) {
-      metaEntries.push(['発行', meta.publisher]);
+    if (loc.publisher) {
+      metaEntries.push([dict.publisherLabel, loc.publisher]);
     }
     if (meta.prefectures) {
-      metaEntries.push(['地域', meta.prefectures]);
+      metaEntries.push([dict.regionLabel, meta.prefectures]);
     }
 
     metaEntries.forEach(([label, value]) => {
@@ -455,9 +564,9 @@
 
     dom.dominantInfoLinks.innerHTML = '';
     const linkDefs = [
-      ['詳細情報', meta.detailUrl],
-      ['説明書PDF', meta.pdfUrl],
-      ['原図JPG', meta.originalImageUrl]
+      [dict.linkDetail, meta.detailUrl],
+      [dict.linkPdf, meta.pdfUrl],
+      [dict.linkOriginal, meta.originalImageUrl]
     ];
     linkDefs.forEach(([label, url]) => {
       if (!url) {
@@ -474,14 +583,14 @@
 
     // 下段：凡例画像
     if (meta.legendImageUrl) {
-      dom.legendMapName.textContent = meta.mapNameJa;
+      dom.legendMapName.textContent = loc.title;
       dom.legendImage.src = meta.legendImageUrl;
-      dom.legendImage.alt = `${meta.mapNameJa} 凡例`;
+      dom.legendImage.alt = `${loc.title} ${dict.legendTitle}`;
       dom.legendImage.hidden = false;
       dom.legendOpenLink.href = meta.legendImageUrl;
       dom.legendOpenLink.hidden = false;
     } else {
-      dom.legendMapName.textContent = '凡例画像なし';
+      dom.legendMapName.textContent = dict.legendNone;
       dom.legendImage.removeAttribute('src');
       dom.legendImage.hidden = true;
       dom.legendOpenLink.href = '#';
@@ -534,6 +643,7 @@
    */
   function renderActiveOverlayList() {
     dom.activeOverlayList.innerHTML = '';
+    const dict = t();
 
     if (state.activeOverlays.length === 0) {
       dom.activeWmsBar.hidden = true;
@@ -542,12 +652,13 @@
     }
 
     dom.activeWmsBar.hidden = false;
-    dom.activeWmsName.textContent = `表示中の地質図 (${state.activeOverlays.length}/${CONFIG.MAX_OVERLAYS})`;
+    dom.activeWmsName.textContent = dict.activeMapsTitle(state.activeOverlays.length, CONFIG.MAX_OVERLAYS);
 
     const fragment = document.createDocumentFragment();
 
     state.activeOverlays.forEach(({ item }) => {
       const { meta } = item;
+      const loc = getLocalizedMeta(meta);
       const li = document.createElement('li');
       li.className = 'active-overlay-item';
 
@@ -556,8 +667,8 @@
 
       const label = document.createElement('span');
       label.className = 'active-overlay-label';
-      label.textContent = meta.mapNameJa;
-      label.title = `${meta.mapNameJa} にズーム`;
+      label.textContent = loc.title;
+      label.title = loc.title;
       label.addEventListener('click', () => zoomToMapItem(item));
 
       const btns = document.createElement('div');
@@ -566,16 +677,16 @@
       const zoomBtn = document.createElement('button');
       zoomBtn.type = 'button';
       zoomBtn.className = 'icon-button';
-      zoomBtn.title = 'この図幅にズーム';
-      zoomBtn.setAttribute('aria-label', `${meta.mapNameJa} にズーム`);
+      zoomBtn.title = 'Zoom';
+      zoomBtn.setAttribute('aria-label', `${loc.title} zoom`);
       zoomBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>';
       zoomBtn.addEventListener('click', () => zoomToMapItem(item));
 
       const removeBtn = document.createElement('button');
       removeBtn.type = 'button';
       removeBtn.className = 'icon-button';
-      removeBtn.title = 'この地質図を閉じる';
-      removeBtn.setAttribute('aria-label', `${meta.mapNameJa} を閉じる`);
+      removeBtn.title = 'Close';
+      removeBtn.setAttribute('aria-label', `${loc.title} close`);
       removeBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
       removeBtn.addEventListener('click', () => removeOverlayByItem(item));
 
@@ -584,9 +695,9 @@
 
       const metaRow = document.createElement('div');
       metaRow.className = 'active-overlay-meta';
-      const yearText = meta.publishedYear != null ? `${meta.publishedYear}年` : '年不明';
+      const yearText = meta.publishedYear != null ? `${meta.publishedYear}${dict.yearSuffix}` : dict.yearUnknown;
       const infoSpan = document.createElement('span');
-      infoSpan.textContent = `${yearText} / ${meta.authorsJa}`;
+      infoSpan.textContent = `${yearText} / ${loc.authors}`;
       metaRow.appendChild(infoSpan);
 
       if (meta.detailUrl) {
@@ -595,7 +706,7 @@
         detailLink.href = meta.detailUrl;
         detailLink.target = '_blank';
         detailLink.rel = 'noopener noreferrer';
-        detailLink.textContent = '詳細情報';
+        detailLink.textContent = dict.linkDetail;
         metaRow.appendChild(detailLink);
       }
 
@@ -605,7 +716,7 @@
         pdfLink.href = meta.pdfUrl;
         pdfLink.target = '_blank';
         pdfLink.rel = 'noopener noreferrer';
-        pdfLink.textContent = 'PDF';
+        pdfLink.textContent = dict.linkPdf;
         metaRow.appendChild(pdfLink);
       }
 
@@ -766,12 +877,14 @@
    * 絞り込み結果リストを描画する（常時表示）
    */
   function renderResultList() {
+    const dict = t();
     dom.resultList.innerHTML = '';
     const fragment = document.createDocumentFragment();
     const displayItems = state.filteredItems.slice(0, CONFIG.MAX_LIST_ITEMS);
 
     displayItems.forEach((item) => {
       const { meta } = item;
+      const loc = getLocalizedMeta(meta);
       const li = document.createElement('li');
       const button = document.createElement('button');
       button.type = 'button';
@@ -785,11 +898,11 @@
 
       const nameSpan = document.createElement('span');
       nameSpan.className = 'result-item-name';
-      nameSpan.textContent = meta.mapNameJa;
+      nameSpan.textContent = loc.title;
 
       const authorSpan = document.createElement('span');
       authorSpan.className = 'result-item-author';
-      authorSpan.textContent = meta.authorsJa;
+      authorSpan.textContent = loc.authors;
 
       mainSpan.append(nameSpan, authorSpan);
 
@@ -810,12 +923,12 @@
     if (state.filteredItems.length > CONFIG.MAX_LIST_ITEMS) {
       const noteLi = document.createElement('li');
       noteLi.className = 'result-list-note';
-      noteLi.textContent = `ほか ${state.filteredItems.length - CONFIG.MAX_LIST_ITEMS} 件（検索で絞り込めます）`;
+      noteLi.textContent = dict.moreItems(state.filteredItems.length - CONFIG.MAX_LIST_ITEMS);
       fragment.appendChild(noteLi);
     } else if (state.filteredItems.length === 0) {
       const emptyLi = document.createElement('li');
       emptyLi.className = 'result-list-note';
-      emptyLi.textContent = '条件に一致する図幅がありません';
+      emptyLi.textContent = dict.noMatch;
       fragment.appendChild(emptyLi);
     }
 
@@ -827,6 +940,7 @@
    * 10年ごとの年代マルチセレクトチップを自動生成する
    */
   function renderDecadeChips() {
+    const dict = t();
     const years = state.allItems
       .map(({ meta }) => Number(meta.publishedYear))
       .filter((year) => !Number.isNaN(year) && year > 0);
@@ -849,12 +963,13 @@
 
     const fragment = document.createDocumentFragment();
     sortedDecades.forEach((decade) => {
+      const isSelected = state.selectedDecades.has(decade);
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'decade-chip';
-      btn.textContent = `${decade}年代`;
+      btn.className = isSelected ? 'decade-chip is-selected' : 'decade-chip';
+      btn.textContent = `${decade}${dict.decadeUnit}`;
       btn.dataset.decade = String(decade);
-      btn.setAttribute('aria-pressed', 'false');
+      btn.setAttribute('aria-pressed', String(isSelected));
 
       btn.addEventListener('click', () => {
         if (state.selectedDecades.has(decade)) {
@@ -936,31 +1051,33 @@
    * 図幅名および著者名のサジェスト候補プールを構築する
    */
   function buildSuggestionPool() {
+    const dict = t();
     const pool = [];
     const seenKeys = new Set();
 
     state.allItems.forEach((item) => {
       const { meta } = item;
-      const mapKey = `map:${meta.mapNameJa}`;
+      const loc = getLocalizedMeta(meta);
+      const mapKey = `map:${loc.title}`;
       if (!seenKeys.has(mapKey)) {
         seenKeys.add(mapKey);
         pool.push({
           type: 'map',
-          label: meta.mapNameJa,
-          badge: '図幅',
-          searchText: `${meta.mapNameJa} ${meta.mapNameEn} ${meta.mapCode}`.toLowerCase(),
+          label: loc.title,
+          badge: dict.badgeMap,
+          searchText: `${loc.title} ${meta.mapCode}`.toLowerCase(),
           item
         });
       }
 
-      meta.authorList.forEach((author) => {
+      loc.authorList.forEach((author) => {
         const authorKey = `author:${author}`;
         if (!seenKeys.has(authorKey)) {
           seenKeys.add(authorKey);
           pool.push({
             type: 'author',
             label: author,
-            badge: '著者',
+            badge: dict.badgeAuthor,
             searchText: author.toLowerCase(),
             item: null
           });
@@ -1112,7 +1229,7 @@
         ? Math.floor(year / 10) * 10
         : null;
 
-      const matchesText = !query || meta.searchTokens.includes(query);
+      const matchesText = !query || getLocalizedMeta(meta).searchTokens.includes(query);
       const matchesDecade = !hasDecadeFilter || (decade !== null && state.selectedDecades.has(decade));
 
       const isVisible = matchesText && matchesDecade;
@@ -1181,6 +1298,65 @@
   }
 
   /**
+   * 表示言語（日本語 / 英語）を切り替え、UI・検索・サジェスト・ツールチップを再描画する
+   * @param {'ja'|'en'} lang - 言語コード
+   */
+  function switchLanguage(lang) {
+    if (!I18N[lang] || state.lang === lang) {
+      return;
+    }
+
+    state.lang = lang;
+    document.documentElement.lang = lang;
+    const dict = t();
+
+    dom.langButtons.forEach((btn) => {
+      btn.classList.toggle('is-active', btn.dataset.lang === lang);
+    });
+
+    dom.appTitle.textContent = dict.appTitle;
+    dom.searchInput.placeholder = dict.searchPlaceholder;
+    dom.searchInput.setAttribute('aria-label', dict.searchPlaceholder);
+    dom.decadeLabel.textContent = dict.decadeLabel;
+    dom.resetFiltersBtn.textContent = dict.reset;
+    dom.basemapLabel.textContent = dict.basemapLabel;
+    dom.clearWmsBtn.textContent = dict.clearAll;
+    dom.opacityLabel.textContent = dict.opacity;
+    dom.resultListLabel.textContent = dict.resultListLabel;
+    dom.dominantInfoEyebrow.textContent = dict.eyebrow;
+    dom.legendPanelTitle.textContent = dict.legendTitle;
+    dom.legendOpenLink.textContent = dict.legendOpen;
+
+    const basemapLabelMap = {
+      pale: dict.basemapPale,
+      std: dict.basemapStd,
+      photo: dict.basemapPhoto
+    };
+    dom.basemapButtons.forEach((btn) => {
+      const key = btn.dataset.basemap;
+      if (basemapLabelMap[key]) {
+        btn.textContent = basemapLabelMap[key];
+      }
+    });
+
+    // ホバーツールチップの言語を更新
+    state.allItems.forEach(({ layer, meta }) => {
+      if (typeof layer.setTooltipContent === 'function') {
+        layer.setTooltipContent(buildTooltipText(meta));
+      }
+    });
+
+    hideSuggestions();
+    renderDecadeChips();
+    buildSuggestionPool();
+    applyFilters();
+    renderActiveOverlayList();
+    if (state.dominantLegendItem) {
+      renderLegendPanel(state.dominantLegendItem, true);
+    }
+  }
+
+  /**
    * UIおよびキーボードイベントリスナーを登録する
    */
   function initEventListeners() {
@@ -1202,6 +1378,10 @@
 
     dom.basemapButtons.forEach((btn) => {
       btn.addEventListener('click', () => switchBasemap(btn.dataset.basemap));
+    });
+
+    dom.langButtons.forEach((btn) => {
+      btn.addEventListener('click', () => switchLanguage(btn.dataset.lang));
     });
 
     document.addEventListener('keydown', handleGlobalKeydown);

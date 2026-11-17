@@ -34,9 +34,13 @@
               <line x1="16" y1="6" x2="16" y2="22"></line>
             </svg>
           </span>
-          <h1 class="panel-title">5万分の1地質図幅</h1>
+          <h1 id="app-title" class="panel-title">5万分の1地質図幅</h1>
         </div>
         <div class="panel-header-actions">
+          <div class="segmented-control lang-switch" role="group" aria-label="表示言語の切り替え">
+            <button type="button" class="segmented-btn is-active" data-lang="ja">JP</button>
+            <button type="button" class="segmented-btn" data-lang="en">EN</button>
+          </div>
           <span id="result-count" class="result-badge" aria-live="polite">読込中...</span>
           <button
             type="button"
@@ -81,7 +85,7 @@
         <!-- 発行年（10年ごとの年代マルチセレクト） -->
         <div class="filter-group">
           <div class="filter-label-row">
-            <span class="filter-label">発行年（複数選択可）</span>
+            <span id="decade-label" class="filter-label">発行年（複数選択可）</span>
             <button type="button" id="reset-filters" class="text-button" title="検索条件をリセット">
               リセット
             </button>
@@ -91,7 +95,7 @@
 
         <!-- 背景地図切替 -->
         <div class="basemap-row" role="group" aria-label="背景地図の切り替え">
-          <span class="filter-label">背景地図</span>
+          <span id="basemap-label" class="filter-label">背景地図</span>
           <div class="segmented-control">
             <button type="button" class="segmented-btn is-active" data-basemap="pale">淡色</button>
             <button type="button" class="segmented-btn" data-basemap="std">標準</button>
@@ -120,7 +124,7 @@
           <ul id="active-overlay-list" class="active-overlay-list"></ul>
 
           <div class="wms-opacity-row">
-            <label class="wms-opacity-label" for="wms-opacity">透過度</label>
+            <label id="opacity-label" class="wms-opacity-label" for="wms-opacity">透過度</label>
             <input
               type="range"
               id="wms-opacity"
@@ -140,7 +144,7 @@
         <!-- 該当図幅一覧（常時表示） -->
         <div class="result-list-section">
           <div class="result-list-header">
-            <span class="filter-label">該当図幅一覧</span>
+            <span id="result-list-label" class="filter-label">該当図幅一覧</span>
           </div>
           <ul id="result-list" class="result-list"></ul>
         </div>
@@ -158,7 +162,7 @@
       <section id="dominant-info-section" class="dominant-info-section">
         <div class="sidebar-header dominant-info-header">
           <div class="legend-title-group">
-            <span class="dominant-info-eyebrow">表示中の図幅詳細</span>
+            <span id="dominant-info-eyebrow" class="dominant-info-eyebrow">表示中の図幅詳細</span>
             <h2 id="dominant-info-title" class="legend-panel-title"></h2>
             <p id="dominant-info-subtitle" class="dominant-info-subtitle" hidden></p>
           </div>
@@ -172,7 +176,7 @@
       <!-- 下段：地質凡例 -->
       <div class="sidebar-header legend-sidebar-header">
         <div class="legend-title-group">
-          <h2 class="legend-panel-title">地質凡例</h2>
+          <h2 id="legend-panel-title" class="legend-panel-title">地質凡例</h2>
           <span id="legend-map-name" class="legend-map-name"></span>
         </div>
         <a
