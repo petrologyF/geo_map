@@ -823,18 +823,28 @@
   }
 
   /**
-   * データ内の発行年から10年ごとの年代マルチセレクトチップを生成する
+   * データ内の最小発行年から現在年（例: 2026年→2020年代、2030年→2030年代）まで
+   * 10年ごとの年代マルチセレクトチップを自動生成する
    */
   function renderDecadeChips() {
-    const decades = new Set();
-    state.allItems.forEach(({ meta }) => {
-      const year = Number(meta.publishedYear);
-      if (meta.publishedYear !== null && !Number.isNaN(year)) {
-        decades.add(Math.floor(year / 10) * 10);
-      }
-    });
+    const years = state.allItems
+      .map(({ meta }) => Number(meta.publishedYear))
+      .filter((year) => !Number.isNaN(year) && year > 0);
 
-    const sortedDecades = [...decades].sort((a, b) => a - b);
+    const currentDecade = Math.floor(new Date().getFullYear() / 10) * 10;
+    const minDecade = years.length > 0
+      ? Math.floor(Math.min(...years) / 10) * 10
+      : currentDecade;
+    const maxDataDecade = years.length > 0
+      ? Math.floor(Math.max(...years) / 10) * 10
+      : currentDecade;
+    const maxDecade = Math.max(maxDataDecade, currentDecade);
+
+    const sortedDecades = [];
+    for (let decade = minDecade; decade <= maxDecade; decade += 10) {
+      sortedDecades.push(decade);
+    }
+
     dom.decadeChips.innerHTML = '';
 
     const fragment = document.createDocumentFragment();
