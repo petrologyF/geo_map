@@ -163,6 +163,16 @@
     const attribution = props.license?.attribution || CONFIG.GSJ_ATTRIBUTION;
     const rawPdfUrl = props.downloads?.pdf || props.downloads?.PDF || '';
     const mapCode = props.map_code || props.layer_name || '';
+    const mapId = props.map_id ?? null;
+    const fallbackMetadataUrl = mapId != null
+      ? `https://gbank.gsj.jp/ld/resource/publication/map/g050/map${String(mapId).padStart(5, '0')}.html`
+      : '';
+    const detailUrl = [
+      props.metadata_url,
+      fallbackMetadataUrl,
+      props.related_resources?.publication_uri,
+      props.related_resources?.catalog_url
+    ].find((url) => isSafeUrl(url)) || '';
 
     const searchTokens = [
       mapNameJa,
@@ -174,7 +184,7 @@
     ].join(' ').toLowerCase();
 
     return {
-      mapId: props.map_id ?? null,
+      mapId,
       mapCode,
       mapNameJa,
       mapNameEn,
@@ -190,7 +200,7 @@
       attribution,
       legendImageUrl: isSafeUrl(props.legend_image_url) ? props.legend_image_url : '',
       originalImageUrl: isSafeUrl(props.original_image_url) ? props.original_image_url : '',
-      catalogUrl: isSafeUrl(props.related_resources?.catalog_url) ? props.related_resources.catalog_url : '',
+      detailUrl,
       pdfUrl: isSafeUrl(rawPdfUrl) ? rawPdfUrl : '',
       searchTokens
     };
@@ -290,8 +300,8 @@
     }
 
     const links = [];
-    if (meta.catalogUrl) {
-      links.push(`<a class="map-popup-link" href="${escapeHtml(meta.catalogUrl)}" target="_blank" rel="noopener noreferrer">詳細情報</a>`);
+    if (meta.detailUrl) {
+      links.push(`<a class="map-popup-link" href="${escapeHtml(meta.detailUrl)}" target="_blank" rel="noopener noreferrer">詳細情報</a>`);
     }
     if (meta.pdfUrl) {
       links.push(`<a class="map-popup-link" href="${escapeHtml(meta.pdfUrl)}" target="_blank" rel="noopener noreferrer">説明書PDF</a>`);
