@@ -128,11 +128,11 @@
    * @returns {Object} 正規化されたメタデータ
    */
   function normalizeProperties(props = {}) {
-    const mapNameJa = props.map_name_ja || props.map_name || '名称不明';
-    const mapNameEn = props.map_name_en || '';
+    const mapNameJa = props.map_name_ja || props.map_name || props.map_name_en || '名称不明';
+    const mapNameEn = props.map_name_ja || props.map_name ? (props.map_name_en || '') : '';
     const authorsJa = Array.isArray(props.authors_ja)
       ? props.authors_ja.join('・')
-      : (props.authors || '');
+      : (props.authors || (Array.isArray(props.authors_en) ? props.authors_en.join(', ') : ''));
     const authorsEn = Array.isArray(props.authors_en)
       ? props.authors_en.join(', ')
       : '';
@@ -149,36 +149,49 @@
     const canUseWms = !canUseXyz && props.is_wms_available !== false && isSafeUrl(wmsUrl);
 
     const zoom = props.zoom || {};
+    const zoomMin = typeof zoom.min === 'number'
+      ? zoom.min
+      : (typeof tile.min_zoom === 'number' ? tile.min_zoom : CONFIG.MIN_ZOOM);
+    const zoomMax = typeof zoom.max === 'number'
+      ? zoom.max
+      : (typeof tile.max_zoom === 'number' ? tile.max_zoom : CONFIG.MAX_ZOOM);
+
+    const rawBounds = Array.isArray(props.bounds) && props.bounds.length === 4
+      ? props.bounds
+      : (Array.isArray(tile.bounds) && tile.bounds.length === 4 ? tile.bounds : null);
+
     const attribution = props.license?.attribution || CONFIG.GSJ_ATTRIBUTION;
+    const rawPdfUrl = props.downloads?.pdf || props.downloads?.PDF || '';
+    const mapCode = props.map_code || props.layer_name || '';
 
     const searchTokens = [
       mapNameJa,
       mapNameEn,
       authorsJa,
       authorsEn,
-      props.map_code || '',
+      mapCode,
       prefectures
     ].join(' ').toLowerCase();
 
     return {
       mapId: props.map_id ?? null,
-      mapCode: props.map_code || '',
+      mapCode,
       mapNameJa,
       mapNameEn,
       authorsJa: authorsJa || '不明',
       publishedYear: props.published_year ?? null,
       publisher: props.publisher_ja || props.publisher_en || '',
       prefectures,
-      bounds: Array.isArray(props.bounds) && props.bounds.length === 4 ? props.bounds : null,
-      zoomMin: typeof zoom.min === 'number' ? zoom.min : CONFIG.MIN_ZOOM,
-      zoomMax: typeof zoom.max === 'number' ? zoom.max : CONFIG.MAX_ZOOM,
+      bounds: rawBounds,
+      zoomMin,
+      zoomMax,
       overlayType: canUseXyz ? 'xyz' : (canUseWms ? 'wms' : null),
       overlayUrl: canUseXyz ? xyzUrl : (canUseWms ? wmsUrl : ''),
       attribution,
       legendImageUrl: isSafeUrl(props.legend_image_url) ? props.legend_image_url : '',
       originalImageUrl: isSafeUrl(props.original_image_url) ? props.original_image_url : '',
       catalogUrl: isSafeUrl(props.related_resources?.catalog_url) ? props.related_resources.catalog_url : '',
-      pdfUrl: isSafeUrl(props.downloads?.pdf) ? props.downloads.pdf : '',
+      pdfUrl: isSafeUrl(rawPdfUrl) ? rawPdfUrl : '',
       searchTokens
     };
   }
