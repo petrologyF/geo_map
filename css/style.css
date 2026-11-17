@@ -1016,6 +1016,13 @@ body {
   border-bottom: none;
 }
 
+.dominant-info-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
 .dominant-info-eyebrow {
   font-size: 11px;
   font-weight: 500;

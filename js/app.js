@@ -135,6 +135,14 @@
       legendOpen: '拡大',
       legendNone: '凡例画像なし',
       unknownAuthor: '不明',
+      moveUpTitle: '前面へ移動',
+      moveDownTitle: '背面へ移動',
+      zoomTitle: 'この図幅にズーム',
+      closeTitle: 'この地質図を閉じる',
+      fitAllTitle: '表示中の全図幅にズーム (f)',
+      themeToggleTitle: 'ダークモード切り替え (d)',
+      shortcutHelpTitle: 'キーボードショートカット (?)',
+      closeDetailTitle: '詳細パネルを閉じる',
       shortcutModalTitle: 'キーボードショートカット',
       shortcuts: [
         [['/', 'Ctrl+K'], '検索欄にフォーカス'],
@@ -218,6 +226,14 @@
       legendOpen: 'Open',
       legendNone: 'No legend image',
       unknownAuthor: 'Unknown',
+      moveUpTitle: 'Bring forward',
+      moveDownTitle: 'Send backward',
+      zoomTitle: 'Zoom to map',
+      closeTitle: 'Close overlay',
+      fitAllTitle: 'Fit all visible maps (f)',
+      themeToggleTitle: 'Toggle dark mode (d)',
+      shortcutHelpTitle: 'Keyboard shortcuts (?)',
+      closeDetailTitle: 'Close details panel',
       shortcutModalTitle: 'Keyboard Shortcuts',
       shortcuts: [
         [['/', 'Ctrl+K'], 'Focus search box'],
@@ -235,6 +251,27 @@
         [['Esc'], 'Close help / blur focus']
       ]
     }
+  };
+
+  /**
+   * 地域・提供機関の英語表記マッピング
+   */
+  const REGION_EN_MAP = {
+    '北海道': 'Hokkaido',
+    '富山県': 'Toyama',
+    '石川県': 'Ishikawa',
+    '長野県': 'Nagano',
+    '岐阜県': 'Gifu',
+    '山梨県': 'Yamanashi',
+    '静岡県': 'Shizuoka',
+    '福岡県': 'Fukuoka',
+    '宮城県': 'Miyagi',
+    '全国': 'Nationwide'
+  };
+
+  const PROVIDER_EN_MAP = {
+    '産業技術総合研究所 地質調査総合センター': 'Geological Survey of Japan, AIST',
+    '北海道立総合研究機構 エネルギー・環境・地質研究所': ' Geological Survey of Hokkaido, HRO'
   };
 
   /**
@@ -336,6 +373,7 @@
     wmsOpacitySlider: document.getElementById('wms-opacity'),
     wmsOpacityValue: document.getElementById('wms-opacity-value'),
     legendSidebar: document.getElementById('legend-sidebar'),
+    closeDominantBtn: document.getElementById('close-dominant-btn'),
     dominantInfoEyebrow: document.getElementById('dominant-info-eyebrow'),
     dominantInfoTitle: document.getElementById('dominant-info-title'),
     dominantInfoSubtitle: document.getElementById('dominant-info-subtitle'),
@@ -587,9 +625,20 @@
       ? (meta.authorsEnList.length > 0 ? meta.authorsEnList : meta.authorsJaList)
       : (meta.authorsJaList.length > 0 ? meta.authorsJaList : meta.authorsEnList);
     const publisher = isEn ? meta.publisherEn : meta.publisherJa;
-    const searchTokens = isEn ? meta.searchTokensEn : meta.searchTokensJa;
+    const providerName = isEn
+      ? (PROVIDER_EN_MAP[meta.providerNameJa]?.trim() || meta.providerNameJa)
+      : meta.providerNameJa;
+    const regionList = isEn
+      ? meta.regionList.map((r) => REGION_EN_MAP[r] || r)
+      : meta.regionList;
+    const region = isEn
+      ? (regionList.length > 0 ? regionList.join(', ') : (REGION_EN_MAP[meta.prefectures] || meta.prefectures))
+      : meta.prefectures;
+    const searchTokens = isEn
+      ? `${meta.searchTokensEn} ${region.toLowerCase()} ${providerName.toLowerCase()}`
+      : meta.searchTokensJa;
 
-    return { title, subtitle, authors, authorList, publisher, searchTokens };
+    return { title, subtitle, authors, authorList, publisher, providerName, region, regionList, searchTokens };
   }
 
   /**
@@ -904,14 +953,14 @@
     if (meta.scale) {
       metaEntries.push([dict.scaleLabel, meta.scale]);
     }
-    if (meta.providerNameJa) {
-      metaEntries.push([dict.providerLabel, meta.providerNameJa]);
+    if (loc.providerName) {
+      metaEntries.push([dict.providerLabel, loc.providerName]);
     }
     if (loc.publisher) {
       metaEntries.push([dict.publisherLabel, loc.publisher]);
     }
-    if (meta.prefectures) {
-      metaEntries.push([dict.regionLabel, meta.prefectures]);
+    if (loc.region) {
+      metaEntries.push([dict.regionLabel, loc.region]);
     }
 
     metaEntries.forEach(([label, value]) => {
@@ -1092,6 +1141,29 @@
   }
 
   /**
+   * 右サイドバーの閉じるボタン押下時に、現在表示中の詳細パネル・選択状態を解除する
+   */
+  function closeDominantDetail() {
+    const current = state.dominantLegendItem;
+    if (current && state.activeOverlays.some((e) => e.item === current)) {
+      removeOverlayByItem(current);
+      return;
+    }
+    if (state.selectedItem) {
+      if (state.selectedItem.layer && !state.activeOverlays.some((e) => e.item === state.selectedItem)) {
+        state.selectedItem.layer.setStyle(
+          styleByScale(state.selectedItem.meta.scaleDenominator, state.selectedItem.meta.mapType)
+        );
+      }
+      state.selectedItem = null;
+      syncSelectedListItem();
+      updateDominantLegend();
+      return;
+    }
+    renderLegendPanel(null);
+  }
+
+  /**
    * 指定した図幅アイテムが現在オーバーレイ表示中または選択中か判定する
    * @param {Object} item - 図幅アイテム
    * @returns {boolean} 表示中・選択中ならtrue
@@ -1169,34 +1241,34 @@
       const upBtn = document.createElement('button');
       upBtn.type = 'button';
       upBtn.className = 'icon-button';
-      upBtn.title = '前面へ';
+      upBtn.title = dict.moveUpTitle;
       upBtn.disabled = i === state.activeOverlays.length - 1;
-      upBtn.setAttribute('aria-label', `${loc.title} move up`);
+      upBtn.setAttribute('aria-label', `${loc.title} ${dict.moveUpTitle}`);
       upBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
       upBtn.addEventListener('click', () => moveOverlayOrder(i, 1));
 
       const downBtn = document.createElement('button');
       downBtn.type = 'button';
       downBtn.className = 'icon-button';
-      downBtn.title = '背面へ';
+      downBtn.title = dict.moveDownTitle;
       downBtn.disabled = i === 0;
-      downBtn.setAttribute('aria-label', `${loc.title} move down`);
+      downBtn.setAttribute('aria-label', `${loc.title} ${dict.moveDownTitle}`);
       downBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
       downBtn.addEventListener('click', () => moveOverlayOrder(i, -1));
 
       const zoomBtn = document.createElement('button');
       zoomBtn.type = 'button';
       zoomBtn.className = 'icon-button';
-      zoomBtn.title = 'Zoom';
-      zoomBtn.setAttribute('aria-label', `${loc.title} zoom`);
+      zoomBtn.title = dict.zoomTitle;
+      zoomBtn.setAttribute('aria-label', `${loc.title} ${dict.zoomTitle}`);
       zoomBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>';
       zoomBtn.addEventListener('click', () => zoomToMapItem(item));
 
       const removeBtn = document.createElement('button');
       removeBtn.type = 'button';
       removeBtn.className = 'icon-button';
-      removeBtn.title = 'Close';
-      removeBtn.setAttribute('aria-label', `${loc.title} close`);
+      removeBtn.title = dict.closeTitle;
+      removeBtn.setAttribute('aria-label', `${loc.title} ${dict.closeTitle}`);
       removeBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
       removeBtn.addEventListener('click', () => removeOverlayByItem(item));
 
@@ -1449,8 +1521,17 @@
 
     setStatusMessage('');
 
-    // タイル未配信（tile_type: "none" 等）の場合はオーバーレイ配列には入れず、選択状態＋右サイドバー表示のみ行う
+    // タイル未配信（tile_type: "none" 等）の場合はオーバーレイ配列には入れず、選択状態＋右サイドバー表示（再クリックで解除）を行う
     if (!overlayLayer) {
+      if (prevSelected === item && !dom.legendSidebar.hidden) {
+        if (item.layer) {
+          item.layer.setStyle(styleByScale(item.meta.scaleDenominator, item.meta.mapType));
+        }
+        state.selectedItem = null;
+        syncSelectedListItem();
+        updateDominantLegend();
+        return;
+      }
       if (item.layer) {
         item.layer.setStyle(CONFIG.POLYGON_STYLE.selected);
       }
@@ -1763,7 +1844,8 @@
       btn.setAttribute('aria-pressed', String(isSelected));
 
       btn.addEventListener('click', () => {
-        if (state.selectedMapType !== typeKey) {
+        const changed = state.selectedMapType !== typeKey;
+        if (changed) {
           state.selectedMapType = typeKey;
           state.selectedScales.clear();
           renderScaleChips();
@@ -1775,6 +1857,9 @@
         btn.classList.add('is-selected');
         btn.setAttribute('aria-pressed', 'true');
         applyFilters();
+        if (changed && !state.viewportOnly && state.filteredItems.length > 0) {
+          fitAllVisibleItems();
+        }
       });
 
       fragment.appendChild(btn);
@@ -1789,7 +1874,7 @@
   function renderRegionChips() {
     const regionsSet = new Set();
     state.allItems.forEach(({ meta }) => {
-      meta.regionList.forEach((r) => regionsSet.add(r));
+      getLocalizedMeta(meta).regionList.forEach((r) => regionsSet.add(r));
     });
 
     dom.regionChips.innerHTML = '';
@@ -2298,7 +2383,7 @@
       const matchesText = !query || loc.searchTokens.includes(query);
       const matchesYear = !hasYearFilter || (hasValidYear && year >= currentMin && year <= currentMax);
       const matchesScale = !hasScaleFilter || state.selectedScales.has(meta.scale);
-      const matchesRegion = !hasRegionFilter || meta.regionList.some((r) => state.selectedRegions.has(r));
+      const matchesRegion = !hasRegionFilter || loc.regionList.some((r) => state.selectedRegions.has(r));
       const matchesAuthor = !hasAuthorFilter || loc.authorList.some((a) => state.selectedAuthors.has(a));
       const matchesPublisher = !hasPublisherFilter || state.selectedPublishers.has(loc.publisher);
       const matchesViewport = !viewBounds || computeIntersectionArea(viewBounds, getItemBounds(item)) > 0;
@@ -2676,6 +2761,17 @@
     dom.legendPanelTitle.textContent = dict.legendTitle;
     dom.legendOpenLink.textContent = dict.legendOpen;
 
+    dom.fitAllBtn.title = dict.fitAllTitle;
+    dom.fitAllBtn.setAttribute('aria-label', dict.fitAllTitle);
+    dom.themeToggleBtn.title = dict.themeToggleTitle;
+    dom.themeToggleBtn.setAttribute('aria-label', dict.themeToggleTitle);
+    dom.shortcutHelpBtn.title = dict.shortcutHelpTitle;
+    dom.shortcutHelpBtn.setAttribute('aria-label', dict.shortcutHelpTitle);
+    if (dom.closeDominantBtn) {
+      dom.closeDominantBtn.title = dict.closeDetailTitle;
+      dom.closeDominantBtn.setAttribute('aria-label', dict.closeDetailTitle);
+    }
+
     const basemapLabelMap = {
       pale: dict.basemapPale,
       std: dict.basemapStd,
@@ -2696,6 +2792,7 @@
     });
 
     hideSuggestions();
+    state.selectedRegions.clear();
     state.selectedAuthors.clear();
     state.selectedPublishers.clear();
     renderMapTypeChips();
@@ -2771,6 +2868,9 @@
 
     dom.tabLegendBtn.addEventListener('click', () => switchVisualMode('legend'));
     dom.tabSectionBtn.addEventListener('click', () => switchVisualMode('section'));
+    if (dom.closeDominantBtn) {
+      dom.closeDominantBtn.addEventListener('click', closeDominantDetail);
+    }
 
     dom.basemapButtons.forEach((btn) => {
       btn.addEventListener('click', () => switchBasemap(btn.dataset.basemap));
