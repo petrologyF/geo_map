@@ -147,6 +147,7 @@
         [['b'], '背景地図（淡色/標準/写真）を切り替え'],
         [['[', ']'], '透過度を 10% 減少 / 増加'],
         [['x'], '表示中の地質図をすべて閉じる'],
+        [['d'], 'ダークモード / ライトモード切替'],
         [['?'], 'ショートカット一覧を表示/閉じる'],
         [['Esc'], 'ヘルプ・検索・フォーカスを解除']
       ]
@@ -229,6 +230,7 @@
         [['b'], 'Cycle basemap (Pale/Std/Photo)'],
         [['[', ']'], 'Decrease / increase opacity by 10%'],
         [['x'], 'Clear all active overlays'],
+        [['d'], 'Toggle dark / light mode'],
         [['?'], 'Toggle shortcut help'],
         [['Esc'], 'Close help / blur focus']
       ]
@@ -240,6 +242,7 @@
    */
   const state = {
     lang: 'ja',
+    theme: 'light',
     map: null,
     activeBaseLayer: null,
     activeBasemapKey: 'pale',
@@ -286,6 +289,7 @@
     appTitle: document.getElementById('app-title'),
     langButtons: document.querySelectorAll('.segmented-btn[data-lang]'),
     fitAllBtn: document.getElementById('fit-all-btn'),
+    themeToggleBtn: document.getElementById('theme-toggle-btn'),
     shortcutHelpBtn: document.getElementById('shortcut-help-btn'),
     shortcutModal: document.getElementById('shortcut-modal'),
     shortcutModalTitle: document.getElementById('shortcut-modal-title'),
@@ -2442,6 +2446,57 @@
   }
 
   /**
+   * テーマ（light / dark）を適用し、アイコンと localStorage を更新する
+   * @param {'light'|'dark'} theme
+   */
+  function applyTheme(theme) {
+    state.theme = theme === 'dark' ? 'dark' : 'light';
+    if (state.theme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+
+    const isDark = state.theme === 'dark';
+    dom.themeToggleBtn.setAttribute('aria-pressed', String(isDark));
+    dom.themeToggleBtn.innerHTML = isDark
+      ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>'
+      : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
+  }
+
+  /**
+   * ダークモード / ライトモードを切り替えて保存する
+   */
+  function toggleTheme() {
+    const nextTheme = state.theme === 'dark' ? 'light' : 'dark';
+    applyTheme(nextTheme);
+    try {
+      localStorage.setItem('geomap_theme', nextTheme);
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  /**
+   * 保存済み設定またはOS設定から初期テーマを適用する
+   */
+  function initTheme() {
+    let saved = null;
+    try {
+      saved = localStorage.getItem('geomap_theme');
+    } catch {
+      saved = null;
+    }
+    if (saved === 'dark' || saved === 'light') {
+      applyTheme(saved);
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      applyTheme('dark');
+    } else {
+      applyTheme('light');
+    }
+  }
+
+  /**
    * グローバルキーボードショートカットを処理する
    * @param {KeyboardEvent} event - キーダウンイベント
    */
@@ -2529,6 +2584,9 @@
     } else if (lowerKey === 'x') {
       event.preventDefault();
       clearAllOverlays();
+    } else if (lowerKey === 'd') {
+      event.preventDefault();
+      toggleTheme();
     }
   }
 
@@ -2624,6 +2682,7 @@
 
     dom.resultList.addEventListener('keydown', handleResultListKeydown);
 
+    dom.themeToggleBtn.addEventListener('click', toggleTheme);
     dom.shortcutHelpBtn.addEventListener('click', openShortcutModal);
     dom.closeShortcutModal.addEventListener('click', closeShortcutModal);
     dom.shortcutModal.addEventListener('click', (event) => {
@@ -2695,6 +2754,7 @@
    * アプリケーションのエントリポイント
    */
   async function init() {
+    initTheme();
     switchMobileView('map');
     state.map = initMap();
     initEventListeners();
