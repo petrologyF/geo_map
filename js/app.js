@@ -367,8 +367,9 @@
   /**
    * XYZタイル（優先）またはWMSで地質図オーバーレイレイヤーを追加する
    * @param {Object} meta - normalizeProperties() の返却オブジェクト
+   * @param {L.LatLngBounds} [fallbackBounds] - meta.bounds が無い場合のフォールバック範囲
    */
-  function updateOverlayLayer(meta) {
+  function updateOverlayLayer(meta, fallbackBounds) {
     if (state.activeOverlayLayer && state.map) {
       state.map.removeLayer(state.activeOverlayLayer);
       state.activeOverlayLayer = null;
@@ -383,30 +384,51 @@
 
     setStatusMessage('');
 
+    let layerBounds = fallbackBounds || null;
+    if (meta.bounds) {
+      const [west, south, east, north] = meta.bounds;
+      layerBounds = L.latLngBounds([[south, west], [north, east]]);
+    }
+
+    const commonOptions = {
+      opacity: state.overlayOpacity,
+      attribution: meta.attribution,
+      ...(layerBounds && layerBounds.isValid() ? { bounds: layerBounds } : {})
+    };
+
     const layer = meta.overlayType === 'xyz'
       ? L.tileLayer(meta.overlayUrl, {
+          ...commonOptions,
           minZoom: meta.zoomMin,
-          maxZoom: meta.zoomMax,
-          opacity: state.overlayOpacity,
-          attribution: meta.attribution
+          maxZoom: meta.zoomMax
         })
       : L.tileLayer.wms(meta.overlayUrl, {
           ...CONFIG.WMS_OPTIONS,
-          opacity: state.overlayOpacity,
-          attribution: meta.attribution
+          ...commonOptions
         });
 
+    let loadedTileCount = 0;
+    let errorTileCount = 0;
+
     layer.on('loading', () => {
+      loadedTileCount = 0;
+      errorTileCount = 0;
       dom.wmsStatusDot.classList.add('is-loading');
+    });
+
+    layer.on('tileload', () => {
+      loadedTileCount += 1;
+    });
+
+    layer.on('tileerror', () => {
+      errorTileCount += 1;
     });
 
     layer.on('load', () => {
       dom.wmsStatusDot.classList.remove('is-loading');
-    });
-
-    layer.on('tileerror', () => {
-      dom.wmsStatusDot.classList.remove('is-loading');
-      setStatusMessage(`「${meta.mapNameJa}」の地質図タイル取得中にエラーが発生しました。`);
+      if (loadedTileCount === 0 && errorTileCount > 0) {
+        setStatusMessage(`「${meta.mapNameJa}」の地質図タイル取得中にエラーが発生しました。`);
+      }
     });
 
     state.activeOverlayLayer = layer.addTo(state.map);
@@ -435,7 +457,8 @@
       .openOn(state.map);
 
     // B. 既存レイヤーを削除し、新たなXYZ/WMSレイヤーを追加
-    updateOverlayLayer(meta);
+    const fallbackBounds = layer.getBounds ? layer.getBounds() : null;
+    updateOverlayLayer(meta, fallbackBounds);
 
     // 選択中ポリゴンを強調
     state.selectedItem = item;
