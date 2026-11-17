@@ -1,0 +1,26 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "map_name": "東京",
+        "published_year": 1995,
+        "authors": "遠藤 秀典・他",
+        "wms_url": "https://gbank.gsj.jp/ows/50k_example"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [139.5, 35.5],
+            [139.75, 35.5],
+            [139.75, 35.6667],
+            [139.5, 35.6667],
+            [139.5, 35.5]
+          ]
+        ]
+      }
+    }
+  ]
+}

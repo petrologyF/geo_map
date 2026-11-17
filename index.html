@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>5万分の1地質図幅検索 | 産総研 WebGIS</title>
+
+  <!-- Google Fonts: Noto Sans JP -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <!-- Leaflet.js v1.9.4 CSS -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+    crossorigin=""
+  >
+
+  <!-- Application CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- フルスクリーンマップコンテナ -->
+  <div id="map" aria-label="地質図幅検索マップ"></div>
+
+  <!-- Chrome風フローティング検索・フィルタパネル -->
+  <aside id="floating-panel" class="floating-panel" aria-label="図幅検索・フィルタ">
+    <div class="panel-header">
+      <div class="panel-title-group">
+        <span class="panel-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+            <line x1="8" y1="2" x2="8" y2="18"></line>
+            <line x1="16" y1="6" x2="16" y2="22"></line>
+          </svg>
+        </span>
+        <h1 class="panel-title">5万分の1地質図幅</h1>
+      </div>
+      <div class="panel-header-actions">
+        <span id="result-count" class="result-badge" aria-live="polite">読込中...</span>
+        <button
+          type="button"
+          id="toggle-panel-btn"
+          class="icon-button subtle"
+          title="パネルを折りたたむ"
+          aria-label="パネルを折りたたむ"
+          aria-expanded="true"
+        >
+          <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="18 15 12 9 6 15"></polyline>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="panel-body" class="panel-body">
+      <!-- テキスト検索 -->
+      <div class="search-field">
+        <span class="search-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </span>
+        <input
+          type="search"
+          id="search-input"
+          class="text-input"
+          placeholder="図幅名または著者で検索"
+          autocomplete="off"
+          aria-label="図幅名または著者で検索"
+        >
+        <kbd class="shortcut-hint" title="検索にフォーカス">/</kbd>
+      </div>
+
+      <!-- 年代フィルタ -->
+      <div class="filter-group">
+        <div class="filter-label-row">
+          <label class="filter-label" for="year-min">発行年</label>
+          <button type="button" id="reset-filters" class="text-button" title="検索条件をリセット">
+            リセット
+          </button>
+        </div>
+        <div class="year-range-inputs">
+          <input
+            type="number"
+            id="year-min"
+            class="number-input"
+            placeholder="開始年"
+            aria-label="開始年"
+          >
+          <span class="range-separator" aria-hidden="true">〜</span>
+          <input
+            type="number"
+            id="year-max"
+            class="number-input"
+            placeholder="終了年"
+            aria-label="終了年"
+          >
+        </div>
+      </div>
+
+      <!-- 選択中WMSレイヤー情報・透過度コントロール（表示時のみ可視） -->
+      <div id="active-wms-bar" class="active-wms-bar" hidden>
+        <div class="active-wms-header">
+          <div class="active-wms-info">
+            <span id="wms-status-dot" class="wms-dot" aria-hidden="true"></span>
+            <span id="active-wms-name" class="active-wms-name"></span>
+          </div>
+          <div class="active-wms-actions">
+            <button
+              type="button"
+              id="zoom-wms-btn"
+              class="icon-button"
+              title="この図幅にズーム"
+              aria-label="この図幅にズーム"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                <line x1="11" y1="8" x2="11" y2="14"></line>
+                <line x1="8" y1="11" x2="14" y2="11"></line>
+              </svg>
+            </button>
+            <button
+              type="button"
+              id="clear-wms-btn"
+              class="icon-button"
+              title="地質図オーバーレイを閉じる"
+              aria-label="地質図オーバーレイを閉じる"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="wms-opacity-row">
+          <label class="wms-opacity-label" for="wms-opacity">透過度</label>
+          <input
+            type="range"
+            id="wms-opacity"
+            class="range-slider"
+            min="0"
+            max="100"
+            value="85"
+            aria-label="地質図の不透明度"
+          >
+          <span id="wms-opacity-value" class="wms-opacity-value">85%</span>
+        </div>
+      </div>
+
+      <!-- 絞り込み結果リスト -->
+      <div id="result-list-section" class="result-list-section" hidden>
+        <button
+          type="button"
+          id="toggle-list-btn"
+          class="list-toggle-button"
+          aria-expanded="false"
+          aria-controls="result-list"
+        >
+          <span>該当図幅一覧を表示</span>
+          <svg class="list-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <ul id="result-list" class="result-list" hidden></ul>
+      </div>
+
+      <!-- エラー・ステータス通知用 -->
+      <p id="status-message" class="status-message" role="status" hidden></p>
+    </div>
+  </aside>
+
+  <!-- Leaflet.js v1.9.4 JS -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""
+  ></script>
+
+  <!-- Application JS -->
+  <script src="js/app.js" defer></script>
+</body>
+</html>
