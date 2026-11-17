@@ -593,14 +593,24 @@
     }
 
     const zoom = CONFIG.LOUPE_ZOOM;
-    const loupeRadius = dom.legendLoupe.offsetWidth / 2 || 80;
+    dom.legendLoupe.hidden = false;
+    const loupeW = dom.legendLoupe.offsetWidth || 260;
+    const loupeH = dom.legendLoupe.offsetHeight || 132;
+    const halfW = loupeW / 2;
+    const halfH = loupeH / 2;
 
-    dom.legendLoupe.style.left = `${x}px`;
-    dom.legendLoupe.style.top = `${y}px`;
+    const loupeX = rect.width > loupeW
+      ? Math.max(halfW, Math.min(rect.width - halfW, x))
+      : rect.width / 2;
+    const loupeY = rect.height > loupeH
+      ? Math.max(halfH, Math.min(rect.height - halfH, y))
+      : rect.height / 2;
+
+    dom.legendLoupe.style.left = `${loupeX}px`;
+    dom.legendLoupe.style.top = `${loupeY}px`;
     dom.legendLoupe.style.backgroundImage = `url("${dom.legendImage.src}")`;
     dom.legendLoupe.style.backgroundSize = `${rect.width * zoom}px ${rect.height * zoom}px`;
-    dom.legendLoupe.style.backgroundPosition = `${-(x * zoom - loupeRadius)}px ${-(y * zoom - loupeRadius)}px`;
-    dom.legendLoupe.hidden = false;
+    dom.legendLoupe.style.backgroundPosition = `${-(x * zoom - halfW)}px ${-(y * zoom - halfH)}px`;
   }
 
   /**
