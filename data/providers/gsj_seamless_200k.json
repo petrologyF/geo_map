@@ -1,0 +1,71 @@
+[
+  {
+    "source": {
+      "provider_id": "gsj_seamless_200k",
+      "provider_name_ja": "産業技術総合研究所 地質調査総合センター",
+      "provider_url": "https://gbank.gsj.jp/seamless/",
+      "license": "CC BY 4.0（産総研 地質調査総合センター）",
+      "attribution": "産業技術総合研究所 地質調査総合センター（20万分の1日本シームレス地質図V2）"
+    },
+    "map": {
+      "map_id": "gsj_seamless_200k_jp",
+      "local_id": "seamless_v2",
+      "layer_name": "geology",
+      "map_name_ja": "20万分の1日本シームレス地質図V2",
+      "map_name_en": "Seamless Digital Geological Map of Japan (1:200,000) V2",
+      "scale_denominator": 200000,
+      "series": "20万分の1日本シームレス地質図",
+      "published_year": 2023,
+      "authors": [
+        "産業技術総合研究所 地質調査総合センター"
+      ],
+      "authors_ja": [
+        "産業技術総合研究所 地質調査総合センター"
+      ],
+      "authors_en": [
+        "Geological Survey of Japan, AIST"
+      ],
+      "publisher": "産業技術総合研究所 地質調査総合センター",
+      "publisher_ja": "産業技術総合研究所 地質調査総合センター",
+      "publisher_en": "Geological Survey of Japan, AIST",
+      "region": "全国",
+      "prefectures": [],
+      "bounds": [
+        122.0,
+        20.0,
+        154.0,
+        46.0
+      ],
+      "center": [
+        138.0,
+        36.0
+      ],
+      "zoom": {
+        "min": 4,
+        "max": 16,
+        "default": 6
+      }
+    },
+    "geometry": null,
+    "display": {
+      "tile_type": "wms",
+      "tile_url": "",
+      "wms_url": "https://ows.gsj.jp/ows/seamlessgeologicmapv2",
+      "wms_layers": "geology",
+      "opacity": 0.75
+    },
+    "documents": {
+      "light_pdf_url": "",
+      "full_pdf_url": "",
+      "preferred_pdf": "",
+      "legend_image_url": "",
+      "original_image_url": "",
+      "section_images": []
+    },
+    "downloads": {},
+    "related_resources": {
+      "catalog_url": "https://gbank.gsj.jp/seamless/use.html",
+      "viewer_url": "https://gbank.gsj.jp/seamless/v2/viewer/"
+    }
+  }
+]

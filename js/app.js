@@ -6,6 +6,7 @@
    */
   const CONFIG = {
     GEOJSON_URL: 'data/map_index.geojson',
+    SEAMLESS_PROVIDER_URL: 'data/providers/gsj_seamless_200k.json',
     BASEMAPS: {
       pale: {
         url: 'https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',
@@ -73,6 +74,7 @@
       searchPlaceholder: '図幅名または著者で検索',
       viewportOnlyLabel: '表示範囲内のみ',
       showIndexLabel: '図郭枠を表示',
+      seamless200kLabel: '20万分の1 シームレス (全国WMS)',
       filterAccordionLabel: '詳細フィルター',
       decadeLabel: '発行年',
       scaleFilterLabel: '縮尺・シリーズ',
@@ -102,6 +104,7 @@
       scaleLabel: '縮尺',
       authorsLabel: '著者',
       publisherLabel: '発行',
+      providerLabel: '提供機関',
       regionLabel: '地域',
       linkDetail: '詳細情報',
       linkPdf: '説明書を見る',
@@ -117,6 +120,7 @@
       searchPlaceholder: 'Search by map name or author',
       viewportOnlyLabel: 'In map view only',
       showIndexLabel: 'Show map frames',
+      seamless200kLabel: '1:200K Seamless (WMS)',
       filterAccordionLabel: 'Filters',
       decadeLabel: 'Published Year',
       scaleFilterLabel: 'Scale / Series',
@@ -146,6 +150,7 @@
       scaleLabel: 'Scale',
       authorsLabel: 'Authors',
       publisherLabel: 'Publisher',
+      providerLabel: 'Provider',
       regionLabel: 'Region',
       linkDetail: 'Details',
       linkPdf: 'View Manual',
@@ -184,6 +189,8 @@
     currentSuggestions: [],
     activeSuggestionIndex: -1,
     activeOverlays: [],
+    seamlessLayer: null,
+    seamlessMeta: null,
     dominantLegendItem: null,
     overlayOpacity: CONFIG.DEFAULT_OVERLAY_OPACITY
   };
@@ -201,6 +208,8 @@
     viewportOnlyLabel: document.getElementById('viewport-only-label'),
     showIndexToggle: document.getElementById('show-index-toggle'),
     showIndexLabel: document.getElementById('show-index-label'),
+    seamless200kToggle: document.getElementById('seamless-200k-toggle'),
+    seamless200kLabel: document.getElementById('seamless-200k-label'),
     toggleFiltersBtn: document.getElementById('toggle-filters-btn'),
     filterAccordionLabel: document.getElementById('filter-accordion-label'),
     activeFilterBadge: document.getElementById('active-filter-badge'),
@@ -263,37 +272,50 @@
   }
 
   /**
-   * 推奨GeoJSONスキーマおよび従来スキーマの両方を統一フォーマットに正規化する
-   * @param {Object} props - Featureのproperties
+   * 共通スキーマ（source/map/display/documents）および従来スキーマの両方を統一フォーマットに正規化する
+   * @param {Object} props - Featureのproperties または 共通スキーマレコード
    * @returns {Object} 正規化されたメタデータ
    */
   function normalizeProperties(props = {}) {
-    const mapNameJa = props.map_name_ja || props.map_name || props.map_name_en || '名称不明';
-    const mapNameEn = props.map_name_en || props.map_name_ja || props.map_name || 'Untitled';
-    const authorsJaList = Array.isArray(props.authors_ja)
-      ? props.authors_ja.map((a) => String(a).trim()).filter(Boolean)
-      : (typeof props.authors === 'string' && props.authors.trim()
-        ? props.authors.split(/[・,、]/).map((a) => a.trim()).filter(Boolean)
-        : []);
-    const authorsEnList = Array.isArray(props.authors_en)
-      ? props.authors_en.map((a) => String(a).trim()).filter(Boolean)
+    const src = props.source || {};
+    const m = props.map || props;
+    const disp = props.display || {};
+    const docs = props.documents || {};
+
+    const providerId = src.provider_id || 'gsj_50k';
+    const providerNameJa = src.provider_name_ja || '';
+
+    const mapNameJa = m.map_name_ja || m.map_name || m.map_name_en || '名称不明';
+    const mapNameEn = m.map_name_en || m.map_name_ja || m.map_name || 'Untitled';
+    const authorsJaList = Array.isArray(m.authors_ja)
+      ? m.authors_ja.map((a) => String(a).trim()).filter(Boolean)
+      : (Array.isArray(m.authors)
+        ? m.authors.map((a) => String(a).trim()).filter(Boolean)
+        : (typeof m.authors === 'string' && m.authors.trim()
+          ? m.authors.split(/[・,、]/).map((a) => a.trim()).filter(Boolean)
+          : []));
+    const authorsEnList = Array.isArray(m.authors_en)
+      ? m.authors_en.map((a) => String(a).trim()).filter(Boolean)
       : [];
 
     const authorsJa = authorsJaList.join('・');
     const authorsEn = authorsEnList.join(', ');
 
-    const prefectures = Array.isArray(props.prefectures) && props.prefectures.length > 0
-      ? props.prefectures.join('・')
-      : (props.region || '');
+    const prefectures = Array.isArray(m.prefectures) && m.prefectures.length > 0
+      ? m.prefectures.join('・')
+      : (m.region || '');
 
     const tile = props.tile || {};
-    const xyzUrl = tile.webp_template || tile.png_template || tile.xyz_template || '';
-    const canUseXyz = props.is_tile_available !== false && isSafeUrl(xyzUrl);
+    const xyzUrl = disp.tile_type === 'xyz'
+      ? (disp.tile_url || '')
+      : (tile.webp_template || tile.png_template || tile.xyz_template || '');
+    const canUseXyz = (disp.tile_type === 'xyz' || props.is_tile_available !== false) && isSafeUrl(xyzUrl);
 
-    const wmsUrl = props.wms_url || '';
-    const canUseWms = !canUseXyz && props.is_wms_available !== false && isSafeUrl(wmsUrl);
+    const wmsUrl = disp.tile_type === 'wms' ? (disp.wms_url || '') : (props.wms_url || '');
+    const wmsLayers = disp.wms_layers || CONFIG.WMS_OPTIONS.layers;
+    const canUseWms = !canUseXyz && (disp.tile_type === 'wms' || props.is_wms_available !== false) && isSafeUrl(wmsUrl);
 
-    const zoom = props.zoom || {};
+    const zoom = m.zoom || {};
     const zoomMin = typeof zoom.min === 'number'
       ? zoom.min
       : (typeof tile.min_zoom === 'number' ? tile.min_zoom : CONFIG.MIN_ZOOM);
@@ -301,11 +323,11 @@
       ? zoom.max
       : (typeof tile.max_zoom === 'number' ? tile.max_zoom : CONFIG.MAX_ZOOM);
 
-    const rawBounds = Array.isArray(props.bounds) && props.bounds.length === 4
-      ? props.bounds
+    const rawBounds = Array.isArray(m.bounds) && m.bounds.length === 4
+      ? m.bounds
       : (Array.isArray(tile.bounds) && tile.bounds.length === 4 ? tile.bounds : null);
 
-    const attribution = props.license?.attribution || CONFIG.GSJ_ATTRIBUTION;
+    const attribution = src.attribution || props.license?.attribution || CONFIG.GSJ_ATTRIBUTION;
     const downloads = props.downloads || {};
     const downloadEntries = Object.entries(downloads).filter(([, url]) => isSafeUrl(url));
     const lightPdfEntry = downloadEntries.find(([key, url]) =>
@@ -316,37 +338,48 @@
     );
 
     const desc = props.description || {};
-    const lightPdfUrl = [desc.light_pdf_url, lightPdfEntry?.[1], downloads.pdf_light].find((u) => isSafeUrl(u)) || '';
-    const fullPdfUrl = [desc.full_pdf_url, downloads.pdf, downloads.PDF, normalPdfEntry?.[1]].find((u) => isSafeUrl(u)) || '';
-    const preferredPdf = [desc.preferred_pdf, lightPdfUrl, fullPdfUrl].find((u) => isSafeUrl(u)) || '';
-    const mapCode = props.map_code || props.layer_name || '';
-    const scaleMatch = String(props.series_en || props.series_ja || mapNameEn || mapNameJa).match(/1\s*:\s*[\d,]+/);
-    let scale = props.scale || (scaleMatch ? scaleMatch[0].replace(/\s+/g, '') : '');
+    const lightPdfUrl = [docs.light_pdf_url, desc.light_pdf_url, lightPdfEntry?.[1], downloads.pdf_light].find((u) => isSafeUrl(u)) || '';
+    const fullPdfUrl = [docs.full_pdf_url, desc.full_pdf_url, downloads.pdf, downloads.PDF, normalPdfEntry?.[1]].find((u) => isSafeUrl(u)) || '';
+    const preferredPdf = [docs.preferred_pdf, desc.preferred_pdf, lightPdfUrl, fullPdfUrl].find((u) => isSafeUrl(u)) || '';
+
+    const mapCode = m.map_code || m.layer_name || '';
+    const scaleDenominator = typeof m.scale_denominator === 'number' ? m.scale_denominator : null;
+    const scaleMatch = String(m.series_en || m.series_ja || m.series || mapNameEn || mapNameJa).match(/1\s*:\s*[\d,]+/);
+    let scale = m.scale || (scaleDenominator ? `1:${scaleDenominator.toLocaleString('en-US')}` : (scaleMatch ? scaleMatch[0].replace(/\s+/g, '') : ''));
     if (!scale) {
       if (/^G50/i.test(mapCode) || /5万分の1/.test(mapNameJa)) scale = '1:50,000';
       else if (/^G200/i.test(mapCode) || /20万分の1/.test(mapNameJa)) scale = '1:200,000';
       else if (/^G75/i.test(mapCode) || /7\.5万分の1/.test(mapNameJa)) scale = '1:75,000';
       else if (/^G500/i.test(mapCode) || /50万分の1/.test(mapNameJa)) scale = '1:500,000';
       else if (/^G1000/i.test(mapCode) || /100万分の1/.test(mapNameJa)) scale = '1:1,000,000';
-      else scale = props.series_ja || props.series_en || '';
+      else scale = m.series_ja || m.series_en || m.series || '';
     }
-    const mapId = props.map_id ?? null;
-    const fallbackMetadataUrl = mapId != null
-      ? `https://gbank.gsj.jp/ld/resource/publication/map/g050/map${String(mapId).padStart(5, '0')}.html`
+    const mapId = m.map_id ?? null;
+    const localId = m.local_id ?? mapId;
+    const fallbackMetadataUrl = (localId != null && /^\d+$/.test(String(localId)))
+      ? `https://gbank.gsj.jp/ld/resource/publication/map/g050/map${String(localId).padStart(5, '0')}.html`
       : '';
     const detailUrl = [
+      props.related_resources?.metadata_url,
       props.metadata_url,
       fallbackMetadataUrl,
       props.related_resources?.publication_uri,
       props.related_resources?.catalog_url
     ].find((url) => isSafeUrl(url)) || '';
 
-    const searchTokensJa = [mapNameJa, authorsJa, mapCode, prefectures, scale].join(' ').toLowerCase();
-    const searchTokensEn = [mapNameEn, authorsEn, mapCode, prefectures, scale].join(' ').toLowerCase();
+    const legendImageUrl = [docs.legend_image_url, props.legend_image_url].find((u) => isSafeUrl(u)) || '';
+    const originalImageUrl = [docs.original_image_url, props.original_image_url].find((u) => isSafeUrl(u)) || '';
+
+    const searchTokensJa = [mapNameJa, authorsJa, mapCode, prefectures, scale, providerNameJa].join(' ').toLowerCase();
+    const searchTokensEn = [mapNameEn, authorsEn, mapCode, prefectures, scale, providerNameJa].join(' ').toLowerCase();
 
     return {
+      providerId,
+      providerNameJa,
       mapId,
+      localId,
       mapCode,
+      scaleDenominator: scaleDenominator || (scale === '1:50,000' ? 50000 : (scale === '1:200,000' ? 200000 : null)),
       scale,
       mapNameJa,
       mapNameEn,
@@ -354,18 +387,20 @@
       authorsEn,
       authorsJaList,
       authorsEnList,
-      publishedYear: props.published_year ?? null,
-      publisherJa: props.publisher_ja || props.publisher_en || '',
-      publisherEn: props.publisher_en || props.publisher_ja || '',
+      publishedYear: m.published_year ?? null,
+      publisherJa: m.publisher_ja || m.publisher || m.publisher_en || '',
+      publisherEn: m.publisher_en || m.publisher || m.publisher_ja || '',
       prefectures,
       bounds: rawBounds,
       zoomMin,
       zoomMax,
       overlayType: canUseXyz ? 'xyz' : (canUseWms ? 'wms' : null),
       overlayUrl: canUseXyz ? xyzUrl : (canUseWms ? wmsUrl : ''),
+      wmsLayers,
+      defaultOpacity: typeof disp.opacity === 'number' ? disp.opacity : CONFIG.DEFAULT_OVERLAY_OPACITY,
       attribution,
-      legendImageUrl: isSafeUrl(props.legend_image_url) ? props.legend_image_url : '',
-      originalImageUrl: isSafeUrl(props.original_image_url) ? props.original_image_url : '',
+      legendImageUrl,
+      originalImageUrl,
       detailUrl,
       lightPdfUrl,
       fullPdfUrl,
@@ -374,6 +409,21 @@
       searchTokensJa,
       searchTokensEn
     };
+  }
+
+  /**
+   * 縮尺分母に応じた図郭ポリゴンのデフォルトスタイルを返す
+   * @param {number|null} scaleDenominator - 縮尺分母（50000, 200000 など）
+   * @returns {Object} Leaflet Path オプション
+   */
+  function styleByScale(scaleDenominator) {
+    if (scaleDenominator === 200000) {
+      return { ...CONFIG.POLYGON_STYLE.default, color: '#00796b', fillColor: '#00796b' };
+    }
+    if (scaleDenominator && scaleDenominator !== 50000) {
+      return { ...CONFIG.POLYGON_STYLE.default, color: '#5e35b1', fillColor: '#5e35b1' };
+    }
+    return CONFIG.POLYGON_STYLE.default;
   }
 
   /**
@@ -686,6 +736,9 @@
     if (meta.scale) {
       metaEntries.push([dict.scaleLabel, meta.scale]);
     }
+    if (meta.providerNameJa) {
+      metaEntries.push([dict.providerLabel, meta.providerNameJa]);
+    }
     if (loc.publisher) {
       metaEntries.push([dict.publisherLabel, loc.publisher]);
     }
@@ -882,7 +935,7 @@
       state.map.removeLayer(removed.layer);
     }
     if (removed.item.layer) {
-      removed.item.layer.setStyle(CONFIG.POLYGON_STYLE.default);
+      removed.item.layer.setStyle(styleByScale(removed.item.meta.scaleDenominator));
     }
 
     renderActiveOverlayList();
@@ -899,7 +952,7 @@
         state.map.removeLayer(layer);
       }
       if (item.layer) {
-        item.layer.setStyle(CONFIG.POLYGON_STYLE.default);
+        item.layer.setStyle(styleByScale(item.meta.scaleDenominator));
       }
     });
     state.activeOverlays = [];
@@ -907,6 +960,77 @@
     renderActiveOverlayList();
     syncSelectedListItem();
     updateDominantLegend();
+  }
+
+  /**
+   * display.tile_type（xyz / wms）に応じて Leaflet レイヤーを生成する
+   * @param {Object} meta - normalizeProperties() の返却オブジェクト
+   * @param {L.LatLngBounds|null} [layerBounds] - 表示範囲制限
+   * @param {number} [zIndex] - レイヤー重ね順
+   * @returns {L.Layer|null}
+   */
+  function createGeologicalLayer(meta, layerBounds = null, zIndex = 300) {
+    if (!meta.overlayType || !meta.overlayUrl) {
+      return null;
+    }
+
+    const commonOptions = {
+      opacity: state.overlayOpacity,
+      attribution: meta.attribution,
+      zIndex,
+      ...(layerBounds && layerBounds.isValid() ? { bounds: layerBounds } : {})
+    };
+
+    if (meta.overlayType === 'xyz') {
+      return L.tileLayer(meta.overlayUrl, {
+        ...commonOptions,
+        minZoom: CONFIG.MIN_ZOOM,
+        maxNativeZoom: meta.zoomMax,
+        maxZoom: CONFIG.MAX_ZOOM
+      });
+    }
+
+    if (meta.overlayType === 'wms') {
+      return L.tileLayer.wms(meta.overlayUrl, {
+        ...CONFIG.WMS_OPTIONS,
+        layers: meta.wmsLayers || CONFIG.WMS_OPTIONS.layers,
+        ...commonOptions,
+        maxZoom: CONFIG.MAX_ZOOM
+      });
+    }
+
+    return null;
+  }
+
+  /**
+   * 20万分の1日本シームレス地質図（全国WMS）の表示/非表示を切り替える
+   */
+  function toggleSeamless200k() {
+    const enabled = dom.seamless200kToggle.checked;
+    if (!state.map) {
+      return;
+    }
+
+    if (!enabled) {
+      if (state.seamlessLayer) {
+        state.map.removeLayer(state.seamlessLayer);
+        state.seamlessLayer = null;
+      }
+      return;
+    }
+
+    if (!state.seamlessMeta) {
+      dom.seamless200kToggle.checked = false;
+      setStatusMessage('20万分の1シームレス地質図の設定が読み込まれていません。');
+      return;
+    }
+
+    if (!state.seamlessLayer) {
+      state.seamlessLayer = createGeologicalLayer(state.seamlessMeta, null, 200);
+      if (state.seamlessLayer) {
+        state.seamlessLayer.addTo(state.map);
+      }
+    }
   }
 
   /**
@@ -926,7 +1050,9 @@
       return;
     }
 
-    if (!meta.overlayType || !meta.overlayUrl) {
+    const layerBounds = getItemBounds(item);
+    const overlayLayer = createGeologicalLayer(meta, layerBounds, 300);
+    if (!overlayLayer) {
       setStatusMessage(`「${meta.mapNameJa}」には利用可能なタイルURLまたはWMS URLがありません。`);
       return;
     }
@@ -937,26 +1063,6 @@
     if (state.activeOverlays.length >= CONFIG.MAX_OVERLAYS) {
       removeOverlayByItem(state.activeOverlays[0].item);
     }
-
-    const layerBounds = getItemBounds(item);
-    const commonOptions = {
-      opacity: state.overlayOpacity,
-      attribution: meta.attribution,
-      ...(layerBounds && layerBounds.isValid() ? { bounds: layerBounds } : {})
-    };
-
-    const overlayLayer = meta.overlayType === 'xyz'
-      ? L.tileLayer(meta.overlayUrl, {
-          ...commonOptions,
-          minZoom: CONFIG.MIN_ZOOM,
-          maxNativeZoom: meta.zoomMax,
-          maxZoom: CONFIG.MAX_ZOOM
-        })
-      : L.tileLayer.wms(meta.overlayUrl, {
-          ...CONFIG.WMS_OPTIONS,
-          ...commonOptions,
-          maxZoom: CONFIG.MAX_ZOOM
-        });
 
     let loadedTileCount = 0;
     let errorTileCount = 0;
@@ -1058,7 +1164,7 @@
       });
       button.addEventListener('mouseleave', () => {
         if (!isItemOverlayed(item) && state.showIndexFrames) {
-          item.layer.setStyle(CONFIG.POLYGON_STYLE.default);
+          item.layer.setStyle(styleByScale(item.meta.scaleDenominator));
         }
       });
       button.addEventListener('click', () => {
@@ -1345,7 +1451,7 @@
    */
   function renderGeoJsonFeatures(geojsonData) {
     const geoJsonLayer = L.geoJSON(geojsonData, {
-      style: () => CONFIG.POLYGON_STYLE.default,
+      style: (feature) => styleByScale(feature?.properties?.map?.scale_denominator ?? null),
       onEachFeature: (feature, layer) => {
         const meta = normalizeProperties(feature.properties);
         const item = { layer, meta };
@@ -1367,7 +1473,7 @@
 
         layer.on('mouseout', () => {
           if (!isItemOverlayed(item)) {
-            layer.setStyle(CONFIG.POLYGON_STYLE.default);
+            layer.setStyle(styleByScale(meta.scaleDenominator));
           }
         });
 
@@ -1685,6 +1791,10 @@
     state.overlayOpacity = percent / 100;
     dom.wmsOpacityValue.textContent = `${percent}%`;
 
+    if (state.seamlessLayer && typeof state.seamlessLayer.setOpacity === 'function') {
+      state.seamlessLayer.setOpacity(state.overlayOpacity);
+    }
+
     state.activeOverlays.forEach(({ layer }) => {
       if (layer && typeof layer.setOpacity === 'function') {
         layer.setOpacity(state.overlayOpacity);
@@ -1734,6 +1844,7 @@
     dom.searchInput.setAttribute('aria-label', dict.searchPlaceholder);
     dom.viewportOnlyLabel.textContent = dict.viewportOnlyLabel;
     dom.showIndexLabel.textContent = dict.showIndexLabel;
+    dom.seamless200kLabel.textContent = dict.seamless200kLabel;
     dom.filterAccordionLabel.textContent = dict.filterAccordionLabel;
     dom.decadeLabel.textContent = dict.decadeLabel;
     dom.scaleFilterLabel.textContent = dict.scaleFilterLabel;
@@ -1799,6 +1910,7 @@
       applyFilters();
     });
     dom.showIndexToggle.addEventListener('change', toggleIndexFrames);
+    dom.seamless200kToggle.addEventListener('change', toggleSeamless200k);
 
     dom.yearRangeMin.addEventListener('input', () => handleYearSliderInput('min'));
     dom.yearRangeMax.addEventListener('input', () => handleYearSliderInput('max'));
@@ -1828,11 +1940,30 @@
   }
 
   /**
+   * 20万分の1シームレス地質図プロバイダ設定を読み込む
+   */
+  async function loadSeamlessProvider() {
+    try {
+      const response = await fetch(CONFIG.SEAMLESS_PROVIDER_URL);
+      if (!response.ok) {
+        return;
+      }
+      const records = await response.json();
+      if (Array.isArray(records) && records.length > 0) {
+        state.seamlessMeta = normalizeProperties(records[0]);
+      }
+    } catch (error) {
+      console.warn('Seamless 200k provider config load skipped:', error);
+    }
+  }
+
+  /**
    * アプリケーションのエントリポイント
    */
   async function init() {
     state.map = initMap();
     initEventListeners();
+    loadSeamlessProvider();
 
     try {
       const geojsonData = await fetchMapIndex(CONFIG.GEOJSON_URL);
