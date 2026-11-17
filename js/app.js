@@ -134,7 +134,22 @@
       tabSections: '断面図',
       legendOpen: '拡大',
       legendNone: '凡例画像なし',
-      unknownAuthor: '不明'
+      unknownAuthor: '不明',
+      shortcutModalTitle: 'キーボードショートカット',
+      shortcuts: [
+        [['/', 'Ctrl+K'], '検索欄にフォーカス'],
+        [['m'], '地図にフォーカスを移動'],
+        [['l'], '該当図幅一覧にフォーカスを移動'],
+        [['↑', '↓'], '一覧内の図幅を上下移動'],
+        [['f'], '表示中の全図幅にズーム'],
+        [['i'], '図郭枠の表示/非表示を切り替え'],
+        [['s'], '20万分の1シームレスを切り替え'],
+        [['b'], '背景地図（淡色/標準/写真）を切り替え'],
+        [['[', ']'], '透過度を 10% 減少 / 増加'],
+        [['x'], '表示中の地質図をすべて閉じる'],
+        [['?'], 'ショートカット一覧を表示/閉じる'],
+        [['Esc'], 'ヘルプ・検索・フォーカスを解除']
+      ]
     },
     en: {
       appTitle: 'GeoMap Search',
@@ -201,7 +216,22 @@
       tabSections: 'Sections',
       legendOpen: 'Open',
       legendNone: 'No legend image',
-      unknownAuthor: 'Unknown'
+      unknownAuthor: 'Unknown',
+      shortcutModalTitle: 'Keyboard Shortcuts',
+      shortcuts: [
+        [['/', 'Ctrl+K'], 'Focus search box'],
+        [['m'], 'Focus map container'],
+        [['l'], 'Focus matching maps list'],
+        [['↑', '↓'], 'Navigate items in list'],
+        [['f'], 'Fit all visible maps'],
+        [['i'], 'Toggle map frames'],
+        [['s'], 'Toggle 1:200K Seamless WMS'],
+        [['b'], 'Cycle basemap (Pale/Std/Photo)'],
+        [['[', ']'], 'Decrease / increase opacity by 10%'],
+        [['x'], 'Clear all active overlays'],
+        [['?'], 'Toggle shortcut help'],
+        [['Esc'], 'Close help / blur focus']
+      ]
     }
   };
 
@@ -212,6 +242,8 @@
     lang: 'ja',
     map: null,
     activeBaseLayer: null,
+    activeBasemapKey: 'pale',
+    lastFocusedBeforeModal: null,
     indexLayerGroup: null,
     allItems: [],
     filteredItems: [],
@@ -248,11 +280,17 @@
    */
   const dom = {
     appLayout: document.querySelector('.app-layout'),
+    mapEl: document.getElementById('map'),
     mobileNavButtons: document.querySelectorAll('.mobile-nav-btn[data-mobile-view]'),
     mobileLegendTab: document.getElementById('mobile-legend-tab'),
     appTitle: document.getElementById('app-title'),
     langButtons: document.querySelectorAll('.segmented-btn[data-lang]'),
     fitAllBtn: document.getElementById('fit-all-btn'),
+    shortcutHelpBtn: document.getElementById('shortcut-help-btn'),
+    shortcutModal: document.getElementById('shortcut-modal'),
+    shortcutModalTitle: document.getElementById('shortcut-modal-title'),
+    closeShortcutModal: document.getElementById('close-shortcut-modal'),
+    shortcutList: document.getElementById('shortcut-list'),
     searchInput: document.getElementById('search-input'),
     searchSuggestions: document.getElementById('search-suggestions'),
     mapTypeLabel: document.getElementById('map-type-label'),
@@ -586,6 +624,7 @@
       state.map.removeLayer(state.activeBaseLayer);
     }
 
+    state.activeBasemapKey = key;
     state.activeBaseLayer = L.tileLayer(basemap.url, {
       attribution: basemap.attribution,
       maxZoom: basemap.maxZoom
@@ -1495,16 +1534,21 @@
       yearSpan.textContent = meta.publishedYear != null ? `${meta.publishedYear}` : '';
 
       button.append(mainSpan, yearSpan);
-      button.addEventListener('mouseenter', () => {
+      const highlightItem = () => {
         if (!isItemOverlayed(item) && state.showIndexFrames) {
           item.layer.setStyle(CONFIG.POLYGON_STYLE.hover);
         }
-      });
-      button.addEventListener('mouseleave', () => {
+      };
+      const unhighlightItem = () => {
         if (!isItemOverlayed(item) && state.showIndexFrames) {
           item.layer.setStyle(styleByScale(item.meta.scaleDenominator, item.meta.mapType));
         }
-      });
+      };
+
+      button.addEventListener('mouseenter', highlightItem);
+      button.addEventListener('mouseleave', unhighlightItem);
+      button.addEventListener('focus', highlightItem);
+      button.addEventListener('blur', unhighlightItem);
       button.addEventListener('click', () => {
         zoomToMapItem(item);
         addOverlayForItem(item);
@@ -2303,22 +2347,188 @@
   }
 
   /**
-   * キーボードショートカットを処理する（`/` または `Ctrl+K` で検索フォーカス）
+   * ヘルプモーダル内のショートカット一覧を描画する
+   */
+  function renderShortcutModal() {
+    const dict = t();
+    dom.shortcutModalTitle.textContent = dict.shortcutModalTitle;
+    dom.shortcutList.innerHTML = '';
+
+    const fragment = document.createDocumentFragment();
+    dict.shortcuts.forEach(([keys, desc]) => {
+      const row = document.createElement('div');
+      row.className = 'shortcut-row';
+
+      const dt = document.createElement('dt');
+      dt.className = 'shortcut-desc';
+      dt.textContent = desc;
+
+      const dd = document.createElement('dd');
+      dd.className = 'shortcut-keys';
+      keys.forEach((k) => {
+        const kbd = document.createElement('kbd');
+        kbd.className = 'shortcut-kbd';
+        kbd.textContent = k;
+        dd.appendChild(kbd);
+      });
+
+      row.append(dt, dd);
+      fragment.appendChild(row);
+    });
+
+    dom.shortcutList.appendChild(fragment);
+  }
+
+  /**
+   * ショートカットヘルプモーダルを開く
+   */
+  function openShortcutModal() {
+    state.lastFocusedBeforeModal = document.activeElement;
+    renderShortcutModal();
+    dom.shortcutModal.hidden = false;
+    dom.closeShortcutModal.focus();
+  }
+
+  /**
+   * ショートカットヘルプモーダルを閉じる
+   */
+  function closeShortcutModal() {
+    if (dom.shortcutModal.hidden) {
+      return;
+    }
+    dom.shortcutModal.hidden = true;
+    if (state.lastFocusedBeforeModal && typeof state.lastFocusedBeforeModal.focus === 'function') {
+      state.lastFocusedBeforeModal.focus();
+    }
+    state.lastFocusedBeforeModal = null;
+  }
+
+  /**
+   * ショートカットヘルプモーダルを開閉する
+   */
+  function toggleShortcutModal() {
+    if (dom.shortcutModal.hidden) {
+      openShortcutModal();
+    } else {
+      closeShortcutModal();
+    }
+  }
+
+  /**
+   * 該当図幅一覧（#result-list）内の矢印キー上下移動を処理する
+   * @param {KeyboardEvent} event - キーダウンイベント
+   */
+  function handleResultListKeydown(event) {
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
+      return;
+    }
+    const items = [...dom.resultList.querySelectorAll('.result-list-item')];
+    if (items.length === 0) {
+      return;
+    }
+    const currentIndex = items.indexOf(document.activeElement);
+    if (currentIndex === -1) {
+      return;
+    }
+
+    event.preventDefault();
+    const nextIndex = event.key === 'ArrowDown'
+      ? Math.min(items.length - 1, currentIndex + 1)
+      : Math.max(0, currentIndex - 1);
+
+    const target = items[nextIndex];
+    target.focus();
+    target.scrollIntoView({ block: 'nearest' });
+  }
+
+  /**
+   * グローバルキーボードショートカットを処理する
    * @param {KeyboardEvent} event - キーダウンイベント
    */
   function handleGlobalKeydown(event) {
-    const isInputFocused = ['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName);
+    const activeEl = document.activeElement;
+    const isInputFocused = ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl?.tagName);
+    const hasModifier = event.ctrlKey || event.metaKey || event.altKey;
 
-    if ((event.key === '/' && !isInputFocused) || ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k')) {
+    if (event.key === 'Escape') {
+      if (!dom.shortcutModal.hidden) {
+        event.preventDefault();
+        closeShortcutModal();
+        return;
+      }
+      if (isInputFocused) {
+        activeEl.blur();
+        hideSuggestions();
+        return;
+      }
+      if (activeEl?.classList?.contains('result-list-item') || activeEl === dom.mapEl) {
+        activeEl.blur();
+      }
+      return;
+    }
+
+    if ((event.key === '/' && !isInputFocused && !hasModifier) || ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k')) {
       event.preventDefault();
+      if (!dom.shortcutModal.hidden) {
+        closeShortcutModal();
+      }
       dom.searchInput.focus();
       dom.searchInput.select();
       return;
     }
 
-    if (event.key === 'Escape' && isInputFocused) {
-      document.activeElement.blur();
-      hideSuggestions();
+    if (isInputFocused || hasModifier) {
+      return;
+    }
+
+    if (event.key === '?') {
+      event.preventDefault();
+      toggleShortcutModal();
+      return;
+    }
+
+    if (!dom.shortcutModal.hidden) {
+      return;
+    }
+
+    const lowerKey = event.key.toLowerCase();
+
+    if (lowerKey === 'm') {
+      event.preventDefault();
+      dom.mapEl?.focus();
+    } else if (lowerKey === 'l') {
+      event.preventDefault();
+      const targetItem = dom.resultList.querySelector('.result-list-item.is-selected')
+        || dom.resultList.querySelector('.result-list-item');
+      if (targetItem) {
+        targetItem.focus();
+        targetItem.scrollIntoView({ block: 'nearest' });
+      }
+    } else if (lowerKey === 'f') {
+      event.preventDefault();
+      fitAllVisibleItems();
+    } else if (lowerKey === 'i') {
+      event.preventDefault();
+      dom.showIndexToggle.checked = !dom.showIndexToggle.checked;
+      toggleIndexFrames();
+    } else if (lowerKey === 's') {
+      event.preventDefault();
+      dom.seamless200kToggle.checked = !dom.seamless200kToggle.checked;
+      toggleSeamless200k();
+    } else if (lowerKey === 'b') {
+      event.preventDefault();
+      const order = ['pale', 'std', 'photo'];
+      const nextKey = order[(order.indexOf(state.activeBasemapKey) + 1) % order.length];
+      switchBasemap(nextKey);
+    } else if (event.key === '[' || event.key === ']') {
+      event.preventDefault();
+      const current = Number(dom.wmsOpacitySlider.value);
+      const next = Math.max(0, Math.min(100, current + (event.key === ']' ? 10 : -10)));
+      dom.wmsOpacitySlider.value = String(next);
+      handleOpacityChange();
+    } else if (lowerKey === 'x') {
+      event.preventDefault();
+      clearAllOverlays();
     }
   }
 
@@ -2395,6 +2605,9 @@
     if (state.dominantLegendItem) {
       renderLegendPanel(state.dominantLegendItem, true);
     }
+    if (!dom.shortcutModal.hidden) {
+      renderShortcutModal();
+    }
   }
 
   /**
@@ -2408,6 +2621,16 @@
     dom.searchInput.addEventListener('focus', renderSuggestions);
     dom.searchInput.addEventListener('blur', hideSuggestions);
     dom.searchInput.addEventListener('keydown', handleSearchKeydown);
+
+    dom.resultList.addEventListener('keydown', handleResultListKeydown);
+
+    dom.shortcutHelpBtn.addEventListener('click', openShortcutModal);
+    dom.closeShortcutModal.addEventListener('click', closeShortcutModal);
+    dom.shortcutModal.addEventListener('click', (event) => {
+      if (event.target === dom.shortcutModal) {
+        closeShortcutModal();
+      }
+    });
 
     dom.viewportOnlyToggle.addEventListener('change', () => {
       state.viewportOnly = dom.viewportOnlyToggle.checked;

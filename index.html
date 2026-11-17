@@ -60,6 +60,19 @@
               <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
             </svg>
           </button>
+          <button
+            type="button"
+            id="shortcut-help-btn"
+            class="icon-button subtle"
+            title="キーボードショートカット (?)"
+            aria-label="キーボードショートカット一覧"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -248,7 +261,7 @@
 
     <!-- 中央マップエリア -->
     <main class="map-container">
-      <div id="map" aria-label="地質図幅検索マップ"></div>
+      <div id="map" tabindex="0" aria-label="地質図幅検索マップ"></div>
     </main>
 
     <!-- 右サイドバー：現在表示中の地質図のうち最も広い図幅の詳細情報＆凡例 -->
@@ -299,6 +312,24 @@
         </div>
       </div>
     </aside>
+  </div>
+
+  <!-- キーボードショートカット一覧ヘルプモーダル -->
+  <div id="shortcut-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="shortcut-modal-title" hidden>
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h2 id="shortcut-modal-title" class="modal-title">キーボードショートカット</h2>
+        <button type="button" id="close-shortcut-modal" class="icon-button subtle" aria-label="閉じる">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <dl id="shortcut-list" class="shortcut-list"></dl>
+      </div>
+    </div>
   </div>
 
   <!-- Leaflet.js v1.9.4 JS -->
