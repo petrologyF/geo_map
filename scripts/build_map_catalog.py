@@ -79,11 +79,13 @@ def extract_tilejson_url(metadata_url: str, soup: BeautifulSoup) -> str | None:
 
 
 def extract_download_links(metadata_url: str, soup: BeautifulSoup) -> dict[str, str]:
-    """ダウンロード表から各種フォーマットのリンクを抽出する。"""
+    """ダウンロード表（最内テーブル）から各種フォーマットのリンクを抽出する。"""
     downloads: dict[str, str] = {}
     download_table = None
 
     for table in soup.find_all("table"):
+        if table.find("table"):
+            continue
         if find_table_row(table, "PDF"):
             download_table = table
             break
@@ -97,12 +99,24 @@ def extract_download_links(metadata_url: str, soup: BeautifulSoup) -> dict[str, 
             continue
 
         label = clean_text(cells[0])
-        link = cells[-1].find("a", href=True)
+        link = cells[2].find("a", href=True)
 
         if label and link:
-            downloads[label] = urljoin(metadata_url, link["href"])
+            url = urljoin(metadata_url, link["href"])
+            downloads.setdefault(label, url)
+            if "軽量" in label or "light" in label.lower() or re.search(r"_(?:l|light|low)\.pdf$", url, re.I):
+                downloads.setdefault("pdf_light", url)
 
     return downloads
+
+
+def extract_original_image_url(metadata_url: str, soup: BeautifulSoup) -> str:
+    """ページ内の原図JPG（*_org_*.jpg）URLを抽出する。"""
+    for link in soup.find_all("a", href=True):
+        href = urljoin(metadata_url, link["href"])
+        if re.search(r"_org_\d+\.jpe?g$", href, re.I):
+            return href
+    return ""
 
 
 def extract_related_links(metadata_url: str, soup: BeautifulSoup) -> dict[str, str]:
@@ -286,7 +300,7 @@ def build_record(metadata_url: str, series_code: str = "g050") -> dict:
             "default_zoom": default_zoom,
         },
         "legend_image_url": tilejson.get("legend", ""),
-        "original_image_url": "",
+        "original_image_url": extract_original_image_url(metadata_url, soup),
         "section_images": [],
         "downloads": downloads,
         "related_resources": {

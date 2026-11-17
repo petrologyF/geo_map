@@ -304,7 +304,15 @@
       : (Array.isArray(tile.bounds) && tile.bounds.length === 4 ? tile.bounds : null);
 
     const attribution = props.license?.attribution || CONFIG.GSJ_ATTRIBUTION;
-    const rawPdfUrl = props.downloads?.pdf || props.downloads?.PDF || '';
+    const downloads = props.downloads || {};
+    const downloadEntries = Object.entries(downloads).filter(([, url]) => isSafeUrl(url));
+    const lightPdfEntry = downloadEntries.find(([key, url]) =>
+      /light|軽量|low/i.test(key) || /_(?:l|light|low)\.pdf(?:$|\?)/i.test(url)
+    );
+    const normalPdfEntry = downloadEntries.find(([key, url]) =>
+      /^pdf$/i.test(key) || /\.pdf(?:$|\?)/i.test(url)
+    );
+    const rawPdfUrl = lightPdfEntry?.[1] || downloads.pdf_light || downloads.pdf || downloads.PDF || normalPdfEntry?.[1] || '';
     const mapCode = props.map_code || props.layer_name || '';
     const scaleMatch = String(props.series_en || props.series_ja || mapNameEn || mapNameJa).match(/1\s*:\s*[\d,]+/);
     let scale = props.scale || (scaleMatch ? scaleMatch[0].replace(/\s+/g, '') : '');
