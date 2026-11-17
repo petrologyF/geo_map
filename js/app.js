@@ -227,6 +227,8 @@
     currentSuggestions: [],
     activeSuggestionIndex: -1,
     activeOverlays: [],
+    selectedItem: null,
+    loadingLayerCount: 0,
     seamlessLayer: null,
     seamlessMeta: null,
     dominantLegendItem: null,
@@ -837,7 +839,7 @@
     const linkDefs = [
       [dict.linkDetail, meta.detailUrl],
       [dict.linkPdf, meta.preferredPdf],
-      [dict.linkFullPdf, meta.fullPdfUrl],
+      [dict.linkFullPdf, meta.fullPdfUrl !== meta.preferredPdf ? meta.fullPdfUrl : ''],
       [dict.linkOriginal, meta.originalImageUrl]
     ];
     linkDefs.forEach(([label, url]) => {
@@ -880,8 +882,13 @@
    * 現在オーバーレイ表示されている地質図の中で最も広く表示されているものを特定し、右サイドバーを更新する
    */
   function updateDominantLegend() {
-    if (!state.map || state.activeOverlays.length === 0) {
+    if (!state.map) {
       renderLegendPanel(null);
+      return;
+    }
+
+    if (state.activeOverlays.length === 0) {
+      renderLegendPanel(state.selectedItem);
       return;
     }
 
@@ -902,12 +909,12 @@
   }
 
   /**
-   * 指定した図幅アイテムが現在オーバーレイ表示中か判定する
+   * 指定した図幅アイテムが現在オーバーレイ表示中または選択中か判定する
    * @param {Object} item - 図幅アイテム
-   * @returns {boolean} 表示中ならtrue
+   * @returns {boolean} 表示中・選択中ならtrue
    */
   function isItemOverlayed(item) {
-    return state.activeOverlays.some((entry) => entry.item === item);
+    return item === state.selectedItem || state.activeOverlays.some((entry) => entry.item === item);
   }
 
   /**
@@ -1010,10 +1017,19 @@
     }
 
     const [removed] = state.activeOverlays.splice(idx, 1);
+    if (removed.isLoading) {
+      state.loadingLayerCount = Math.max(0, state.loadingLayerCount - 1);
+      if (state.loadingLayerCount === 0) {
+        dom.wmsStatusDot.classList.remove('is-loading');
+      }
+    }
     if (state.map && removed.layer) {
       state.map.removeLayer(removed.layer);
     }
-    if (removed.item.layer) {
+    if (state.selectedItem === item) {
+      state.selectedItem = null;
+    }
+    if (removed.item.layer && !isItemOverlayed(removed.item)) {
       removed.item.layer.setStyle(styleByScale(removed.item.meta.scaleDenominator, removed.item.meta.mapType));
     }
 
@@ -1035,6 +1051,11 @@
       }
     });
     state.activeOverlays = [];
+    if (state.selectedItem && state.selectedItem.layer) {
+      state.selectedItem.layer.setStyle(styleByScale(state.selectedItem.meta.scaleDenominator, state.selectedItem.meta.mapType));
+    }
+    state.selectedItem = null;
+    state.loadingLayerCount = 0;
     dom.wmsStatusDot.classList.remove('is-loading');
     renderActiveOverlayList();
     syncSelectedListItem();
@@ -1120,18 +1141,31 @@
   }
 
   /**
-   * XYZタイル（優先）またはWMSで地質図オーバーレイレイヤーを追加する（最大4図幅まで保持）
+   * 図幅を選択し、タイル/WMSがある場合はオーバーレイ追加（最大4図幅）、
+   * タイル未配信の場合は詳細・凡例パネル表示のみを行う
    * @param {Object} item - { layer, meta } オブジェクト
    */
   function addOverlayForItem(item) {
     const { meta } = item;
 
-    // すでに表示中の場合は最前面へ移動して終了
+    // 以前の選択図幅がオーバーレイ中でなければスタイルをデフォルトに戻す
+    const prevSelected = state.selectedItem;
+    state.selectedItem = item;
+    if (prevSelected && prevSelected !== item && !state.activeOverlays.some((e) => e.item === prevSelected)) {
+      if (prevSelected.layer) {
+        prevSelected.layer.setStyle(styleByScale(prevSelected.meta.scaleDenominator, prevSelected.meta.mapType));
+      }
+    }
+
+    // すでにオーバーレイ表示中の場合は最前面へ移動し、配列順も最新へ揃えて終了
     const existing = state.activeOverlays.find((entry) => entry.item === item);
     if (existing) {
-      if (typeof existing.layer.bringToFront === 'function') {
+      if (existing.layer && typeof existing.layer.bringToFront === 'function') {
         existing.layer.bringToFront();
       }
+      state.activeOverlays.push(...state.activeOverlays.splice(state.activeOverlays.indexOf(existing), 1));
+      renderActiveOverlayList();
+      syncSelectedListItem();
       updateDominantLegend();
       return;
     }
@@ -1141,41 +1175,61 @@
 
     setStatusMessage('');
 
+    // タイル未配信（tile_type: "none" 等）の場合はオーバーレイ配列には入れず、選択状態＋右サイドバー表示のみ行う
+    if (!overlayLayer) {
+      if (item.layer) {
+        item.layer.setStyle(CONFIG.POLYGON_STYLE.selected);
+      }
+      syncSelectedListItem();
+      renderLegendPanel(item, true);
+      return;
+    }
+
     // 最大4図幅に達している場合、最も古いオーバーレイを1つ外す
     if (state.activeOverlays.length >= CONFIG.MAX_OVERLAYS) {
       removeOverlayByItem(state.activeOverlays[0].item);
     }
 
-    if (overlayLayer) {
-      let loadedTileCount = 0;
-      let errorTileCount = 0;
+    const overlayEntry = { item, layer: overlayLayer, isLoading: false };
+    let loadedTileCount = 0;
+    let errorTileCount = 0;
 
-      overlayLayer.on('loading', () => {
-        loadedTileCount = 0;
-        errorTileCount = 0;
-        dom.wmsStatusDot.classList.add('is-loading');
-      });
+    overlayLayer.on('loading', () => {
+      loadedTileCount = 0;
+      errorTileCount = 0;
+      if (!overlayEntry.isLoading) {
+        overlayEntry.isLoading = true;
+        state.loadingLayerCount += 1;
+      }
+      dom.wmsStatusDot.classList.add('is-loading');
+    });
 
-      overlayLayer.on('tileload', () => {
-        loadedTileCount += 1;
-      });
+    overlayLayer.on('tileload', () => {
+      loadedTileCount += 1;
+    });
 
-      overlayLayer.on('tileerror', () => {
-        errorTileCount += 1;
-      });
+    overlayLayer.on('tileerror', () => {
+      errorTileCount += 1;
+    });
 
-      overlayLayer.on('load', () => {
+    overlayLayer.on('load', () => {
+      if (overlayEntry.isLoading) {
+        overlayEntry.isLoading = false;
+        state.loadingLayerCount = Math.max(0, state.loadingLayerCount - 1);
+      }
+      if (state.loadingLayerCount === 0) {
         dom.wmsStatusDot.classList.remove('is-loading');
-        if (loadedTileCount === 0 && errorTileCount > 0) {
-          setStatusMessage(`「${meta.mapNameJa}」の地質図タイル取得中にエラーが発生しました。`);
-        }
-      });
+      }
+      if (loadedTileCount === 0 && errorTileCount > 0) {
+        setStatusMessage(`「${meta.mapNameJa}」の地質図タイル取得中にエラーが発生しました。`);
+      }
+    });
 
-      overlayLayer.addTo(state.map);
+    overlayLayer.addTo(state.map);
+    state.activeOverlays.push(overlayEntry);
+    if (item.layer) {
+      item.layer.setStyle(CONFIG.POLYGON_STYLE.selected);
     }
-
-    state.activeOverlays.push({ item, layer: overlayLayer });
-    item.layer.setStyle(CONFIG.POLYGON_STYLE.selected);
 
     renderActiveOverlayList();
     syncSelectedListItem();
@@ -1701,14 +1755,18 @@
     state.allItems.forEach((item) => {
       const { meta } = item;
       const loc = getLocalizedMeta(meta);
-      const mapKey = `map:${loc.title}`;
+      const mapKey = `map:${meta.mapId || `${loc.title}_${meta.scale}_${meta.publishedYear}`}`;
+      const metaTags = [meta.scale, meta.publishedYear].filter(Boolean).join(' / ');
+      const suffix = metaTags ? ` (${metaTags})` : '';
+
       if (!seenKeys.has(mapKey)) {
         seenKeys.add(mapKey);
         pool.push({
           type: 'map',
-          label: loc.title,
+          label: `${loc.title}${suffix}`,
+          filterValue: loc.title,
           badge: dict.badgeMap,
-          searchText: `${loc.title} ${meta.mapCode}`.toLowerCase(),
+          searchText: `${loc.title} ${meta.mapCode} ${meta.scale}`.toLowerCase(),
           item
         });
       }
@@ -1717,12 +1775,13 @@
         ? (meta.volcanoNameEn || meta.volcanoNameJa)
         : (meta.volcanoNameJa || meta.volcanoNameEn);
       if (volcanoName) {
-        const volcanoKey = `volcano:${volcanoName}`;
+        const volcanoKey = `volcano:${meta.mapId || `${volcanoName}_${meta.scale}_${meta.publishedYear}`}`;
         if (!seenKeys.has(volcanoKey)) {
           seenKeys.add(volcanoKey);
           pool.push({
             type: 'volcano',
-            label: volcanoName,
+            label: `${volcanoName}${suffix}`,
+            filterValue: volcanoName,
             badge: dict.badgeVolcano,
             searchText: `${meta.volcanoNameJa} ${meta.volcanoNameEn}`.toLowerCase(),
             item
@@ -1737,6 +1796,7 @@
           pool.push({
             type: 'author',
             label: author,
+            filterValue: author,
             badge: dict.badgeAuthor,
             searchText: author.toLowerCase(),
             item: null
@@ -1767,7 +1827,7 @@
       return;
     }
 
-    dom.searchInput.value = suggestion.label;
+    dom.searchInput.value = suggestion.filterValue || suggestion.label;
     hideSuggestions();
     applyFilters();
 
