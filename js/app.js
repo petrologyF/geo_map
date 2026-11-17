@@ -129,6 +129,9 @@
       linkFullPdf: '詳細版PDF',
       linkOriginal: '原図JPG',
       legendTitle: '地質凡例',
+      sectionTitle: '地質断面図',
+      tabLegend: '凡例',
+      tabSections: '断面図',
       legendOpen: '拡大',
       legendNone: '凡例画像なし',
       unknownAuthor: '不明'
@@ -193,6 +196,9 @@
       linkFullPdf: 'Full PDF',
       linkOriginal: 'Original JPG',
       legendTitle: 'Legend',
+      sectionTitle: 'Sections',
+      tabLegend: 'Legend',
+      tabSections: 'Sections',
       legendOpen: 'Open',
       legendNone: 'No legend image',
       unknownAuthor: 'Unknown'
@@ -232,6 +238,8 @@
     seamlessLayer: null,
     seamlessMeta: null,
     dominantLegendItem: null,
+    visualMode: 'legend',
+    activeSectionIndex: 0,
     overlayOpacity: CONFIG.DEFAULT_OVERLAY_OPACITY
   };
 
@@ -292,6 +300,10 @@
     dominantInfoLinks: document.getElementById('dominant-info-links'),
     legendPanelTitle: document.getElementById('legend-panel-title'),
     legendMapName: document.getElementById('legend-map-name'),
+    visualModeTabs: document.getElementById('visual-mode-tabs'),
+    tabLegendBtn: document.getElementById('tab-legend-btn'),
+    tabSectionBtn: document.getElementById('tab-section-btn'),
+    sectionChips: document.getElementById('section-chips'),
     legendOpenLink: document.getElementById('legend-open-link'),
     legendZoomWrapper: document.getElementById('legend-zoom-wrapper'),
     legendImage: document.getElementById('legend-image'),
@@ -433,6 +445,12 @@
 
     const legendImageUrl = [docs.legend_image_url, props.legend_image_url].find((u) => isSafeUrl(u)) || '';
     const originalImageUrl = [docs.original_image_url, props.original_image_url, disp.raster_image_url].find((u) => isSafeUrl(u)) || '';
+    const rawSections = Array.isArray(docs.section_images)
+      ? docs.section_images
+      : (Array.isArray(props.section_images) ? props.section_images : []);
+    const sectionImages = rawSections
+      .filter((s) => s && isSafeUrl(s.url))
+      .map((s, idx) => ({ label: s.label || `Section ${idx + 1}`, url: s.url }));
 
     const searchTokensJa = [mapNameJa, volcanoNameJa, authorsJa, mapCode, prefectures, scale, providerNameJa].join(' ').toLowerCase();
     const searchTokensEn = [mapNameEn, volcanoNameEn, authorsEn, mapCode, prefectures, scale, providerNameJa].join(' ').toLowerCase();
@@ -472,6 +490,7 @@
       attribution,
       legendImageUrl,
       originalImageUrl,
+      sectionImages,
       detailUrl,
       lightPdfUrl,
       fullPdfUrl,
@@ -876,27 +895,107 @@
       dom.dominantInfoLinks.appendChild(a);
     });
 
-    // 下段：凡例画像
-    if (meta.legendImageUrl) {
-      dom.legendMapName.textContent = loc.title;
-      dom.legendImage.src = meta.legendImageUrl;
-      dom.legendImage.alt = `${loc.title} ${dict.legendTitle}`;
-      dom.legendImage.hidden = false;
-      dom.legendOpenLink.href = meta.legendImageUrl;
-      dom.legendOpenLink.hidden = false;
-    } else {
-      dom.legendMapName.textContent = dict.legendNone;
-      dom.legendImage.removeAttribute('src');
-      dom.legendImage.hidden = true;
-      dom.legendOpenLink.href = '#';
-      dom.legendOpenLink.hidden = true;
+    // 下段：凡例 / 断面図切り替え表示
+    if (!forceUpdate) {
+      state.activeSectionIndex = 0;
+      if (meta.sectionImages.length === 0) {
+        state.visualMode = 'legend';
+      } else if (!meta.legendImageUrl) {
+        state.visualMode = 'section';
+      }
     }
+    renderVisualArea(meta);
 
     dom.legendSidebar.hidden = false;
     dom.mobileLegendTab.hidden = false;
 
     if (wasHidden && state.map) {
       state.map.invalidateSize();
+    }
+  }
+
+  /**
+   * 右サイドバー下段（凡例 / 断面図のタブ・チップ・画像・ルーペ）を描画する
+   * @param {Object} meta - normalizeProperties() の返却オブジェクト
+   */
+  function renderVisualArea(meta) {
+    const dict = t();
+    const loc = getLocalizedMeta(meta);
+    const hasSections = meta.sectionImages.length > 0;
+
+    hideLegendLoupe();
+
+    dom.tabLegendBtn.textContent = dict.tabLegend;
+    dom.tabSectionBtn.textContent = hasSections
+      ? `${dict.tabSections} (${meta.sectionImages.length})`
+      : dict.tabSections;
+
+    dom.visualModeTabs.hidden = !hasSections;
+
+    const isSectionMode = state.visualMode === 'section' && hasSections;
+    dom.tabLegendBtn.classList.toggle('is-active', !isSectionMode);
+    dom.tabLegendBtn.setAttribute('aria-selected', String(!isSectionMode));
+    dom.tabSectionBtn.classList.toggle('is-active', isSectionMode);
+    dom.tabSectionBtn.setAttribute('aria-selected', String(isSectionMode));
+
+    if (isSectionMode) {
+      dom.legendPanelTitle.textContent = dict.sectionTitle;
+      dom.sectionChips.innerHTML = '';
+      const fragment = document.createDocumentFragment();
+      meta.sectionImages.forEach((sec, idx) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = idx === state.activeSectionIndex ? 'decade-chip is-selected' : 'decade-chip';
+        btn.textContent = sec.label;
+        btn.addEventListener('click', () => {
+          state.activeSectionIndex = idx;
+          renderVisualArea(meta);
+        });
+        fragment.appendChild(btn);
+      });
+      dom.sectionChips.appendChild(fragment);
+      dom.sectionChips.hidden = false;
+
+      const currentSec = meta.sectionImages[state.activeSectionIndex] || meta.sectionImages[0];
+      dom.legendMapName.textContent = `${loc.title} (${currentSec.label})`;
+      dom.legendImage.src = currentSec.url;
+      dom.legendImage.alt = `${loc.title} ${currentSec.label}`;
+      dom.legendImage.hidden = false;
+      dom.legendOpenLink.href = currentSec.url;
+      dom.legendOpenLink.hidden = false;
+    } else {
+      dom.legendPanelTitle.textContent = dict.legendTitle;
+      dom.sectionChips.hidden = true;
+      dom.sectionChips.innerHTML = '';
+
+      if (meta.legendImageUrl) {
+        dom.legendMapName.textContent = loc.title;
+        dom.legendImage.src = meta.legendImageUrl;
+        dom.legendImage.alt = `${loc.title} ${dict.legendTitle}`;
+        dom.legendImage.hidden = false;
+        dom.legendOpenLink.href = meta.legendImageUrl;
+        dom.legendOpenLink.hidden = false;
+      } else {
+        dom.legendMapName.textContent = dict.legendNone;
+        dom.legendImage.removeAttribute('src');
+        dom.legendImage.hidden = true;
+        dom.legendOpenLink.href = '#';
+        dom.legendOpenLink.hidden = true;
+      }
+    }
+  }
+
+  /**
+   * 右サイドバーの「凡例 / 断面図」表示モードを切り替える
+   * @param {'legend'|'section'} mode
+   */
+  function switchVisualMode(mode) {
+    if (state.visualMode === mode) {
+      return;
+    }
+    state.visualMode = mode;
+    if (state.dominantLegendItem) {
+      renderVisualArea(state.dominantLegendItem.meta);
     }
   }
 
@@ -2332,6 +2431,9 @@
     dom.legendZoomWrapper.addEventListener('mouseenter', updateLegendLoupe);
     dom.legendZoomWrapper.addEventListener('mousemove', updateLegendLoupe);
     dom.legendZoomWrapper.addEventListener('mouseleave', hideLegendLoupe);
+
+    dom.tabLegendBtn.addEventListener('click', () => switchVisualMode('legend'));
+    dom.tabSectionBtn.addEventListener('click', () => switchVisualMode('section'));
 
     dom.basemapButtons.forEach((btn) => {
       btn.addEventListener('click', () => switchBasemap(btn.dataset.basemap));

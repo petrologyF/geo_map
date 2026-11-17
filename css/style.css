@@ -1069,6 +1069,31 @@ body {
   padding: 10px 14px;
 }
 
+.legend-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.legend-header-actions [hidden] {
+  display: none;
+}
+
+.section-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 8px 14px;
+  border-bottom: 1px solid #eef0f2;
+  background-color: var(--color-surface);
+  flex-shrink: 0;
+}
+
+.section-chips[hidden] {
+  display: none;
+}
+
 .legend-title-group {
   min-width: 0;
   display: flex;

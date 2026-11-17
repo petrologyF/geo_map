@@ -119,6 +119,35 @@ def extract_original_image_url(metadata_url: str, soup: BeautifulSoup) -> str:
     return ""
 
 
+def extract_section_images(metadata_url: str, soup: BeautifulSoup) -> list[dict[str, str]]:
+    """ページ内の断面図JPG（*_section_*.jpg）とラベルのリストを抽出する。"""
+    sections: list[dict[str, str]] = []
+    seen_urls: set[str] = set()
+
+    for link in soup.find_all("a", href=True):
+        href = urljoin(metadata_url, link["href"])
+        if not re.search(r"_section_\d+\.jpe?g$", href, re.I) or href in seen_urls:
+            continue
+        seen_urls.add(href)
+
+        label = ""
+        row = link.find_parent("tr")
+        if row:
+            first_cell = row.find(["th", "td"])
+            if first_cell:
+                cell_text = clean_text(first_cell)
+                match = re.search(r"Section:\s*([A-Za-z0-9'\-]+)", cell_text, re.I)
+                if match:
+                    label = match.group(1)
+
+        if not label:
+            label = f"断面図{len(sections) + 1}"
+
+        sections.append({"label": label, "url": href})
+
+    return sections
+
+
 def check_url_exists(url: str) -> bool:
     """HEADリクエストでURLが存在するか（HTTP 200系）確認する。"""
     try:
@@ -348,7 +377,7 @@ def build_record(metadata_url: str, series_code: str = "g050") -> dict:
         },
         "legend_image_url": tilejson.get("legend", ""),
         "original_image_url": extract_original_image_url(metadata_url, soup),
-        "section_images": [],
+        "section_images": extract_section_images(metadata_url, soup),
         "description": description,
         "downloads": downloads,
         "related_resources": {

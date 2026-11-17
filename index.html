@@ -268,23 +268,30 @@
         </div>
       </section>
 
-      <!-- 下段：地質凡例 -->
+      <!-- 下段：地質凡例 / 地質断面図 -->
       <div class="sidebar-header legend-sidebar-header">
         <div class="legend-title-group">
           <h2 id="legend-panel-title" class="legend-panel-title">地質凡例</h2>
           <span id="legend-map-name" class="legend-map-name"></span>
         </div>
-        <a
-          id="legend-open-link"
-          class="legend-external-link"
-          href="#"
-          target="_blank"
-          rel="noopener noreferrer"
-          title="凡例を新しいタブで拡大表示"
-        >
-          拡大
-        </a>
+        <div class="legend-header-actions">
+          <div id="visual-mode-tabs" class="segmented-control" role="tablist" aria-label="表示切り替え" hidden>
+            <button type="button" id="tab-legend-btn" class="segmented-btn is-active" data-visual-mode="legend" role="tab" aria-selected="true">凡例</button>
+            <button type="button" id="tab-section-btn" class="segmented-btn" data-visual-mode="section" role="tab" aria-selected="false">断面図</button>
+          </div>
+          <a
+            id="legend-open-link"
+            class="legend-external-link"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="新しいタブで拡大表示"
+          >
+            拡大
+          </a>
+        </div>
       </div>
+      <div id="section-chips" class="section-chips" hidden></div>
       <div class="legend-sidebar-body">
         <div id="legend-zoom-wrapper" class="legend-zoom-wrapper">
           <img id="legend-image" class="legend-image" src="" alt="地質図凡例" loading="lazy">

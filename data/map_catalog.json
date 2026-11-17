@@ -86,6 +86,9 @@
       "layer_name": "G50_10_028yatsuo",
       "map_name_ja": "5万分の1地質図幅「八尾」",
       "map_name_en": "1:50K GeoMap 'Yatsuo' (1960)",
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet",
       "scale_denominator": 50000,
       "series": "5万分の1地質図幅",
       "published_year": 1960,
@@ -120,10 +123,7 @@
         "min": 2,
         "max": 14,
         "default": 11
-      },
-      "map_type": "geological_map_sheet",
-      "theme": "geology",
-      "geometry_model": "map_sheet"
+      }
     },
     "geometry": {
       "type": "Polygon",
@@ -157,8 +157,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_028yatsuo/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85,
-      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_501_org_501.jpg"
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_501_org_501.jpg",
+      "opacity": 0.85
     },
     "documents": {
       "light_pdf_url": "",
@@ -166,7 +166,16 @@
       "preferred_pdf": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10028_1960_D.pdf",
       "legend_image_url": "https://gbank.gsj.jp/geonavi/docdata/data/pict_data/orgsize_501_legend_584.jpg",
       "original_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_501_org_501.jpg",
-      "section_images": []
+      "section_images": [
+        {
+          "label": "AB",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_501_section_854.jpg"
+        },
+        {
+          "label": "CD",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_501_section_853.jpg"
+        }
+      ]
     },
     "downloads": {
       "PDF": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10028_1960_D.pdf",
@@ -202,6 +211,9 @@
       "layer_name": "G50_10_029gohyakkoku",
       "map_name_ja": "5万分の1地質図幅「五百石」",
       "map_name_en": "1:50K GeoMap 'Gohyakkoku' (1960)",
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet",
       "scale_denominator": 50000,
       "series": "5万分の1地質図幅",
       "published_year": 1960,
@@ -236,10 +248,7 @@
         "min": 2,
         "max": 14,
         "default": 11
-      },
-      "map_type": "geological_map_sheet",
-      "theme": "geology",
-      "geometry_model": "map_sheet"
+      }
     },
     "geometry": {
       "type": "Polygon",
@@ -273,8 +282,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_029gohyakkoku/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85,
-      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_502_org_502.jpg"
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_502_org_502.jpg",
+      "opacity": 0.85
     },
     "documents": {
       "light_pdf_url": "",
@@ -282,7 +291,16 @@
       "preferred_pdf": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10029_1960_D.pdf",
       "legend_image_url": "https://gbank.gsj.jp/geonavi/docdata/data/pict_data/orgsize_502_legend_585.jpg",
       "original_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_502_org_502.jpg",
-      "section_images": []
+      "section_images": [
+        {
+          "label": "AB",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_502_section_855.jpg"
+        },
+        {
+          "label": "CDE",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_502_section_856.jpg"
+        }
+      ]
     },
     "downloads": {
       "PDF": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10029_1960_D.pdf",
@@ -318,6 +336,9 @@
       "layer_name": "G50_10_030tateyama",
       "map_name_ja": "5万分の1地質図幅「立山」",
       "map_name_en": "1:50K GeoMap 'Tateyama' (2000)",
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet",
       "scale_denominator": 50000,
       "series": "5万分の1地質図幅",
       "published_year": 2000,
@@ -361,10 +382,7 @@
         "min": 2,
         "max": 14,
         "default": 11
-      },
-      "map_type": "geological_map_sheet",
-      "theme": "geology",
-      "geometry_model": "map_sheet"
+      }
     },
     "geometry": {
       "type": "Polygon",
@@ -398,8 +416,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_030tateyama/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85,
-      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_503_org_503.jpg"
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_503_org_503.jpg",
+      "opacity": 0.85
     },
     "documents": {
       "light_pdf_url": "",
@@ -407,7 +425,16 @@
       "preferred_pdf": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10030_2000_D.pdf",
       "legend_image_url": "https://gbank.gsj.jp/geonavi/docdata/data/pict_data/orgsize_503_legend_586.jpg",
       "original_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_503_org_503.jpg",
-      "section_images": []
+      "section_images": [
+        {
+          "label": "ABC",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_503_section_858.jpg"
+        },
+        {
+          "label": "DEFG",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_503_section_857.jpg"
+        }
+      ]
     },
     "downloads": {
       "PDF": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10030_2000_D.pdf",
@@ -443,6 +470,9 @@
       "layer_name": "G50_10_031omachi",
       "map_name_ja": "5万分の1地質図幅「大町」",
       "map_name_en": "1:50K GeoMap 'Omachi' (1989)",
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet",
       "scale_denominator": 50000,
       "series": "5万分の1地質図幅",
       "published_year": 1989,
@@ -483,10 +513,7 @@
         "min": 2,
         "max": 14,
         "default": 11
-      },
-      "map_type": "geological_map_sheet",
-      "theme": "geology",
-      "geometry_model": "map_sheet"
+      }
     },
     "geometry": {
       "type": "Polygon",
@@ -520,8 +547,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_031omachi/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85,
-      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_504_org_504.jpg"
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_504_org_504.jpg",
+      "opacity": 0.85
     },
     "documents": {
       "light_pdf_url": "",
@@ -529,7 +556,20 @@
       "preferred_pdf": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10031_1989_D.pdf",
       "legend_image_url": "https://gbank.gsj.jp/geonavi/docdata/data/pict_data/orgsize_504_legend_587.jpg",
       "original_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_504_org_504.jpg",
-      "section_images": []
+      "section_images": [
+        {
+          "label": "AB",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_504_section_860.jpg"
+        },
+        {
+          "label": "CD",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_504_section_861.jpg"
+        },
+        {
+          "label": "EF",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_504_section_859.jpg"
+        }
+      ]
     },
     "downloads": {
       "PDF": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10031_1989_D.pdf",
@@ -565,6 +605,9 @@
       "layer_name": "G50_10_035shirokimine",
       "map_name_ja": "5万分の1地質図幅「白木峰」",
       "map_name_en": "1:50K GeoMap 'Shirokimine' (1981)",
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet",
       "scale_denominator": 50000,
       "series": "5万分の1地質図幅",
       "published_year": 1981,
@@ -605,10 +648,7 @@
         "min": 2,
         "max": 14,
         "default": 11
-      },
-      "map_type": "geological_map_sheet",
-      "theme": "geology",
-      "geometry_model": "map_sheet"
+      }
     },
     "geometry": {
       "type": "Polygon",
@@ -642,8 +682,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_035shirokimine/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85,
-      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_505_org_505.jpg"
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_505_org_505.jpg",
+      "opacity": 0.85
     },
     "documents": {
       "light_pdf_url": "",
@@ -651,7 +691,20 @@
       "preferred_pdf": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10035_1981_D.pdf",
       "legend_image_url": "https://gbank.gsj.jp/geonavi/docdata/data/pict_data/orgsize_505_legend_588.jpg",
       "original_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_505_org_505.jpg",
-      "section_images": []
+      "section_images": [
+        {
+          "label": "AB",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_505_section_863.jpg"
+        },
+        {
+          "label": "CD",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_505_section_864.jpg"
+        },
+        {
+          "label": "EF",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_505_section_862.jpg"
+        }
+      ]
     },
     "downloads": {
       "PDF": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10035_1981_D.pdf",
@@ -687,6 +740,9 @@
       "layer_name": "G50_10_036higashimozumi",
       "map_name_ja": "5万分の1地質図幅「東茂住」",
       "map_name_en": "1:50K GeoMap 'Higashimozumi' (1959)",
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet",
       "scale_denominator": 50000,
       "series": "5万分の1地質図幅",
       "published_year": 1958,
@@ -721,10 +777,7 @@
         "min": 2,
         "max": 14,
         "default": 11
-      },
-      "map_type": "geological_map_sheet",
-      "theme": "geology",
-      "geometry_model": "map_sheet"
+      }
     },
     "geometry": {
       "type": "Polygon",
@@ -758,8 +811,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_036higashimozumi/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85,
-      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_506_org_506.jpg"
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_506_org_506.jpg",
+      "opacity": 0.85
     },
     "documents": {
       "light_pdf_url": "",
@@ -767,7 +820,16 @@
       "preferred_pdf": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10036_1958_D.pdf",
       "legend_image_url": "https://gbank.gsj.jp/geonavi/docdata/data/pict_data/orgsize_506_legend_589.jpg",
       "original_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_506_org_506.jpg",
-      "section_images": []
+      "section_images": [
+        {
+          "label": "AB",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_506_section_865.jpg"
+        },
+        {
+          "label": "CD",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_506_section_866.jpg"
+        }
+      ]
     },
     "downloads": {
       "PDF": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10036_1958_D.pdf",
@@ -803,6 +865,9 @@
       "layer_name": "G50_10_037yarigatake",
       "map_name_ja": "5万分の1地質図幅「槍ヶ岳」",
       "map_name_en": "1:50K GeoMap 'Yarigatake' (1991)",
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet",
       "scale_denominator": 50000,
       "series": "5万分の1地質図幅",
       "published_year": 1991,
@@ -846,10 +911,7 @@
         "min": 2,
         "max": 14,
         "default": 11
-      },
-      "map_type": "geological_map_sheet",
-      "theme": "geology",
-      "geometry_model": "map_sheet"
+      }
     },
     "geometry": {
       "type": "Polygon",
@@ -883,8 +945,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_037yarigatake/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85,
-      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_507_org_507.jpg"
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_507_org_507.jpg",
+      "opacity": 0.85
     },
     "documents": {
       "light_pdf_url": "",
@@ -892,7 +954,20 @@
       "preferred_pdf": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10037_1991_D.pdf",
       "legend_image_url": "https://gbank.gsj.jp/geonavi/docdata/data/pict_data/orgsize_507_legend_590.jpg",
       "original_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_507_org_507.jpg",
-      "section_images": []
+      "section_images": [
+        {
+          "label": "ABC",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_507_section_867.jpg"
+        },
+        {
+          "label": "DEFG",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_507_section_869.jpg"
+        },
+        {
+          "label": "HIJ",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_507_section_868.jpg"
+        }
+      ]
     },
     "downloads": {
       "PDF": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10037_1991_D.pdf",
@@ -928,6 +1003,9 @@
       "layer_name": "G50_10_038shinanoikeda",
       "map_name_ja": "5万分の1地質図幅「信濃池田」",
       "map_name_en": "1:50K GeoMap 'Shinano-Ikeda' (1983)",
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet",
       "scale_denominator": 50000,
       "series": "5万分の1地質図幅",
       "published_year": 1983,
@@ -962,10 +1040,7 @@
         "min": 2,
         "max": 14,
         "default": 11
-      },
-      "map_type": "geological_map_sheet",
-      "theme": "geology",
-      "geometry_model": "map_sheet"
+      }
     },
     "geometry": {
       "type": "Polygon",
@@ -999,8 +1074,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_038shinanoikeda/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85,
-      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_508_org_508.jpg"
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_508_org_508.jpg",
+      "opacity": 0.85
     },
     "documents": {
       "light_pdf_url": "",
@@ -1008,7 +1083,20 @@
       "preferred_pdf": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10038_1983_D.pdf",
       "legend_image_url": "https://gbank.gsj.jp/geonavi/docdata/data/pict_data/orgsize_508_legend_591.jpg",
       "original_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_508_org_508.jpg",
-      "section_images": []
+      "section_images": [
+        {
+          "label": "AB",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_508_section_872.jpg"
+        },
+        {
+          "label": "CD",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_508_section_870.jpg"
+        },
+        {
+          "label": "EFG",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_508_section_871.jpg"
+        }
+      ]
     },
     "downloads": {
       "PDF": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10038_1983_D.pdf",
@@ -1044,6 +1132,9 @@
       "layer_name": "G50_10_043hidafurukawa",
       "map_name_ja": "5万分の1地質図幅「飛騨古川」",
       "map_name_en": "1:50K GeoMap 'Hida-Furukawa' (1975)",
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet",
       "scale_denominator": 50000,
       "series": "5万分の1地質図幅",
       "published_year": 1975,
@@ -1081,10 +1172,7 @@
         "min": 2,
         "max": 14,
         "default": 11
-      },
-      "map_type": "geological_map_sheet",
-      "theme": "geology",
-      "geometry_model": "map_sheet"
+      }
     },
     "geometry": {
       "type": "Polygon",
@@ -1118,8 +1206,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_043hidafurukawa/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85,
-      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_509_org_509.jpg"
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_509_org_509.jpg",
+      "opacity": 0.85
     },
     "documents": {
       "light_pdf_url": "",
@@ -1127,7 +1215,28 @@
       "preferred_pdf": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10043_1975_D.pdf",
       "legend_image_url": "https://gbank.gsj.jp/geonavi/docdata/data/pict_data/orgsize_509_legend_592.jpg",
       "original_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_509_org_509.jpg",
-      "section_images": []
+      "section_images": [
+        {
+          "label": "AB",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_509_section_877.jpg"
+        },
+        {
+          "label": "CD",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_509_section_875.jpg"
+        },
+        {
+          "label": "EF",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_509_section_876.jpg"
+        },
+        {
+          "label": "GH",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_509_section_873.jpg"
+        },
+        {
+          "label": "IJ",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_509_section_874.jpg"
+        }
+      ]
     },
     "downloads": {
       "PDF": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10043_1975_D.pdf",
@@ -1163,6 +1272,9 @@
       "layer_name": "G50_10_044funatsu",
       "map_name_ja": "5万分の1地質図幅「船津」",
       "map_name_en": "1:50K GeoMap 'Funatsu' (1957)",
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet",
       "scale_denominator": 50000,
       "series": "5万分の1地質図幅",
       "published_year": 1957,
@@ -1197,10 +1309,7 @@
         "min": 2,
         "max": 14,
         "default": 11
-      },
-      "map_type": "geological_map_sheet",
-      "theme": "geology",
-      "geometry_model": "map_sheet"
+      }
     },
     "geometry": {
       "type": "Polygon",
@@ -1234,8 +1343,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_044funatsu/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85,
-      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_510_org_510.jpg"
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_510_org_510.jpg",
+      "opacity": 0.85
     },
     "documents": {
       "light_pdf_url": "",
@@ -1243,7 +1352,16 @@
       "preferred_pdf": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10044_1957_D.pdf",
       "legend_image_url": "https://gbank.gsj.jp/geonavi/docdata/data/pict_data/orgsize_510_legend_593.jpg",
       "original_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_510_org_510.jpg",
-      "section_images": []
+      "section_images": [
+        {
+          "label": "AB",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_510_section_878.jpg"
+        },
+        {
+          "label": "CD",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_510_section_879.jpg"
+        }
+      ]
     },
     "downloads": {
       "PDF": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10044_1957_D.pdf",
@@ -1279,6 +1397,9 @@
       "layer_name": "G50_10_045kamikochi",
       "map_name_ja": "5万分の1地質図幅「上高地」",
       "map_name_en": "1:50K GeoMap 'Kamikochi' (1990)",
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet",
       "scale_denominator": 50000,
       "series": "5万分の1地質図幅",
       "published_year": 1990,
@@ -1310,10 +1431,7 @@
         "min": 2,
         "max": 14,
         "default": 11
-      },
-      "map_type": "geological_map_sheet",
-      "theme": "geology",
-      "geometry_model": "map_sheet"
+      }
     },
     "geometry": {
       "type": "Polygon",
@@ -1347,8 +1465,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_045kamikochi/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85,
-      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_511_org_511.jpg"
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_511_org_511.jpg",
+      "opacity": 0.85
     },
     "documents": {
       "light_pdf_url": "",
@@ -1356,7 +1474,20 @@
       "preferred_pdf": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10045_1990_D.pdf",
       "legend_image_url": "https://gbank.gsj.jp/geonavi/docdata/data/pict_data/orgsize_511_legend_594.jpg",
       "original_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_511_org_511.jpg",
-      "section_images": []
+      "section_images": [
+        {
+          "label": "ABC",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_511_section_881.jpg"
+        },
+        {
+          "label": "DE",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_511_section_882.jpg"
+        },
+        {
+          "label": "FGH",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_511_section_880.jpg"
+        }
+      ]
     },
     "downloads": {
       "PDF": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10045_1990_D.pdf",
@@ -1392,6 +1523,9 @@
       "layer_name": "G50_10_051mikkamachi",
       "map_name_ja": "5万分の1地質図幅「三日町」",
       "map_name_en": "1:50K GeoMap 'Mikkamachi' (1982)",
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet",
       "scale_denominator": 50000,
       "series": "5万分の1地質図幅",
       "published_year": 1982,
@@ -1423,10 +1557,7 @@
         "min": 2,
         "max": 14,
         "default": 11
-      },
-      "map_type": "geological_map_sheet",
-      "theme": "geology",
-      "geometry_model": "map_sheet"
+      }
     },
     "geometry": {
       "type": "Polygon",
@@ -1460,8 +1591,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_10_051mikkamachi/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85,
-      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_512_org_512.jpg"
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_512_org_512.jpg",
+      "opacity": 0.85
     },
     "documents": {
       "light_pdf_url": "",
@@ -1469,7 +1600,20 @@
       "preferred_pdf": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10051_1982_D.pdf",
       "legend_image_url": "https://gbank.gsj.jp/geonavi/docdata/data/pict_data/orgsize_512_legend_596.jpg",
       "original_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_512_org_512.jpg",
-      "section_images": []
+      "section_images": [
+        {
+          "label": "AB",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_512_section_889.jpg"
+        },
+        {
+          "label": "CDE",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_512_section_890.jpg"
+        },
+        {
+          "label": "FG",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_512_section_888.jpg"
+        }
+      ]
     },
     "downloads": {
       "PDF": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_10051_1982_D.pdf",
@@ -1505,6 +1649,9 @@
       "layer_name": "G50_08_057Ogawara",
       "map_name_ja": "5万分の1地質図幅「大河原」",
       "map_name_en": "1:50K GeoMap 'Ogawara' (2025)",
+      "map_type": "geological_map_sheet",
+      "theme": "geology",
+      "geometry_model": "map_sheet",
       "scale_denominator": 50000,
       "series": "5万分の1地質図幅",
       "published_year": 2025,
@@ -1545,10 +1692,7 @@
         "min": 2,
         "max": 14,
         "default": 11
-      },
-      "map_type": "geological_map_sheet",
-      "theme": "geology",
-      "geometry_model": "map_sheet"
+      }
     },
     "geometry": {
       "type": "Polygon",
@@ -1582,8 +1726,8 @@
       "tile_url": "https://tiles.gsj.jp/tiles/geomap/G50_08_057Ogawara/{z}/{x}/{y}.webp",
       "wms_url": "",
       "wms_layers": "",
-      "opacity": 0.85,
-      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_1911_org_1854.jpg"
+      "raster_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_1911_org_1854.jpg",
+      "opacity": 0.85
     },
     "documents": {
       "light_pdf_url": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_08057_2025_D-L.pdf",
@@ -1591,7 +1735,16 @@
       "preferred_pdf": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_08057_2025_D-L.pdf",
       "legend_image_url": "https://gbank.gsj.jp/geonavi/docdata/data/pict_data/orgsize_1911_legend_1872.jpg",
       "original_image_url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_1911_org_1854.jpg",
-      "section_images": []
+      "section_images": [
+        {
+          "label": "ABC",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_1911_section_2488.jpg"
+        },
+        {
+          "label": "DEF",
+          "url": "https://gbank.gsj.jp/ld/resource/image/map/gsj_map_1911_section_2489.jpg"
+        }
+      ]
     },
     "downloads": {
       "PDF": "https://www.gsj.jp/data/50KGM/PDF/GSJ_MAP_G050_08057_2025_D.pdf",
