@@ -1670,7 +1670,10 @@
 
     state.filteredItems = [...state.allItems];
 
-    // 標準では5万分の1(1:50,000)のみ表示する
+    // 標準では5万分の1地質図幅(geological_map_sheet + 1:50,000)のみ表示する
+    if (state.allItems.some(({ meta }) => meta.mapType === 'geological_map_sheet')) {
+      state.selectedMapType = 'geological_map_sheet';
+    }
     if (state.allItems.some(({ meta }) => meta.scale === '1:50,000')) {
       state.selectedScales.add('1:50,000');
     }
