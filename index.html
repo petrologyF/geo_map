@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>5万分の1地質図幅検索 | 産総研 WebGIS</title>
+  <title>地質図検索 WebGIS | 産総研</title>
 
   <!-- Google Fonts: Noto Sans JP -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -34,7 +34,7 @@
               <line x1="16" y1="6" x2="16" y2="22"></line>
             </svg>
           </span>
-          <h1 id="app-title" class="panel-title">5万分の1地質図幅</h1>
+          <h1 id="app-title" class="panel-title">地質図検索</h1>
         </div>
         <div class="panel-header-actions">
           <div class="segmented-control lang-switch" role="group" aria-label="表示言語の切り替え">
@@ -82,7 +82,19 @@
           <ul id="search-suggestions" class="search-suggestions" role="listbox" hidden></ul>
         </div>
 
-        <!-- 折りたたみ式フィルター（発行年・著者・その他） -->
+        <!-- クイック表示オプション（地図範囲連動・図郭枠表示） -->
+        <div class="quick-toggles">
+          <label class="toggle-chip-label">
+            <input type="checkbox" id="viewport-only-toggle" class="toggle-checkbox">
+            <span id="viewport-only-label">表示範囲内のみ</span>
+          </label>
+          <label class="toggle-chip-label">
+            <input type="checkbox" id="show-index-toggle" class="toggle-checkbox" checked>
+            <span id="show-index-label">図郭枠を表示</span>
+          </label>
+        </div>
+
+        <!-- 折りたたみ式フィルター（発行年レンジ・縮尺・著者・その他） -->
         <section class="filter-accordion" aria-label="詳細フィルター">
           <div class="filter-accordion-header">
             <button
@@ -109,10 +121,34 @@
           </div>
 
           <div id="filter-panel-body" class="filter-panel-body" hidden>
-            <!-- 発行年（10年ごとの年代マルチセレクト） -->
+            <!-- 発行年（デュアルレンジスライダー） -->
             <div class="filter-group">
-              <span id="decade-label" class="filter-label">発行年（複数選択可）</span>
-              <div id="decade-chips" class="decade-chips" role="group" aria-label="発行年代フィルタ"></div>
+              <div class="filter-label-row">
+                <span id="decade-label" class="filter-label">発行年</span>
+                <span id="year-range-display" class="year-range-display"></span>
+              </div>
+              <div class="dual-range-container">
+                <div class="dual-range-track-bg"></div>
+                <div id="year-range-track" class="dual-range-track-active"></div>
+                <input
+                  type="range"
+                  id="year-range-min"
+                  class="dual-range-input"
+                  aria-label="開始年"
+                >
+                <input
+                  type="range"
+                  id="year-range-max"
+                  class="dual-range-input"
+                  aria-label="終了年"
+                >
+              </div>
+            </div>
+
+            <!-- 縮尺・シリーズマルチセレクト -->
+            <div class="filter-group">
+              <span id="scale-filter-label" class="filter-label">縮尺・シリーズ</span>
+              <div id="scale-chips" class="decade-chips" role="group" aria-label="縮尺フィルタ"></div>
             </div>
 
             <!-- 著者マルチセレクト -->

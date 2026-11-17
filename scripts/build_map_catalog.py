@@ -18,7 +18,7 @@ from urllib.parse import urljoin
 import requests
 from bs4 import BeautifulSoup
 
-BASE_URL = "https://gbank.gsj.jp/ld/resource/publication/map/g050/map{map_id}.html"
+BASE_URL = "https://gbank.gsj.jp/ld/resource/publication/map/{series}/map{map_id}.html"
 USER_AGENT = "GeologicalMapWebGIS/0.1 (research use)"
 
 
@@ -159,11 +159,12 @@ def extract_japanese_metadata(catalog_url: str) -> dict:
                 kv[key] = val
 
     raw_title = kv.get("図名", "")
+    series_ja = kv.get("シリーズ名", "")
     if raw_title:
         # 例: "槍ヶ岳　YARIGATAKE" -> 日本語名部分を抽出
         ja_part = re.sub(r"[\s　]+[A-Za-z0-9'\-\s,()]+$", "", raw_title).strip()
         map_title = ja_part or raw_title
-        result["map_name_ja"] = f"5万分の1地質図幅「{map_title}」"
+        result["map_name_ja"] = f"{series_ja}「{map_title}」" if series_ja else map_title
 
     raw_authors = kv.get("著者", "")
     if raw_authors:
@@ -175,11 +176,26 @@ def extract_japanese_metadata(catalog_url: str) -> dict:
         result["authors_ja"] = authors
 
     result["publisher_ja"] = kv.get("発行者", "")
-    result["series_ja"] = kv.get("シリーズ名", "")
+    result["series_ja"] = series_ja
     return result
 
 
-def build_record(metadata_url: str) -> dict:
+def infer_scale(series_code: str, series_en: str) -> str:
+    """シリーズコードまたは英語シリーズ名から縮尺表記を推定する。"""
+    match = re.search(r"1\s*:\s*[\d,]+", series_en or "")
+    if match:
+        return re.sub(r"\s+", "", match.group(0))
+    code_map = {
+        "g050": "1:50,000",
+        "g075": "1:75,000",
+        "g200": "1:200,000",
+        "g500": "1:500,000",
+        "g1000": "1:1,000,000",
+    }
+    return code_map.get(series_code.lower(), series_code)
+
+
+def build_record(metadata_url: str, series_code: str = "g050") -> dict:
     """メタデータHTMLとTileJSONを取得し、カタログレコード辞書を構築する。"""
     metadata_html = fetch_text(metadata_url)
     soup = BeautifulSoup(metadata_html, "html.parser")
@@ -243,6 +259,7 @@ def build_record(metadata_url: str) -> dict:
     return {
         "map_id": map_id,
         "layer_name": layer_name,
+        "scale": infer_scale(series_code, series_en),
         "map_name_ja": ja_meta["map_name_ja"],
         "map_name_en": map_name_en,
         "series_ja": ja_meta["series_ja"],
@@ -325,6 +342,11 @@ def main() -> None:
         help="GSJ の map_id（例: 507 または 00507）",
     )
     parser.add_argument(
+        "--series",
+        default="g050",
+        help="GSJ のシリーズコード（例: g050=5万分の1, g200=20万分の1, g075=7.5万分の1）",
+    )
+    parser.add_argument(
         "--output",
         default="data/map_catalog.json",
         help="出力するJSONファイルのパス",
@@ -346,11 +368,11 @@ def main() -> None:
 
     for index, raw_map_id in enumerate(args.map_id):
         padded_id = str(raw_map_id).strip().zfill(5)
-        metadata_url = BASE_URL.format(map_id=padded_id)
+        metadata_url = BASE_URL.format(series=args.series, map_id=padded_id)
         print(f"取得中: {metadata_url}")
 
         try:
-            record = build_record(metadata_url)
+            record = build_record(metadata_url, args.series)
             records.append(record)
             print(f"  OK: {record['map_name_en'] or record['layer_name']}")
         except Exception as error:

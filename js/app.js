@@ -69,11 +69,13 @@
    */
   const I18N = {
     ja: {
-      appTitle: '5万分の1地質図幅',
+      appTitle: '地質図検索',
       searchPlaceholder: '図幅名または著者で検索',
+      viewportOnlyLabel: '表示範囲内のみ',
+      showIndexLabel: '図郭枠を表示',
       filterAccordionLabel: '詳細フィルター',
-      decadeLabel: '発行年（複数選択可）',
-      decadeUnit: '年代',
+      decadeLabel: '発行年',
+      scaleFilterLabel: '縮尺・シリーズ',
       authorFilterLabel: '著者（複数選択可）',
       otherFilterLabel: 'その他（発行機関・資料）',
       flagPdf: '説明書PDFあり',
@@ -97,6 +99,7 @@
       yearLabel: '発行年',
       yearSuffix: '年',
       yearUnknown: '不明',
+      scaleLabel: '縮尺',
       authorsLabel: '著者',
       publisherLabel: '発行',
       regionLabel: '地域',
@@ -109,11 +112,13 @@
       unknownAuthor: '不明'
     },
     en: {
-      appTitle: '1:50K GeoMap',
+      appTitle: 'GeoMap Search',
       searchPlaceholder: 'Search by map name or author',
+      viewportOnlyLabel: 'In map view only',
+      showIndexLabel: 'Show map frames',
       filterAccordionLabel: 'Filters',
-      decadeLabel: 'Published Decade (Multi-select)',
-      decadeUnit: 's',
+      decadeLabel: 'Published Year',
+      scaleFilterLabel: 'Scale / Series',
       authorFilterLabel: 'Authors (Multi-select)',
       otherFilterLabel: 'Other (Publisher / Resources)',
       flagPdf: 'Has PDF',
@@ -137,6 +142,7 @@
       yearLabel: 'Year',
       yearSuffix: '',
       yearUnknown: 'Unknown',
+      scaleLabel: 'Scale',
       authorsLabel: 'Authors',
       publisherLabel: 'Publisher',
       regionLabel: 'Region',
@@ -160,7 +166,15 @@
     indexLayerGroup: null,
     allItems: [],
     filteredItems: [],
-    selectedDecades: new Set(),
+    yearRange: {
+      minBound: 1950,
+      maxBound: new Date().getFullYear(),
+      currentMin: 1950,
+      currentMax: new Date().getFullYear()
+    },
+    viewportOnly: false,
+    showIndexFrames: true,
+    selectedScales: new Set(),
     selectedAuthors: new Set(),
     selectedPublishers: new Set(),
     selectedResourceFlags: new Set(),
@@ -181,12 +195,21 @@
     fitAllBtn: document.getElementById('fit-all-btn'),
     searchInput: document.getElementById('search-input'),
     searchSuggestions: document.getElementById('search-suggestions'),
+    viewportOnlyToggle: document.getElementById('viewport-only-toggle'),
+    viewportOnlyLabel: document.getElementById('viewport-only-label'),
+    showIndexToggle: document.getElementById('show-index-toggle'),
+    showIndexLabel: document.getElementById('show-index-label'),
     toggleFiltersBtn: document.getElementById('toggle-filters-btn'),
     filterAccordionLabel: document.getElementById('filter-accordion-label'),
     activeFilterBadge: document.getElementById('active-filter-badge'),
     filterPanelBody: document.getElementById('filter-panel-body'),
     decadeLabel: document.getElementById('decade-label'),
-    decadeChips: document.getElementById('decade-chips'),
+    yearRangeDisplay: document.getElementById('year-range-display'),
+    yearRangeTrack: document.getElementById('year-range-track'),
+    yearRangeMin: document.getElementById('year-range-min'),
+    yearRangeMax: document.getElementById('year-range-max'),
+    scaleFilterLabel: document.getElementById('scale-filter-label'),
+    scaleChips: document.getElementById('scale-chips'),
     authorFilterLabel: document.getElementById('author-filter-label'),
     authorChips: document.getElementById('author-chips'),
     otherFilterLabel: document.getElementById('other-filter-label'),
@@ -283,6 +306,16 @@
     const attribution = props.license?.attribution || CONFIG.GSJ_ATTRIBUTION;
     const rawPdfUrl = props.downloads?.pdf || props.downloads?.PDF || '';
     const mapCode = props.map_code || props.layer_name || '';
+    const scaleMatch = String(props.series_en || props.series_ja || mapNameEn || mapNameJa).match(/1\s*:\s*[\d,]+/);
+    let scale = props.scale || (scaleMatch ? scaleMatch[0].replace(/\s+/g, '') : '');
+    if (!scale) {
+      if (/^G50/i.test(mapCode) || /5万分の1/.test(mapNameJa)) scale = '1:50,000';
+      else if (/^G200/i.test(mapCode) || /20万分の1/.test(mapNameJa)) scale = '1:200,000';
+      else if (/^G75/i.test(mapCode) || /7\.5万分の1/.test(mapNameJa)) scale = '1:75,000';
+      else if (/^G500/i.test(mapCode) || /50万分の1/.test(mapNameJa)) scale = '1:500,000';
+      else if (/^G1000/i.test(mapCode) || /100万分の1/.test(mapNameJa)) scale = '1:1,000,000';
+      else scale = props.series_ja || props.series_en || '';
+    }
     const mapId = props.map_id ?? null;
     const fallbackMetadataUrl = mapId != null
       ? `https://gbank.gsj.jp/ld/resource/publication/map/g050/map${String(mapId).padStart(5, '0')}.html`
@@ -294,12 +327,13 @@
       props.related_resources?.catalog_url
     ].find((url) => isSafeUrl(url)) || '';
 
-    const searchTokensJa = [mapNameJa, authorsJa, mapCode, prefectures].join(' ').toLowerCase();
-    const searchTokensEn = [mapNameEn, authorsEn, mapCode, prefectures].join(' ').toLowerCase();
+    const searchTokensJa = [mapNameJa, authorsJa, mapCode, prefectures, scale].join(' ').toLowerCase();
+    const searchTokensEn = [mapNameEn, authorsEn, mapCode, prefectures, scale].join(' ').toLowerCase();
 
     return {
       mapId,
       mapCode,
+      scale,
       mapNameJa,
       mapNameEn,
       authorsJa,
@@ -452,8 +486,13 @@
     // 図郭ポリゴン管理用のレイヤーグループを追加
     state.indexLayerGroup = L.layerGroup().addTo(map);
 
-    // 地図移動・ズーム完了時に現在表示中の地質図のうち最も広いものの凡例を更新
-    map.on('moveend', updateDominantLegend);
+    // 地図移動・ズーム完了時に表示範囲フィルタと凡例を更新
+    map.on('moveend', () => {
+      if (state.viewportOnly) {
+        applyFilters();
+      }
+      updateDominantLegend();
+    });
 
     return map;
   }
@@ -617,6 +656,9 @@
       [dict.yearLabel, yearValue],
       [dict.authorsLabel, loc.authors]
     ];
+    if (meta.scale) {
+      metaEntries.push([dict.scaleLabel, meta.scale]);
+    }
     if (loc.publisher) {
       metaEntries.push([dict.publisherLabel, loc.publisher]);
     }
@@ -981,6 +1023,16 @@
       yearSpan.textContent = meta.publishedYear != null ? `${meta.publishedYear}` : '';
 
       button.append(mainSpan, yearSpan);
+      button.addEventListener('mouseenter', () => {
+        if (!isItemOverlayed(item) && state.showIndexFrames) {
+          item.layer.setStyle(CONFIG.POLYGON_STYLE.hover);
+        }
+      });
+      button.addEventListener('mouseleave', () => {
+        if (!isItemOverlayed(item) && state.showIndexFrames) {
+          item.layer.setStyle(CONFIG.POLYGON_STYLE.default);
+        }
+      });
       button.addEventListener('click', () => {
         zoomToMapItem(item);
         addOverlayForItem(item);
@@ -1006,48 +1058,101 @@
   }
 
   /**
-   * データ内の最小発行年から現在年（例: 2026年→2020年代、2030年→2030年代）まで
-   * 10年ごとの年代マルチセレクトチップを自動生成する
+   * 発行年デュアルレンジスライダーの見た目（選択範囲バー・年表示）を更新する
    */
-  function renderDecadeChips() {
+  function updateYearSliderUI() {
     const dict = t();
+    const { minBound, maxBound, currentMin, currentMax } = state.yearRange;
+    const span = Math.max(1, maxBound - minBound);
+    const leftPct = ((currentMin - minBound) / span) * 100;
+    const rightPct = ((currentMax - minBound) / span) * 100;
+
+    dom.yearRangeTrack.style.left = `${leftPct}%`;
+    dom.yearRangeTrack.style.width = `${Math.max(0, rightPct - leftPct)}%`;
+    dom.yearRangeDisplay.textContent = `${currentMin}${dict.yearSuffix} 〜 ${currentMax}${dict.yearSuffix}`;
+  }
+
+  /**
+   * データ内の最小発行年から現在年（例: 2026年、2030年なら2030年）まで
+   * 発行年デュアルレンジスライダーを初期化する
+   */
+  function initYearSlider() {
     const years = state.allItems
       .map(({ meta }) => Number(meta.publishedYear))
       .filter((year) => !Number.isNaN(year) && year > 0);
 
-    const currentDecade = Math.floor(new Date().getFullYear() / 10) * 10;
-    const minDecade = years.length > 0
-      ? Math.floor(Math.min(...years) / 10) * 10
-      : currentDecade;
-    const maxDataDecade = years.length > 0
-      ? Math.floor(Math.max(...years) / 10) * 10
-      : currentDecade;
-    const maxDecade = Math.max(maxDataDecade, currentDecade);
+    const currentYear = new Date().getFullYear();
+    const minBound = years.length > 0 ? Math.min(...years) : currentYear;
+    const maxBound = Math.max(years.length > 0 ? Math.max(...years) : currentYear, currentYear);
 
-    const sortedDecades = [];
-    for (let decade = minDecade; decade <= maxDecade; decade += 10) {
-      sortedDecades.push(decade);
+    state.yearRange = {
+      minBound,
+      maxBound,
+      currentMin: minBound,
+      currentMax: maxBound
+    };
+
+    dom.yearRangeMin.min = String(minBound);
+    dom.yearRangeMin.max = String(maxBound);
+    dom.yearRangeMin.value = String(minBound);
+
+    dom.yearRangeMax.min = String(minBound);
+    dom.yearRangeMax.max = String(maxBound);
+    dom.yearRangeMax.value = String(maxBound);
+
+    updateYearSliderUI();
+  }
+
+  /**
+   * 発行年デュアルレンジスライダー操作時のクランプおよび即時フィルタリング
+   * @param {'min'|'max'} changedSide - 動かした側のつまみ
+   */
+  function handleYearSliderInput(changedSide) {
+    let minVal = Number(dom.yearRangeMin.value);
+    let maxVal = Number(dom.yearRangeMax.value);
+
+    if (changedSide === 'min' && minVal > maxVal) {
+      minVal = maxVal;
+      dom.yearRangeMin.value = String(minVal);
+    } else if (changedSide === 'max' && maxVal < minVal) {
+      maxVal = minVal;
+      dom.yearRangeMax.value = String(maxVal);
     }
 
-    dom.decadeChips.innerHTML = '';
+    state.yearRange.currentMin = minVal;
+    state.yearRange.currentMax = maxVal;
+    updateYearSliderUI();
+    applyFilters();
+  }
 
+  /**
+   * 縮尺・シリーズのマルチセレクトチップを生成する
+   */
+  function renderScaleChips() {
+    const scalesSet = new Set();
+    state.allItems.forEach(({ meta }) => {
+      if (meta.scale) {
+        scalesSet.add(meta.scale);
+      }
+    });
+
+    dom.scaleChips.innerHTML = '';
     const fragment = document.createDocumentFragment();
-    sortedDecades.forEach((decade) => {
-      const isSelected = state.selectedDecades.has(decade);
+    [...scalesSet].sort().forEach((scale) => {
+      const isSelected = state.selectedScales.has(scale);
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = isSelected ? 'decade-chip is-selected' : 'decade-chip';
-      btn.textContent = `${decade}${dict.decadeUnit}`;
-      btn.dataset.decade = String(decade);
+      btn.textContent = scale;
       btn.setAttribute('aria-pressed', String(isSelected));
 
       btn.addEventListener('click', () => {
-        if (state.selectedDecades.has(decade)) {
-          state.selectedDecades.delete(decade);
+        if (state.selectedScales.has(scale)) {
+          state.selectedScales.delete(scale);
           btn.classList.remove('is-selected');
           btn.setAttribute('aria-pressed', 'false');
         } else {
-          state.selectedDecades.add(decade);
+          state.selectedScales.add(scale);
           btn.classList.add('is-selected');
           btn.setAttribute('aria-pressed', 'true');
         }
@@ -1057,7 +1162,7 @@
       fragment.appendChild(btn);
     });
 
-    dom.decadeChips.appendChild(fragment);
+    dom.scaleChips.appendChild(fragment);
   }
 
   /**
@@ -1177,8 +1282,13 @@
    * 適用中の詳細フィルター数バッジを更新する
    */
   function updateActiveFilterBadge() {
+    const hasYearFilter =
+      state.yearRange.currentMin > state.yearRange.minBound ||
+      state.yearRange.currentMax < state.yearRange.maxBound;
+
     const count =
-      state.selectedDecades.size +
+      (hasYearFilter ? 1 : 0) +
+      state.selectedScales.size +
       state.selectedAuthors.size +
       state.selectedPublishers.size +
       state.selectedResourceFlags.size;
@@ -1251,7 +1361,8 @@
       state.map.fitBounds(bounds, { padding: [48, 48], maxZoom: 11 });
     }
 
-    renderDecadeChips();
+    initYearSlider();
+    renderScaleChips();
     renderAuthorChips();
     renderOtherChips();
     updateActiveFilterBadge();
@@ -1431,26 +1542,49 @@
   /**
    * 検索文字列と選択中の年代チップに基づき、図郭ポリゴンを即時フィルタリングする
    */
+  /**
+   * 図郭インデックス枠の表示/非表示を切り替える
+   */
+  function toggleIndexFrames() {
+    state.showIndexFrames = dom.showIndexToggle.checked;
+    if (!state.map || !state.indexLayerGroup) {
+      return;
+    }
+    if (state.showIndexFrames) {
+      if (!state.map.hasLayer(state.indexLayerGroup)) {
+        state.indexLayerGroup.addTo(state.map);
+      }
+    } else if (state.map.hasLayer(state.indexLayerGroup)) {
+      state.map.removeLayer(state.indexLayerGroup);
+    }
+  }
+
+  /**
+   * 検索文字列・地図範囲・発行年レンジ・縮尺・著者・その他に基づき即時フィルタリングする
+   */
   function applyFilters() {
     const query = dom.searchInput.value.trim().toLowerCase();
-    const hasDecadeFilter = state.selectedDecades.size > 0;
+    const { minBound, maxBound, currentMin, currentMax } = state.yearRange;
+    const hasYearFilter = currentMin > minBound || currentMax < maxBound;
+    const hasScaleFilter = state.selectedScales.size > 0;
     const hasAuthorFilter = state.selectedAuthors.size > 0;
     const hasPublisherFilter = state.selectedPublishers.size > 0;
     const hasFlagFilter = state.selectedResourceFlags.size > 0;
+    const viewBounds = state.viewportOnly && state.map ? state.map.getBounds() : null;
     const nextFiltered = [];
 
     state.allItems.forEach((item) => {
       const { layer, meta } = item;
       const loc = getLocalizedMeta(meta);
       const year = Number(meta.publishedYear);
-      const decade = (meta.publishedYear !== null && !Number.isNaN(year))
-        ? Math.floor(year / 10) * 10
-        : null;
+      const hasValidYear = meta.publishedYear !== null && !Number.isNaN(year);
 
       const matchesText = !query || loc.searchTokens.includes(query);
-      const matchesDecade = !hasDecadeFilter || (decade !== null && state.selectedDecades.has(decade));
+      const matchesYear = !hasYearFilter || (hasValidYear && year >= currentMin && year <= currentMax);
+      const matchesScale = !hasScaleFilter || state.selectedScales.has(meta.scale);
       const matchesAuthor = !hasAuthorFilter || loc.authorList.some((a) => state.selectedAuthors.has(a));
       const matchesPublisher = !hasPublisherFilter || state.selectedPublishers.has(loc.publisher);
+      const matchesViewport = !viewBounds || computeIntersectionArea(viewBounds, getItemBounds(item)) > 0;
 
       let matchesFlags = true;
       if (hasFlagFilter) {
@@ -1465,7 +1599,14 @@
         }
       }
 
-      const isVisible = matchesText && matchesDecade && matchesAuthor && matchesPublisher && matchesFlags;
+      const isVisible =
+        matchesText &&
+        matchesYear &&
+        matchesScale &&
+        matchesAuthor &&
+        matchesPublisher &&
+        matchesFlags &&
+        matchesViewport;
 
       if (isVisible) {
         if (!state.indexLayerGroup.hasLayer(layer)) {
@@ -1488,7 +1629,16 @@
    */
   function resetFilters() {
     dom.searchInput.value = '';
-    state.selectedDecades.clear();
+    state.viewportOnly = false;
+    dom.viewportOnlyToggle.checked = false;
+
+    state.yearRange.currentMin = state.yearRange.minBound;
+    state.yearRange.currentMax = state.yearRange.maxBound;
+    dom.yearRangeMin.value = String(state.yearRange.minBound);
+    dom.yearRangeMax.value = String(state.yearRange.maxBound);
+    updateYearSliderUI();
+
+    state.selectedScales.clear();
     state.selectedAuthors.clear();
     state.selectedPublishers.clear();
     state.selectedResourceFlags.clear();
@@ -1554,8 +1704,11 @@
     dom.appTitle.textContent = dict.appTitle;
     dom.searchInput.placeholder = dict.searchPlaceholder;
     dom.searchInput.setAttribute('aria-label', dict.searchPlaceholder);
+    dom.viewportOnlyLabel.textContent = dict.viewportOnlyLabel;
+    dom.showIndexLabel.textContent = dict.showIndexLabel;
     dom.filterAccordionLabel.textContent = dict.filterAccordionLabel;
     dom.decadeLabel.textContent = dict.decadeLabel;
+    dom.scaleFilterLabel.textContent = dict.scaleFilterLabel;
     dom.authorFilterLabel.textContent = dict.authorFilterLabel;
     dom.otherFilterLabel.textContent = dict.otherFilterLabel;
     dom.resetFiltersBtn.textContent = dict.reset;
@@ -1589,7 +1742,8 @@
     hideSuggestions();
     state.selectedAuthors.clear();
     state.selectedPublishers.clear();
-    renderDecadeChips();
+    updateYearSliderUI();
+    renderScaleChips();
     renderAuthorChips();
     renderOtherChips();
     buildSuggestionPool();
@@ -1611,6 +1765,15 @@
     dom.searchInput.addEventListener('focus', renderSuggestions);
     dom.searchInput.addEventListener('blur', hideSuggestions);
     dom.searchInput.addEventListener('keydown', handleSearchKeydown);
+
+    dom.viewportOnlyToggle.addEventListener('change', () => {
+      state.viewportOnly = dom.viewportOnlyToggle.checked;
+      applyFilters();
+    });
+    dom.showIndexToggle.addEventListener('change', toggleIndexFrames);
+
+    dom.yearRangeMin.addEventListener('input', () => handleYearSliderInput('min'));
+    dom.yearRangeMax.addEventListener('input', () => handleYearSliderInput('max'));
 
     dom.toggleFiltersBtn.addEventListener('click', toggleFiltersPanel);
     dom.resetFiltersBtn.addEventListener('click', () => {

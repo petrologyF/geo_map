@@ -331,6 +331,126 @@ body {
 }
 
 /* ==========================================================================
+   Quick Toggles & Dual Range Slider
+   ========================================================================== */
+.quick-toggles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.toggle-chip-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border);
+  background-color: var(--color-surface);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text);
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.12s ease, border-color 0.12s ease;
+}
+
+.toggle-chip-label:hover {
+  background-color: var(--color-surface-hover);
+}
+
+.toggle-checkbox {
+  margin: 0;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+}
+
+.filter-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.year-range-display {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.dual-range-container {
+  position: relative;
+  width: 100%;
+  height: 26px;
+  display: flex;
+  align-items: center;
+}
+
+.dual-range-track-bg,
+.dual-range-track-active {
+  position: absolute;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  pointer-events: none;
+}
+
+.dual-range-track-bg {
+  left: 0;
+  right: 0;
+  background-color: var(--color-border);
+}
+
+.dual-range-track-active {
+  background-color: var(--color-primary);
+}
+
+.dual-range-input {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  margin: 0;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  pointer-events: none;
+  outline: none;
+}
+
+.dual-range-input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  cursor: grab;
+  pointer-events: auto;
+  transition: transform 0.12s ease;
+}
+
+.dual-range-input::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.dual-range-input::-webkit-slider-thumb:active {
+  cursor: grabbing;
+}
+
+.dual-range-input::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  cursor: grab;
+  pointer-events: auto;
+}
+
+/* ==========================================================================
    Collapsible Filter Accordion & Multi-Select Chips
    ========================================================================== */
 .filter-accordion {
