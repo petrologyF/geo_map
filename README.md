@@ -108,9 +108,9 @@ pip install -r requirements.txt
 python scripts/build_map_catalog.py \
   --series g050 \
   --map-id 501 502 503 504 505 506 507 508 509 510 511 512 1486 \
-  --output data/map_catalog.json
+  --output data/providers/gsj_50k_raw.json
 
-# 2. 全プロバイダを共通スキーマへ正規化・検証し、data/providers/*.json と map_index.geojson を生成
+# 2. 全プロバイダを共通スキーマへ正規化・検証し、data/providers/*.json・map_catalog.json・map_index.geojson を生成
 python scripts/build_geojson.py
 ```
 

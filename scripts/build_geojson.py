@@ -44,13 +44,14 @@ def main() -> None:
     providers_dir = data_dir / "providers"
     providers_dir.mkdir(parents=True, exist_ok=True)
 
+    gsj_50k_raw_path = providers_dir / "gsj_50k_raw.json"
     gsj_50k_path = providers_dir / "gsj_50k.json"
     catalog_path = data_dir / "map_catalog.json"
 
-    if gsj_50k_path.exists():
+    if gsj_50k_raw_path.exists():
+        gsj_raw = json.loads(gsj_50k_raw_path.read_text(encoding="utf-8"))
+    elif gsj_50k_path.exists():
         gsj_raw = json.loads(gsj_50k_path.read_text(encoding="utf-8"))
-    elif catalog_path.exists():
-        gsj_raw = json.loads(catalog_path.read_text(encoding="utf-8"))
     else:
         gsj_raw = []
 

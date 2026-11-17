@@ -3,11 +3,79 @@
 import re
 
 
+def to_int_year(value) -> int | None:
+    """発行年を安全に整数へ変換する。"""
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        match = re.search(r"\d{4}", value)
+        if match:
+            return int(match.group(0))
+    return None
+
+
 def normalize_sheet_key(name: str) -> str:
-    """重複判定用に図幅名からシリーズ接頭辞や括弧を取り除いたキーを返す。"""
+    """重複判定用に図幅名からシリーズ接頭辞・括弧・中黒・ハイフン・空白を除去したキーを返す。"""
     cleaned = re.sub(r"^.*?「([^」]+)」.*$", r"\1", name or "")
-    cleaned = re.sub(r"[\s　]+", "", cleaned)
+    cleaned = re.sub(r"[\s　・･\-－ー()（）]+", "", cleaned)
     return cleaned.lower()
+
+
+def is_similar_sheet_name(name_a: str, name_b: str) -> bool:
+    """図幅名の表記ゆれ（例:「恵庭」と「恵庭岳」）を考慮して類似判定する。"""
+    key_a = normalize_sheet_key(name_a)
+    key_b = normalize_sheet_key(name_b)
+    if not key_a or not key_b:
+        return False
+    if key_a == key_b:
+        return True
+    shorter, longer = sorted((key_a, key_b), key=len)
+    return len(shorter) >= 2 and longer.startswith(shorter)
+
+
+def is_same_spatial_sheet(bounds_a, bounds_b, threshold_deg: float = 0.05) -> bool:
+    """2つの bounds [west, south, east, north] の中心点距離が閾値以内か判定する。"""
+    if not (isinstance(bounds_a, list) and len(bounds_a) == 4):
+        return False
+    if not (isinstance(bounds_b, list) and len(bounds_b) == 4):
+        return False
+
+    lon_a = (bounds_a[0] + bounds_a[2]) / 2.0
+    lat_a = (bounds_a[1] + bounds_a[3]) / 2.0
+    lon_b = (bounds_b[0] + bounds_b[2]) / 2.0
+    lat_b = (bounds_b[1] + bounds_b[3]) / 2.0
+
+    return abs(lon_a - lon_b) < threshold_deg and abs(lat_a - lat_b) < threshold_deg
+
+
+def is_duplicate_record(gsj_rec: dict, hro_rec: dict) -> bool:
+    """GSJレコードとHROレコードが同一図幅（空間・識別子・名称/発行年）か判定する。"""
+    gm = gsj_rec.get("map", {})
+    hm = hro_rec.get("map", {})
+
+    # 1. 図幅番号・layer_name / local_id の一致
+    g_layer = (gm.get("layer_name") or "").lower()
+    h_layer = (hm.get("layer_name") or "").lower()
+    if g_layer and h_layer and g_layer == h_layer:
+        return True
+
+    g_year = to_int_year(gm.get("published_year"))
+    h_year = to_int_year(hm.get("published_year"))
+    year_close = (g_year is not None and h_year is not None and abs(g_year - h_year) <= 2)
+
+    # 2. 図幅名（表記ゆれ吸収）+ 発行年（±2年以内、または片方不明）
+    same_name = is_similar_sheet_name(gm.get("map_name_ja", ""), hm.get("map_name_ja", ""))
+    if same_name and (year_close or g_year is None or h_year is None):
+        return True
+
+    # 3. 空間的中心点の一致 + (発行年±2年以内 または 名称類似)
+    same_space = is_same_spatial_sheet(gm.get("bounds"), hm.get("bounds"))
+    if same_space and (year_close or same_name):
+        return True
+
+    return False
 
 
 def normalize_hro_eeg(raw: dict) -> dict:
@@ -33,9 +101,9 @@ def normalize_hro_eeg(raw: dict) -> dict:
             "map_type": raw.get("map_type", "geological_map_sheet"),
             "theme": raw.get("theme", "geology"),
             "geometry_model": raw.get("geometry_model", "map_sheet"),
-            "scale_denominator": raw.get("scale_denominator", 50000),
+            "scale_denominator": int(raw.get("scale_denominator", 50000)),
             "series": raw.get("series", "5万分の1地質図幅（北海道）"),
-            "published_year": raw.get("published_year"),
+            "published_year": to_int_year(raw.get("published_year")),
             "authors": raw.get("authors", []),
             "authors_ja": raw.get("authors", []),
             "authors_en": raw.get("authors_en", []),
@@ -71,19 +139,11 @@ def normalize_hro_eeg(raw: dict) -> dict:
 
 
 def merge_without_duplicates(gsj_records: list[dict], hro_records: list[dict]) -> list[dict]:
-    """GSJカタログを優先し、重複する北海道総研レコードを除外して結合する。"""
-    existing_keys = set()
-    for rec in gsj_records:
-        m = rec.get("map", {})
-        key = (normalize_sheet_key(m.get("map_name_ja", "")), m.get("published_year"))
-        existing_keys.add(key)
-
+    """GSJカタログを優先し、空間・識別子・名称/発行年で重複する北海道総研レコードを除外して結合する。"""
     merged = list(gsj_records)
-    for rec in hro_records:
-        m = rec.get("map", {})
-        key = (normalize_sheet_key(m.get("map_name_ja", "")), m.get("published_year"))
-        if key not in existing_keys:
-            existing_keys.add(key)
-            merged.append(rec)
+    for hro_rec in hro_records:
+        if any(is_duplicate_record(gsj_rec, hro_rec) for gsj_rec in gsj_records):
+            continue
+        merged.append(hro_rec)
 
     return merged

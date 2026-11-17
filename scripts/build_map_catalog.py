@@ -439,8 +439,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--output",
-        default="data/map_catalog.json",
-        help="出力するJSONファイルのパス",
+        default="data/providers/gsj_50k_raw.json",
+        help="出力する生のGSJ 5万分の1 JSONファイルのパス（既定: data/providers/gsj_50k_raw.json）",
     )
     parser.add_argument(
         "--geojson-output",
