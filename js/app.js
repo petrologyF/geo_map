@@ -72,6 +72,7 @@
     indexLayerGroup: null,
     allItems: [],
     filteredItems: [],
+    selectedDecades: new Set(),
     suggestionPool: [],
     currentSuggestions: [],
     activeSuggestionIndex: -1,
@@ -84,13 +85,10 @@
    * DOM要素のキャッシュ
    */
   const dom = {
-    floatingPanel: document.getElementById('floating-panel'),
     fitAllBtn: document.getElementById('fit-all-btn'),
-    togglePanelBtn: document.getElementById('toggle-panel-btn'),
     searchInput: document.getElementById('search-input'),
     searchSuggestions: document.getElementById('search-suggestions'),
-    yearMinInput: document.getElementById('year-min'),
-    yearMaxInput: document.getElementById('year-max'),
+    decadeChips: document.getElementById('decade-chips'),
     resetFiltersBtn: document.getElementById('reset-filters'),
     basemapButtons: document.querySelectorAll('.segmented-btn[data-basemap]'),
     resultCount: document.getElementById('result-count'),
@@ -101,34 +99,13 @@
     clearWmsBtn: document.getElementById('clear-wms-btn'),
     wmsOpacitySlider: document.getElementById('wms-opacity'),
     wmsOpacityValue: document.getElementById('wms-opacity-value'),
-    legendPanel: document.getElementById('legend-panel'),
+    legendSidebar: document.getElementById('legend-sidebar'),
     legendMapName: document.getElementById('legend-map-name'),
-    toggleLegendBtn: document.getElementById('toggle-legend-btn'),
     legendOpenLink: document.getElementById('legend-open-link'),
-    legendBody: document.getElementById('legend-body'),
     legendImage: document.getElementById('legend-image'),
-    resultListSection: document.getElementById('result-list-section'),
-    toggleListBtn: document.getElementById('toggle-list-btn'),
     resultList: document.getElementById('result-list'),
     statusMessage: document.getElementById('status-message')
   };
-
-  /**
-   * HTML特殊文字をエスケープする
-   * @param {string|number|null|undefined} value - エスケープ対象の値
-   * @returns {string} エスケープ済み文字列
-   */
-  function escapeHtml(value) {
-    if (value === null || value === undefined) {
-      return '';
-    }
-    return String(value)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
 
   /**
    * URLが安全なスキーム（http/https）であるか検証する
@@ -154,8 +131,8 @@
    */
   function normalizeProperties(props = {}) {
     const mapNameJa = props.map_name_ja || props.map_name || props.map_name_en || '名称不明';
-    const mapNameEn = props.map_name_ja || props.map_name ? (props.map_name_en || '') : '';
-    const authorsJa = Array.isArray(props.authors_ja)
+    const mapNameEn = (props.map_name_ja || props.map_name) ? (props.map_name_en || '') : '';
+    const authorsJa = Array.isArray(props.authors_ja) && props.authors_ja.length > 0
       ? props.authors_ja.join('・')
       : (props.authors || (Array.isArray(props.authors_en) ? props.authors_en.join(', ') : ''));
     const authorsEn = Array.isArray(props.authors_en)
@@ -199,15 +176,6 @@
       props.related_resources?.catalog_url
     ].find((url) => isSafeUrl(url)) || '';
 
-    const searchTokens = [
-      mapNameJa,
-      mapNameEn,
-      authorsJa,
-      authorsEn,
-      mapCode,
-      prefectures
-    ].join(' ').toLowerCase();
-
     const authorList = [];
     if (Array.isArray(props.authors_ja)) {
       authorList.push(...props.authors_ja);
@@ -218,6 +186,15 @@
       authorList.push(...props.authors_en);
     }
     const cleanAuthorList = [...new Set(authorList.map((a) => String(a).trim()).filter(Boolean))];
+
+    const searchTokens = [
+      mapNameJa,
+      mapNameEn,
+      authorsJa,
+      authorsEn,
+      mapCode,
+      prefectures
+    ].join(' ').toLowerCase();
 
     return {
       mapId,
@@ -342,7 +319,7 @@
     // 図郭ポリゴン管理用のレイヤーグループを追加
     state.indexLayerGroup = L.layerGroup().addTo(map);
 
-    // 地図移動・ズーム完了時に画面内で最も広く表示されている図幅の凡例を更新
+    // 地図移動・ズーム完了時に現在表示中の地質図のうち最も広いものの凡例を更新
     map.on('moveend', updateDominantLegend);
 
     return map;
@@ -359,59 +336,6 @@
       throw new Error(`図幅インデックスの読み込みに失敗しました (HTTP ${response.status})`);
     }
     return response.json();
-  }
-
-  /**
-   * ポップアップ用のHTMLコンテンツを生成する
-   * @param {Object} meta - normalizeProperties() の返却オブジェクト
-   * @returns {string} ポップアップHTML文字列
-   */
-  function buildPopupContent(meta) {
-    const title = escapeHtml(meta.mapNameJa);
-    const subtitle = meta.mapNameEn
-      ? `<p class="map-popup-subtitle">${escapeHtml(meta.mapNameEn)}</p>`
-      : '';
-    const publishedYear = meta.publishedYear != null
-      ? `${escapeHtml(meta.publishedYear)}年`
-      : '不明';
-
-    const rows = [
-      `<dt>発行年</dt><dd>${publishedYear}</dd>`,
-      `<dt>著者</dt><dd>${escapeHtml(meta.authorsJa)}</dd>`
-    ];
-
-    if (meta.publisher) {
-      rows.push(`<dt>発行</dt><dd>${escapeHtml(meta.publisher)}</dd>`);
-    }
-    if (meta.prefectures) {
-      rows.push(`<dt>地域</dt><dd>${escapeHtml(meta.prefectures)}</dd>`);
-    }
-
-    const links = [];
-    if (meta.detailUrl) {
-      links.push(`<a class="map-popup-link" href="${escapeHtml(meta.detailUrl)}" target="_blank" rel="noopener noreferrer">詳細情報</a>`);
-    }
-    if (meta.pdfUrl) {
-      links.push(`<a class="map-popup-link" href="${escapeHtml(meta.pdfUrl)}" target="_blank" rel="noopener noreferrer">説明書PDF</a>`);
-    }
-    if (meta.originalImageUrl) {
-      links.push(`<a class="map-popup-link" href="${escapeHtml(meta.originalImageUrl)}" target="_blank" rel="noopener noreferrer">原図JPG</a>`);
-    }
-
-    const linksHtml = links.length > 0
-      ? `<div class="map-popup-links">${links.join('')}</div>`
-      : '';
-
-    return `
-      <div class="map-popup">
-        <h2 class="map-popup-title">${title}</h2>
-        ${subtitle}
-        <dl class="map-popup-meta">
-          ${rows.join('')}
-        </dl>
-        ${linksHtml}
-      </div>
-    `;
   }
 
   /**
@@ -465,20 +389,25 @@
   }
 
   /**
-   * 右手フローティング凡例パネルの表示内容を更新する
+   * 右サイドバーの地質凡例パネルの表示内容を更新する
    * @param {Object|null} item - 表示対象の図幅アイテム（nullで非表示）
    */
   function renderLegendPanel(item) {
+    const wasHidden = dom.legendSidebar.hidden;
+
     if (!item || !item.meta.legendImageUrl) {
       state.dominantLegendItem = null;
-      dom.legendPanel.hidden = true;
+      dom.legendSidebar.hidden = true;
       dom.legendMapName.textContent = '';
       dom.legendImage.removeAttribute('src');
       dom.legendOpenLink.href = '#';
+      if (!wasHidden && state.map) {
+        state.map.invalidateSize();
+      }
       return;
     }
 
-    if (state.dominantLegendItem === item && !dom.legendPanel.hidden) {
+    if (state.dominantLegendItem === item && !dom.legendSidebar.hidden) {
       return;
     }
 
@@ -487,20 +416,15 @@
     dom.legendImage.src = item.meta.legendImageUrl;
     dom.legendImage.alt = `${item.meta.mapNameJa} 凡例`;
     dom.legendOpenLink.href = item.meta.legendImageUrl;
-    dom.legendPanel.hidden = false;
+    dom.legendSidebar.hidden = false;
+
+    if (wasHidden && state.map) {
+      state.map.invalidateSize();
+    }
   }
 
   /**
-   * 指定した図幅アイテムが現在オーバーレイ表示中か判定する
-   * @param {Object} item - 図幅アイテム
-   * @returns {boolean} 表示中ならtrue
-   */
-  function isItemOverlayed(item) {
-    return state.activeOverlays.some((entry) => entry.item === item);
-  }
-
-  /**
-   * 現在オーバーレイ表示されている地質図の中で最も広く表示されているものを特定し、右手の凡例パネルを更新する
+   * 現在オーバーレイ表示されている地質図の中で最も広く表示されているものを特定し、右サイドバーの凡例を更新する
    */
   function updateDominantLegend() {
     if (!state.map || state.activeOverlays.length === 0) {
@@ -528,7 +452,16 @@
   }
 
   /**
-   * 左パネルの「表示中の地質図（最大4件）」リストを描画する
+   * 指定した図幅アイテムが現在オーバーレイ表示中か判定する
+   * @param {Object} item - 図幅アイテム
+   * @returns {boolean} 表示中ならtrue
+   */
+  function isItemOverlayed(item) {
+    return state.activeOverlays.some((entry) => entry.item === item);
+  }
+
+  /**
+   * 左サイドバーの「表示中の地質図（最大4件）」リストを描画する
    */
   function renderActiveOverlayList() {
     dom.activeOverlayList.innerHTML = '';
@@ -545,13 +478,17 @@
     const fragment = document.createDocumentFragment();
 
     state.activeOverlays.forEach(({ item }) => {
+      const { meta } = item;
       const li = document.createElement('li');
       li.className = 'active-overlay-item';
 
+      const topRow = document.createElement('div');
+      topRow.className = 'active-overlay-top';
+
       const label = document.createElement('span');
       label.className = 'active-overlay-label';
-      label.textContent = item.meta.mapNameJa;
-      label.title = `${item.meta.mapNameJa} にズーム`;
+      label.textContent = meta.mapNameJa;
+      label.title = `${meta.mapNameJa} にズーム`;
       label.addEventListener('click', () => zoomToMapItem(item));
 
       const btns = document.createElement('div');
@@ -561,7 +498,7 @@
       zoomBtn.type = 'button';
       zoomBtn.className = 'icon-button';
       zoomBtn.title = 'この図幅にズーム';
-      zoomBtn.setAttribute('aria-label', `${item.meta.mapNameJa} にズーム`);
+      zoomBtn.setAttribute('aria-label', `${meta.mapNameJa} にズーム`);
       zoomBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>';
       zoomBtn.addEventListener('click', () => zoomToMapItem(item));
 
@@ -569,12 +506,41 @@
       removeBtn.type = 'button';
       removeBtn.className = 'icon-button';
       removeBtn.title = 'この地質図を閉じる';
-      removeBtn.setAttribute('aria-label', `${item.meta.mapNameJa} を閉じる`);
+      removeBtn.setAttribute('aria-label', `${meta.mapNameJa} を閉じる`);
       removeBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
       removeBtn.addEventListener('click', () => removeOverlayByItem(item));
 
       btns.append(zoomBtn, removeBtn);
-      li.append(label, btns);
+      topRow.append(label, btns);
+
+      const metaRow = document.createElement('div');
+      metaRow.className = 'active-overlay-meta';
+      const yearText = meta.publishedYear != null ? `${meta.publishedYear}年` : '年不明';
+      const infoSpan = document.createElement('span');
+      infoSpan.textContent = `${yearText} / ${meta.authorsJa}`;
+      metaRow.appendChild(infoSpan);
+
+      if (meta.detailUrl) {
+        const detailLink = document.createElement('a');
+        detailLink.className = 'active-overlay-link';
+        detailLink.href = meta.detailUrl;
+        detailLink.target = '_blank';
+        detailLink.rel = 'noopener noreferrer';
+        detailLink.textContent = '詳細情報';
+        metaRow.appendChild(detailLink);
+      }
+
+      if (meta.pdfUrl) {
+        const pdfLink = document.createElement('a');
+        pdfLink.className = 'active-overlay-link';
+        pdfLink.href = meta.pdfUrl;
+        pdfLink.target = '_blank';
+        pdfLink.rel = 'noopener noreferrer';
+        pdfLink.textContent = 'PDF';
+        metaRow.appendChild(pdfLink);
+      }
+
+      li.append(topRow, metaRow);
       fragment.appendChild(li);
     });
 
@@ -704,41 +670,11 @@
   }
 
   /**
-   * 図幅アイテムを選択し、ポップアップ表示・タイルオーバーレイ（最大4件）・強調スタイルを適用する
-   * @param {Object} item - { layer, meta } オブジェクト
-   * @param {L.LatLng} [latlng] - ポップアップ表示座標（省略時はポリゴン中心）
-   */
-  function selectMapItem(item, latlng) {
-    const { layer, meta } = item;
-
-    // A. クリック地点（または図郭中心）にポップアップを表示
-    const popupLatLng = latlng || layer.getBounds().getCenter();
-    L.popup({ maxWidth: 300 })
-      .setLatLng(popupLatLng)
-      .setContent(buildPopupContent(meta))
-      .openOn(state.map);
-
-    // B. タイル/WMSレイヤーを追加（最大4つまで同時比較可能）
-    addOverlayForItem(item);
-  }
-
-  /**
    * 選択中の図幅の範囲（bounds優先）へマップをズームする
    * @param {Object} item - { layer, meta } オブジェクト
    */
   function zoomToMapItem(item) {
-    if (!item) {
-      return;
-    }
-
-    let bounds = null;
-    if (item.meta.bounds) {
-      const [west, south, east, north] = item.meta.bounds;
-      bounds = L.latLngBounds([[south, west], [north, east]]);
-    } else if (item.layer.getBounds) {
-      bounds = item.layer.getBounds();
-    }
-
+    const bounds = getItemBounds(item);
     if (bounds && bounds.isValid()) {
       state.map.fitBounds(bounds, { padding: [48, 48], maxZoom: item.meta.zoomMax });
     }
@@ -756,13 +692,9 @@
   }
 
   /**
-   * 絞り込み結果リストを描画する（展開時のみDOM構築）
+   * 絞り込み結果リストを描画する（常時表示）
    */
   function renderResultList() {
-    if (dom.resultList.hidden) {
-      return;
-    }
-
     dom.resultList.innerHTML = '';
     const fragment = document.createDocumentFragment();
     const displayItems = state.filteredItems.slice(0, CONFIG.MAX_LIST_ITEMS);
@@ -797,7 +729,7 @@
       button.append(mainSpan, yearSpan);
       button.addEventListener('click', () => {
         zoomToMapItem(item);
-        selectMapItem(item);
+        addOverlayForItem(item);
       });
 
       li.appendChild(button);
@@ -820,21 +752,58 @@
   }
 
   /**
+   * データ内の発行年から10年ごとの年代マルチセレクトチップを生成する
+   */
+  function renderDecadeChips() {
+    const decades = new Set();
+    state.allItems.forEach(({ meta }) => {
+      const year = Number(meta.publishedYear);
+      if (meta.publishedYear !== null && !Number.isNaN(year)) {
+        decades.add(Math.floor(year / 10) * 10);
+      }
+    });
+
+    const sortedDecades = [...decades].sort((a, b) => a - b);
+    dom.decadeChips.innerHTML = '';
+
+    const fragment = document.createDocumentFragment();
+    sortedDecades.forEach((decade) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'decade-chip';
+      btn.textContent = `${decade}年代`;
+      btn.dataset.decade = String(decade);
+      btn.setAttribute('aria-pressed', 'false');
+
+      btn.addEventListener('click', () => {
+        if (state.selectedDecades.has(decade)) {
+          state.selectedDecades.delete(decade);
+          btn.classList.remove('is-selected');
+          btn.setAttribute('aria-pressed', 'false');
+        } else {
+          state.selectedDecades.add(decade);
+          btn.classList.add('is-selected');
+          btn.setAttribute('aria-pressed', 'true');
+        }
+        applyFilters();
+      });
+
+      fragment.appendChild(btn);
+    });
+
+    dom.decadeChips.appendChild(fragment);
+  }
+
+  /**
    * GeoJSONデータからポリゴンレイヤー群を生成してマップに描画する
    * @param {Object} geojsonData - GeoJSON FeatureCollection
    */
   function renderGeoJsonFeatures(geojsonData) {
-    const years = [];
-
     const geoJsonLayer = L.geoJSON(geojsonData, {
       style: () => CONFIG.POLYGON_STYLE.default,
       onEachFeature: (feature, layer) => {
         const meta = normalizeProperties(feature.properties);
         const item = { layer, meta };
-
-        if (typeof meta.publishedYear === 'number' && !Number.isNaN(meta.publishedYear)) {
-          years.push(meta.publishedYear);
-        }
 
         // ホバー時の図幅名ツールチップ
         layer.bindTooltip(buildTooltipText(meta), {
@@ -857,9 +826,9 @@
           }
         });
 
-        // クリック時のイベント登録
-        layer.on('click', (event) => {
-          selectMapItem(item, event.latlng);
+        // クリック時は左サイドバーのオーバーレイ管理へ追加（最大4図幅）
+        layer.on('click', () => {
+          addOverlayForItem(item);
         });
 
         state.allItems.push(item);
@@ -875,19 +844,10 @@
       state.map.fitBounds(bounds, { padding: [48, 48], maxZoom: 11 });
     }
 
-    // 発行年入力のプレースホルダーにデータの最小・最大年を反映
-    if (years.length > 0) {
-      const minYear = Math.min(...years);
-      const maxYear = Math.max(...years);
-      dom.yearMinInput.min = minYear;
-      dom.yearMaxInput.max = maxYear;
-      dom.yearMinInput.placeholder = `${minYear}`;
-      dom.yearMaxInput.placeholder = `${maxYear}`;
-    }
-
-    dom.resultListSection.hidden = state.allItems.length === 0;
+    renderDecadeChips();
     updateResultCount(state.allItems.length, state.allItems.length);
     buildSuggestionPool();
+    renderResultList();
     updateDominantLegend();
   }
 
@@ -955,7 +915,7 @@
 
     if (suggestion.type === 'map' && suggestion.item) {
       zoomToMapItem(suggestion.item);
-      selectMapItem(suggestion.item);
+      addOverlayForItem(suggestion.item);
     } else {
       fitAllVisibleItems();
     }
@@ -1057,30 +1017,24 @@
   }
 
   /**
-   * 検索文字列と発行年範囲に基づき、図郭ポリゴンを即時フィルタリングする
+   * 検索文字列と選択中の年代チップに基づき、図郭ポリゴンを即時フィルタリングする
    */
   function applyFilters() {
     const query = dom.searchInput.value.trim().toLowerCase();
-    const minYearRaw = dom.yearMinInput.value.trim();
-    const maxYearRaw = dom.yearMaxInput.value.trim();
-    const minYear = minYearRaw !== '' ? Number(minYearRaw) : null;
-    const maxYear = maxYearRaw !== '' ? Number(maxYearRaw) : null;
-
+    const hasDecadeFilter = state.selectedDecades.size > 0;
     const nextFiltered = [];
 
     state.allItems.forEach((item) => {
       const { layer, meta } = item;
       const year = Number(meta.publishedYear);
+      const decade = (meta.publishedYear !== null && !Number.isNaN(year))
+        ? Math.floor(year / 10) * 10
+        : null;
 
-      // テキスト一致判定（図幅名・著者名・図幅コード・地域）
       const matchesText = !query || meta.searchTokens.includes(query);
+      const matchesDecade = !hasDecadeFilter || (decade !== null && state.selectedDecades.has(decade));
 
-      // 発行年範囲判定
-      const hasValidYear = meta.publishedYear !== null && !Number.isNaN(year);
-      const matchesMinYear = minYear === null || (hasValidYear && year >= minYear);
-      const matchesMaxYear = maxYear === null || (hasValidYear && year <= maxYear);
-
-      const isVisible = matchesText && matchesMinYear && matchesMaxYear;
+      const isVisible = matchesText && matchesDecade;
 
       if (isVisible) {
         if (!state.indexLayerGroup.hasLayer(layer)) {
@@ -1095,7 +1049,6 @@
     state.filteredItems = nextFiltered;
     updateResultCount(nextFiltered.length, state.allItems.length);
     renderResultList();
-    updateDominantLegend();
   }
 
   /**
@@ -1103,43 +1056,12 @@
    */
   function resetFilters() {
     dom.searchInput.value = '';
-    dom.yearMinInput.value = '';
-    dom.yearMaxInput.value = '';
+    state.selectedDecades.clear();
+    dom.decadeChips.querySelectorAll('.decade-chip').forEach((chip) => {
+      chip.classList.remove('is-selected');
+      chip.setAttribute('aria-pressed', 'false');
+    });
     applyFilters();
-  }
-
-  /**
-   * パネル全体の折りたたみ状態を切り替える
-   */
-  function togglePanel() {
-    const isCollapsed = dom.floatingPanel.classList.toggle('is-collapsed');
-    dom.togglePanelBtn.setAttribute('aria-expanded', String(!isCollapsed));
-    dom.togglePanelBtn.title = isCollapsed ? 'パネルを展開する' : 'パネルを折りたたむ';
-  }
-
-  /**
-   * 該当図幅リストの開閉を切り替える
-   */
-  function toggleResultList() {
-    const willExpand = dom.resultList.hidden;
-    dom.resultList.hidden = !willExpand;
-    dom.toggleListBtn.setAttribute('aria-expanded', String(willExpand));
-    dom.toggleListBtn.querySelector('span').textContent = willExpand
-      ? '該当図幅一覧を隠す'
-      : '該当図幅一覧を表示';
-
-    if (willExpand) {
-      renderResultList();
-    }
-  }
-
-  /**
-   * 凡例パネル全体の折りたたみ状態を切り替える
-   */
-  function toggleLegend() {
-    const isCollapsed = dom.legendPanel.classList.toggle('is-collapsed');
-    dom.toggleLegendBtn.setAttribute('aria-expanded', String(!isCollapsed));
-    dom.toggleLegendBtn.title = isCollapsed ? '凡例を展開する' : '凡例を折りたたむ';
   }
 
   /**
@@ -1158,7 +1080,7 @@
   }
 
   /**
-   * キーボードショートカットを処理する（`/` または `Ctrl+K` で検索フォーカス、`Esc` でポップアップ閉じ）
+   * キーボードショートカットを処理する（`/` または `Ctrl+K` で検索フォーカス）
    * @param {KeyboardEvent} event - キーダウンイベント
    */
   function handleGlobalKeydown(event) {
@@ -1166,20 +1088,14 @@
 
     if ((event.key === '/' && !isInputFocused) || ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k')) {
       event.preventDefault();
-      if (dom.floatingPanel.classList.contains('is-collapsed')) {
-        togglePanel();
-      }
       dom.searchInput.focus();
       dom.searchInput.select();
       return;
     }
 
-    if (event.key === 'Escape') {
-      if (isInputFocused) {
-        document.activeElement.blur();
-      } else if (state.map) {
-        state.map.closePopup();
-      }
+    if (event.key === 'Escape' && isInputFocused) {
+      document.activeElement.blur();
+      hideSuggestions();
     }
   }
 
@@ -1195,16 +1111,11 @@
     dom.searchInput.addEventListener('blur', hideSuggestions);
     dom.searchInput.addEventListener('keydown', handleSearchKeydown);
 
-    dom.yearMinInput.addEventListener('input', applyFilters);
-    dom.yearMaxInput.addEventListener('input', applyFilters);
     dom.resetFiltersBtn.addEventListener('click', () => {
       hideSuggestions();
       resetFilters();
     });
     dom.fitAllBtn.addEventListener('click', fitAllVisibleItems);
-    dom.togglePanelBtn.addEventListener('click', togglePanel);
-    dom.toggleListBtn.addEventListener('click', toggleResultList);
-    dom.toggleLegendBtn.addEventListener('click', toggleLegend);
     dom.clearWmsBtn.addEventListener('click', clearAllOverlays);
     dom.wmsOpacitySlider.addEventListener('input', handleOpacityChange);
 
