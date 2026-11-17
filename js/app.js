@@ -1628,7 +1628,7 @@
    * @param {Object} geojsonData - GeoJSON FeatureCollection
    */
   function renderGeoJsonFeatures(geojsonData) {
-    const geoJsonLayer = L.geoJSON(geojsonData, {
+    L.geoJSON(geojsonData, {
       style: (feature) => styleByScale(
         feature?.properties?.map?.scale_denominator ?? null,
         feature?.properties?.map?.map_type ?? 'geological_map_sheet'
@@ -1670,10 +1670,9 @@
 
     state.filteredItems = [...state.allItems];
 
-    // GeoJSONのバウンディングボックスがあれば初期表示領域に合わせる
-    const bounds = geoJsonLayer.getBounds();
-    if (bounds.isValid()) {
-      state.map.fitBounds(bounds, { padding: [48, 48], maxZoom: 11 });
+    // 標準では5万分の1(1:50,000)のみ表示する
+    if (state.allItems.some(({ meta }) => meta.scale === '1:50,000')) {
+      state.selectedScales.add('1:50,000');
     }
 
     renderMapTypeChips();
@@ -1682,10 +1681,9 @@
     renderRegionChips();
     renderAuthorChips();
     renderOtherChips();
-    updateActiveFilterBadge();
-    updateResultCount(state.allItems.length, state.allItems.length);
     buildSuggestionPool();
-    renderResultList();
+    applyFilters();
+    fitAllVisibleItems();
     updateDominantLegend();
   }
 
