@@ -152,37 +152,6 @@
           >
           <span id="wms-opacity-value" class="wms-opacity-value">85%</span>
         </div>
-
-        <!-- 凡例画像プレビュー（legend_image_url がある場合のみ表示） -->
-        <div id="legend-section" class="legend-section" hidden>
-          <div class="legend-header">
-            <button
-              type="button"
-              id="toggle-legend-btn"
-              class="legend-toggle-button"
-              aria-expanded="true"
-              aria-controls="legend-body"
-            >
-              <span>地質凡例</span>
-              <svg class="list-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="6 9 12 15 18 9"></polyline>
-              </svg>
-            </button>
-            <a
-              id="legend-open-link"
-              class="legend-external-link"
-              href="#"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="凡例を新しいタブで拡大表示"
-            >
-              拡大
-            </a>
-          </div>
-          <div id="legend-body" class="legend-body">
-            <img id="legend-image" class="legend-image" src="" alt="地質図凡例" loading="lazy">
-          </div>
-        </div>
       </div>
 
       <!-- 絞り込み結果リスト -->
@@ -204,6 +173,44 @@
 
       <!-- エラー・ステータス通知用 -->
       <p id="status-message" class="status-message" role="status" hidden></p>
+    </div>
+  </aside>
+
+  <!-- 右手フローティング地質凡例パネル（画面内で最も広く表示されている図幅の凡例を表示） -->
+  <aside id="legend-panel" class="floating-panel legend-floating-panel" aria-label="地質凡例" hidden>
+    <div class="panel-header legend-panel-header">
+      <div class="legend-title-group">
+        <h2 class="legend-panel-title">地質凡例</h2>
+        <span id="legend-map-name" class="legend-map-name"></span>
+      </div>
+      <div class="panel-header-actions">
+        <a
+          id="legend-open-link"
+          class="legend-external-link"
+          href="#"
+          target="_blank"
+          rel="noopener noreferrer"
+          title="凡例を新しいタブで拡大表示"
+        >
+          拡大
+        </a>
+        <button
+          type="button"
+          id="toggle-legend-btn"
+          class="icon-button subtle"
+          title="凡例を折りたたむ"
+          aria-label="凡例を折りたたむ"
+          aria-expanded="true"
+          aria-controls="legend-body"
+        >
+          <svg class="chevron-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="18 15 12 9 6 15"></polyline>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div id="legend-body" class="legend-body">
+      <img id="legend-image" class="legend-image" src="" alt="地質図凡例" loading="lazy">
     </div>
   </aside>
 

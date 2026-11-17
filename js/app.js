@@ -56,6 +56,7 @@
     filteredItems: [],
     activeOverlayLayer: null,
     selectedItem: null,
+    dominantLegendItem: null,
     overlayOpacity: CONFIG.DEFAULT_OVERLAY_OPACITY
   };
 
@@ -77,7 +78,8 @@
     clearWmsBtn: document.getElementById('clear-wms-btn'),
     wmsOpacitySlider: document.getElementById('wms-opacity'),
     wmsOpacityValue: document.getElementById('wms-opacity-value'),
-    legendSection: document.getElementById('legend-section'),
+    legendPanel: document.getElementById('legend-panel'),
+    legendMapName: document.getElementById('legend-map-name'),
     toggleLegendBtn: document.getElementById('toggle-legend-btn'),
     legendOpenLink: document.getElementById('legend-open-link'),
     legendBody: document.getElementById('legend-body'),
@@ -257,6 +259,9 @@
     // 図郭ポリゴン管理用のレイヤーグループを追加
     state.indexLayerGroup = L.layerGroup().addTo(map);
 
+    // 地図移動・ズーム完了時に画面内で最も広く表示されている図幅の凡例を更新
+    map.on('moveend', updateDominantLegend);
+
     return map;
   }
 
@@ -337,22 +342,97 @@
   }
 
   /**
-   * 凡例プレビューセクションを更新する
-   * @param {string} legendUrl - 凡例画像のURL
-   * @param {string} mapName - 代替テキスト用の図幅名
+   * 図幅アイテムの LatLngBounds を取得する
+   * @param {Object} item - { layer, meta } オブジェクト
+   * @returns {L.LatLngBounds|null} 境界オブジェクト
    */
-  function updateLegendDisplay(legendUrl, mapName) {
-    if (!legendUrl) {
-      dom.legendSection.hidden = true;
+  function getItemBounds(item) {
+    if (!item) {
+      return null;
+    }
+    if (item.meta.bounds) {
+      const [west, south, east, north] = item.meta.bounds;
+      return L.latLngBounds([[south, west], [north, east]]);
+    }
+    if (item.layer && typeof item.layer.getBounds === 'function') {
+      return item.layer.getBounds();
+    }
+    return null;
+  }
+
+  /**
+   * 2つの LatLngBounds の交差面積（緯度経度矩形の積）を計算する
+   * @param {L.LatLngBounds} boundsA
+   * @param {L.LatLngBounds} boundsB
+   * @returns {number} 交差面積（交差しない場合は 0）
+   */
+  function computeIntersectionArea(boundsA, boundsB) {
+    if (!boundsA || !boundsB || !boundsA.isValid() || !boundsB.isValid()) {
+      return 0;
+    }
+    const west = Math.max(boundsA.getWest(), boundsB.getWest());
+    const east = Math.min(boundsA.getEast(), boundsB.getEast());
+    const south = Math.max(boundsA.getSouth(), boundsB.getSouth());
+    const north = Math.min(boundsA.getNorth(), boundsB.getNorth());
+
+    if (east <= west || north <= south) {
+      return 0;
+    }
+    return (east - west) * (north - south);
+  }
+
+  /**
+   * 右手フローティング凡例パネルの表示内容を更新する
+   * @param {Object|null} item - 表示対象の図幅アイテム（nullで非表示）
+   */
+  function renderLegendPanel(item) {
+    if (!item || !item.meta.legendImageUrl) {
+      state.dominantLegendItem = null;
+      dom.legendPanel.hidden = true;
+      dom.legendMapName.textContent = '';
       dom.legendImage.removeAttribute('src');
       dom.legendOpenLink.href = '#';
       return;
     }
 
-    dom.legendImage.src = legendUrl;
-    dom.legendImage.alt = `${mapName} 凡例`;
-    dom.legendOpenLink.href = legendUrl;
-    dom.legendSection.hidden = false;
+    if (state.dominantLegendItem === item && !dom.legendPanel.hidden) {
+      return;
+    }
+
+    state.dominantLegendItem = item;
+    dom.legendMapName.textContent = item.meta.mapNameJa;
+    dom.legendImage.src = item.meta.legendImageUrl;
+    dom.legendImage.alt = `${item.meta.mapNameJa} 凡例`;
+    dom.legendOpenLink.href = item.meta.legendImageUrl;
+    dom.legendPanel.hidden = false;
+  }
+
+  /**
+   * 現在の地図表示範囲内で最も広く表示されている地質図を特定し、右手の凡例パネルを更新する
+   */
+  function updateDominantLegend() {
+    if (!state.map || state.filteredItems.length === 0) {
+      renderLegendPanel(null);
+      return;
+    }
+
+    const viewBounds = state.map.getBounds();
+    let bestItem = null;
+    let maxArea = 0;
+
+    state.filteredItems.forEach((item) => {
+      if (!item.meta.legendImageUrl) {
+        return;
+      }
+      const itemBounds = getItemBounds(item);
+      const area = computeIntersectionArea(viewBounds, itemBounds);
+      if (area > maxArea) {
+        maxArea = area;
+        bestItem = item;
+      }
+    });
+
+    renderLegendPanel(bestItem);
   }
 
   /**
@@ -370,7 +450,6 @@
     dom.wmsStatusDot.classList.remove('is-loading');
     dom.activeWmsBar.hidden = true;
     dom.activeWmsName.textContent = '';
-    updateLegendDisplay('', '');
     syncSelectedListItem();
   }
 
@@ -387,7 +466,6 @@
 
     if (!meta.overlayType || !meta.overlayUrl) {
       dom.activeWmsBar.hidden = true;
-      updateLegendDisplay(meta.legendImageUrl, meta.mapNameJa);
       setStatusMessage('この図幅には利用可能なタイルURLまたはWMS URLがありません。');
       return;
     }
@@ -444,7 +522,6 @@
     state.activeOverlayLayer = layer.addTo(state.map);
     dom.activeWmsName.textContent = `表示中: ${meta.mapNameJa}`;
     dom.activeWmsBar.hidden = false;
-    updateLegendDisplay(meta.legendImageUrl, meta.mapNameJa);
   }
 
   /**
@@ -641,6 +718,7 @@
 
     dom.resultListSection.hidden = state.allItems.length === 0;
     updateResultCount(state.allItems.length, state.allItems.length);
+    updateDominantLegend();
   }
 
   /**
@@ -682,6 +760,7 @@
     state.filteredItems = nextFiltered;
     updateResultCount(nextFiltered.length, state.allItems.length);
     renderResultList();
+    updateDominantLegend();
   }
 
   /**
@@ -720,12 +799,12 @@
   }
 
   /**
-   * 凡例プレビューの開閉を切り替える
+   * 凡例パネル全体の折りたたみ状態を切り替える
    */
   function toggleLegend() {
-    const willExpand = dom.legendBody.hidden;
-    dom.legendBody.hidden = !willExpand;
-    dom.toggleLegendBtn.setAttribute('aria-expanded', String(willExpand));
+    const isCollapsed = dom.legendPanel.classList.toggle('is-collapsed');
+    dom.toggleLegendBtn.setAttribute('aria-expanded', String(!isCollapsed));
+    dom.toggleLegendBtn.title = isCollapsed ? '凡例を展開する' : '凡例を折りたたむ';
   }
 
   /**
