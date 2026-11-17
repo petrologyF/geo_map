@@ -31,6 +31,7 @@
     MAX_LIST_ITEMS: 100,
     MAX_SUGGESTIONS: 10,
     MAX_OVERLAYS: 4,
+    LOUPE_ZOOM: 2.5,
     DEFAULT_OVERLAY_OPACITY: 0.85,
     WMS_OPTIONS: {
       layers: 'geo_A',
@@ -70,8 +71,14 @@
     ja: {
       appTitle: '5万分の1地質図幅',
       searchPlaceholder: '図幅名または著者で検索',
+      filterAccordionLabel: '詳細フィルター',
       decadeLabel: '発行年（複数選択可）',
       decadeUnit: '年代',
+      authorFilterLabel: '著者（複数選択可）',
+      otherFilterLabel: 'その他（発行機関・資料）',
+      flagPdf: '説明書PDFあり',
+      flagLegend: '凡例あり',
+      flagOriginal: '原図JPGあり',
       reset: 'リセット',
       basemapLabel: '背景地図',
       basemapPale: '淡色',
@@ -104,8 +111,14 @@
     en: {
       appTitle: '1:50K GeoMap',
       searchPlaceholder: 'Search by map name or author',
+      filterAccordionLabel: 'Filters',
       decadeLabel: 'Published Decade (Multi-select)',
       decadeUnit: 's',
+      authorFilterLabel: 'Authors (Multi-select)',
+      otherFilterLabel: 'Other (Publisher / Resources)',
+      flagPdf: 'Has PDF',
+      flagLegend: 'Has Legend',
+      flagOriginal: 'Has Original JPG',
       reset: 'Reset',
       basemapLabel: 'Basemap',
       basemapPale: 'Pale',
@@ -148,6 +161,9 @@
     allItems: [],
     filteredItems: [],
     selectedDecades: new Set(),
+    selectedAuthors: new Set(),
+    selectedPublishers: new Set(),
+    selectedResourceFlags: new Set(),
     suggestionPool: [],
     currentSuggestions: [],
     activeSuggestionIndex: -1,
@@ -165,8 +181,16 @@
     fitAllBtn: document.getElementById('fit-all-btn'),
     searchInput: document.getElementById('search-input'),
     searchSuggestions: document.getElementById('search-suggestions'),
+    toggleFiltersBtn: document.getElementById('toggle-filters-btn'),
+    filterAccordionLabel: document.getElementById('filter-accordion-label'),
+    activeFilterBadge: document.getElementById('active-filter-badge'),
+    filterPanelBody: document.getElementById('filter-panel-body'),
     decadeLabel: document.getElementById('decade-label'),
     decadeChips: document.getElementById('decade-chips'),
+    authorFilterLabel: document.getElementById('author-filter-label'),
+    authorChips: document.getElementById('author-chips'),
+    otherFilterLabel: document.getElementById('other-filter-label'),
+    otherChips: document.getElementById('other-chips'),
     resetFiltersBtn: document.getElementById('reset-filters'),
     basemapLabel: document.getElementById('basemap-label'),
     basemapButtons: document.querySelectorAll('.segmented-btn[data-basemap]'),
@@ -188,7 +212,9 @@
     legendPanelTitle: document.getElementById('legend-panel-title'),
     legendMapName: document.getElementById('legend-map-name'),
     legendOpenLink: document.getElementById('legend-open-link'),
+    legendZoomWrapper: document.getElementById('legend-zoom-wrapper'),
     legendImage: document.getElementById('legend-image'),
+    legendLoupe: document.getElementById('legend-loupe'),
     resultListLabel: document.getElementById('result-list-label'),
     resultList: document.getElementById('result-list'),
     statusMessage: document.getElementById('status-message')
@@ -497,8 +523,51 @@
   }
 
   /**
+   * 凡例画像の拡大鏡（ルーペ）を非表示にする
+   */
+  function hideLegendLoupe() {
+    dom.legendLoupe.hidden = true;
+  }
+
+  /**
+   * 凡例画像のホバー位置に合わせて拡大鏡（ルーペ）を更新する
+   * @param {MouseEvent} event - マウス移動イベント
+   */
+  function updateLegendLoupe(event) {
+    if (dom.legendImage.hidden || !dom.legendImage.src || !dom.legendImage.complete || dom.legendImage.naturalWidth === 0) {
+      hideLegendLoupe();
+      return;
+    }
+
+    const rect = dom.legendImage.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      hideLegendLoupe();
+      return;
+    }
+
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    if (x < 0 || y < 0 || x > rect.width || y > rect.height) {
+      hideLegendLoupe();
+      return;
+    }
+
+    const zoom = CONFIG.LOUPE_ZOOM;
+    const loupeRadius = dom.legendLoupe.offsetWidth / 2 || 80;
+
+    dom.legendLoupe.style.left = `${x}px`;
+    dom.legendLoupe.style.top = `${y}px`;
+    dom.legendLoupe.style.backgroundImage = `url("${dom.legendImage.src}")`;
+    dom.legendLoupe.style.backgroundSize = `${rect.width * zoom}px ${rect.height * zoom}px`;
+    dom.legendLoupe.style.backgroundPosition = `${-(x * zoom - loupeRadius)}px ${-(y * zoom - loupeRadius)}px`;
+    dom.legendLoupe.hidden = false;
+  }
+
+  /**
    * 右サイドバー（最広表示図幅の詳細情報 & 地質凡例）の表示内容を更新する
    * @param {Object|null} item - 表示対象の図幅アイテム（nullで非表示）
+   * @param {boolean} [forceUpdate=false] - 同一アイテムでも強制再描画するか
    */
   function renderLegendPanel(item, forceUpdate = false) {
     const wasHidden = dom.legendSidebar.hidden;
@@ -506,6 +575,7 @@
 
     if (!item) {
       state.dominantLegendItem = null;
+      hideLegendLoupe();
       dom.legendSidebar.hidden = true;
       dom.dominantInfoTitle.textContent = '';
       dom.dominantInfoSubtitle.textContent = '';
@@ -991,6 +1061,147 @@
   }
 
   /**
+   * 現在の言語の著者一覧からマルチセレクトチップを生成する
+   */
+  function renderAuthorChips() {
+    const authorsSet = new Set();
+    state.allItems.forEach(({ meta }) => {
+      getLocalizedMeta(meta).authorList.forEach((author) => authorsSet.add(author));
+    });
+
+    const sortedAuthors = [...authorsSet].sort((a, b) => a.localeCompare(b, state.lang));
+    dom.authorChips.innerHTML = '';
+
+    const fragment = document.createDocumentFragment();
+    sortedAuthors.forEach((author) => {
+      const isSelected = state.selectedAuthors.has(author);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = isSelected ? 'decade-chip is-selected' : 'decade-chip';
+      btn.textContent = author;
+      btn.setAttribute('aria-pressed', String(isSelected));
+
+      btn.addEventListener('click', () => {
+        if (state.selectedAuthors.has(author)) {
+          state.selectedAuthors.delete(author);
+          btn.classList.remove('is-selected');
+          btn.setAttribute('aria-pressed', 'false');
+        } else {
+          state.selectedAuthors.add(author);
+          btn.classList.add('is-selected');
+          btn.setAttribute('aria-pressed', 'true');
+        }
+        applyFilters();
+      });
+
+      fragment.appendChild(btn);
+    });
+
+    dom.authorChips.appendChild(fragment);
+  }
+
+  /**
+   * 発行機関および資料有無（PDF・凡例・原図）のマルチセレクトチップを生成する
+   */
+  function renderOtherChips() {
+    const dict = t();
+    const publishers = new Set();
+    state.allItems.forEach(({ meta }) => {
+      const pub = getLocalizedMeta(meta).publisher;
+      if (pub) {
+        publishers.add(pub);
+      }
+    });
+
+    dom.otherChips.innerHTML = '';
+    const fragment = document.createDocumentFragment();
+
+    [...publishers].sort((a, b) => a.localeCompare(b, state.lang)).forEach((pub) => {
+      const isSelected = state.selectedPublishers.has(pub);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = isSelected ? 'decade-chip is-selected' : 'decade-chip';
+      btn.textContent = pub;
+      btn.setAttribute('aria-pressed', String(isSelected));
+
+      btn.addEventListener('click', () => {
+        if (state.selectedPublishers.has(pub)) {
+          state.selectedPublishers.delete(pub);
+          btn.classList.remove('is-selected');
+          btn.setAttribute('aria-pressed', 'false');
+        } else {
+          state.selectedPublishers.add(pub);
+          btn.classList.add('is-selected');
+          btn.setAttribute('aria-pressed', 'true');
+        }
+        applyFilters();
+      });
+
+      fragment.appendChild(btn);
+    });
+
+    const resourceFlags = [
+      ['pdf', dict.flagPdf],
+      ['legend', dict.flagLegend],
+      ['original', dict.flagOriginal]
+    ];
+
+    resourceFlags.forEach(([flagKey, label]) => {
+      const isSelected = state.selectedResourceFlags.has(flagKey);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = isSelected ? 'decade-chip is-selected' : 'decade-chip';
+      btn.textContent = label;
+      btn.setAttribute('aria-pressed', String(isSelected));
+
+      btn.addEventListener('click', () => {
+        if (state.selectedResourceFlags.has(flagKey)) {
+          state.selectedResourceFlags.delete(flagKey);
+          btn.classList.remove('is-selected');
+          btn.setAttribute('aria-pressed', 'false');
+        } else {
+          state.selectedResourceFlags.add(flagKey);
+          btn.classList.add('is-selected');
+          btn.setAttribute('aria-pressed', 'true');
+        }
+        applyFilters();
+      });
+
+      fragment.appendChild(btn);
+    });
+
+    dom.otherChips.appendChild(fragment);
+  }
+
+  /**
+   * 適用中の詳細フィルター数バッジを更新する
+   */
+  function updateActiveFilterBadge() {
+    const count =
+      state.selectedDecades.size +
+      state.selectedAuthors.size +
+      state.selectedPublishers.size +
+      state.selectedResourceFlags.size;
+
+    if (count > 0) {
+      dom.activeFilterBadge.textContent = String(count);
+      dom.activeFilterBadge.hidden = false;
+    } else {
+      dom.activeFilterBadge.textContent = '0';
+      dom.activeFilterBadge.hidden = true;
+    }
+  }
+
+  /**
+   * 詳細フィルターの折りたたみ状態を切り替える
+   */
+  function toggleFiltersPanel() {
+    const willExpand = dom.filterPanelBody.hidden;
+    dom.filterPanelBody.hidden = !willExpand;
+    dom.toggleFiltersBtn.setAttribute('aria-expanded', String(willExpand));
+  }
+
+  /**
    * GeoJSONデータからポリゴンレイヤー群を生成してマップに描画する
    * @param {Object} geojsonData - GeoJSON FeatureCollection
    */
@@ -1041,6 +1252,9 @@
     }
 
     renderDecadeChips();
+    renderAuthorChips();
+    renderOtherChips();
+    updateActiveFilterBadge();
     updateResultCount(state.allItems.length, state.allItems.length);
     buildSuggestionPool();
     renderResultList();
@@ -1220,19 +1434,38 @@
   function applyFilters() {
     const query = dom.searchInput.value.trim().toLowerCase();
     const hasDecadeFilter = state.selectedDecades.size > 0;
+    const hasAuthorFilter = state.selectedAuthors.size > 0;
+    const hasPublisherFilter = state.selectedPublishers.size > 0;
+    const hasFlagFilter = state.selectedResourceFlags.size > 0;
     const nextFiltered = [];
 
     state.allItems.forEach((item) => {
       const { layer, meta } = item;
+      const loc = getLocalizedMeta(meta);
       const year = Number(meta.publishedYear);
       const decade = (meta.publishedYear !== null && !Number.isNaN(year))
         ? Math.floor(year / 10) * 10
         : null;
 
-      const matchesText = !query || getLocalizedMeta(meta).searchTokens.includes(query);
+      const matchesText = !query || loc.searchTokens.includes(query);
       const matchesDecade = !hasDecadeFilter || (decade !== null && state.selectedDecades.has(decade));
+      const matchesAuthor = !hasAuthorFilter || loc.authorList.some((a) => state.selectedAuthors.has(a));
+      const matchesPublisher = !hasPublisherFilter || state.selectedPublishers.has(loc.publisher);
 
-      const isVisible = matchesText && matchesDecade;
+      let matchesFlags = true;
+      if (hasFlagFilter) {
+        if (state.selectedResourceFlags.has('pdf') && !meta.pdfUrl) {
+          matchesFlags = false;
+        }
+        if (state.selectedResourceFlags.has('legend') && !meta.legendImageUrl) {
+          matchesFlags = false;
+        }
+        if (state.selectedResourceFlags.has('original') && !meta.originalImageUrl) {
+          matchesFlags = false;
+        }
+      }
+
+      const isVisible = matchesText && matchesDecade && matchesAuthor && matchesPublisher && matchesFlags;
 
       if (isVisible) {
         if (!state.indexLayerGroup.hasLayer(layer)) {
@@ -1245,6 +1478,7 @@
     });
 
     state.filteredItems = nextFiltered;
+    updateActiveFilterBadge();
     updateResultCount(nextFiltered.length, state.allItems.length);
     renderResultList();
   }
@@ -1255,7 +1489,10 @@
   function resetFilters() {
     dom.searchInput.value = '';
     state.selectedDecades.clear();
-    dom.decadeChips.querySelectorAll('.decade-chip').forEach((chip) => {
+    state.selectedAuthors.clear();
+    state.selectedPublishers.clear();
+    state.selectedResourceFlags.clear();
+    document.querySelectorAll('.decade-chip.is-selected').forEach((chip) => {
       chip.classList.remove('is-selected');
       chip.setAttribute('aria-pressed', 'false');
     });
@@ -1317,7 +1554,10 @@
     dom.appTitle.textContent = dict.appTitle;
     dom.searchInput.placeholder = dict.searchPlaceholder;
     dom.searchInput.setAttribute('aria-label', dict.searchPlaceholder);
+    dom.filterAccordionLabel.textContent = dict.filterAccordionLabel;
     dom.decadeLabel.textContent = dict.decadeLabel;
+    dom.authorFilterLabel.textContent = dict.authorFilterLabel;
+    dom.otherFilterLabel.textContent = dict.otherFilterLabel;
     dom.resetFiltersBtn.textContent = dict.reset;
     dom.basemapLabel.textContent = dict.basemapLabel;
     dom.clearWmsBtn.textContent = dict.clearAll;
@@ -1347,7 +1587,11 @@
     });
 
     hideSuggestions();
+    state.selectedAuthors.clear();
+    state.selectedPublishers.clear();
     renderDecadeChips();
+    renderAuthorChips();
+    renderOtherChips();
     buildSuggestionPool();
     applyFilters();
     renderActiveOverlayList();
@@ -1368,6 +1612,7 @@
     dom.searchInput.addEventListener('blur', hideSuggestions);
     dom.searchInput.addEventListener('keydown', handleSearchKeydown);
 
+    dom.toggleFiltersBtn.addEventListener('click', toggleFiltersPanel);
     dom.resetFiltersBtn.addEventListener('click', () => {
       hideSuggestions();
       resetFilters();
@@ -1375,6 +1620,10 @@
     dom.fitAllBtn.addEventListener('click', fitAllVisibleItems);
     dom.clearWmsBtn.addEventListener('click', clearAllOverlays);
     dom.wmsOpacitySlider.addEventListener('input', handleOpacityChange);
+
+    dom.legendZoomWrapper.addEventListener('mouseenter', updateLegendLoupe);
+    dom.legendZoomWrapper.addEventListener('mousemove', updateLegendLoupe);
+    dom.legendZoomWrapper.addEventListener('mouseleave', hideLegendLoupe);
 
     dom.basemapButtons.forEach((btn) => {
       btn.addEventListener('click', () => switchBasemap(btn.dataset.basemap));

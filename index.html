@@ -82,16 +82,52 @@
           <ul id="search-suggestions" class="search-suggestions" role="listbox" hidden></ul>
         </div>
 
-        <!-- 発行年（10年ごとの年代マルチセレクト） -->
-        <div class="filter-group">
-          <div class="filter-label-row">
-            <span id="decade-label" class="filter-label">発行年（複数選択可）</span>
+        <!-- 折りたたみ式フィルター（発行年・著者・その他） -->
+        <section class="filter-accordion" aria-label="詳細フィルター">
+          <div class="filter-accordion-header">
+            <button
+              type="button"
+              id="toggle-filters-btn"
+              class="filter-accordion-toggle"
+              aria-expanded="false"
+              aria-controls="filter-panel-body"
+            >
+              <span class="filter-toggle-title-group">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                </svg>
+                <span id="filter-accordion-label">詳細フィルター</span>
+                <span id="active-filter-badge" class="active-filter-badge" hidden>0</span>
+              </span>
+              <svg class="accordion-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
             <button type="button" id="reset-filters" class="text-button" title="検索条件をリセット">
               リセット
             </button>
           </div>
-          <div id="decade-chips" class="decade-chips" role="group" aria-label="発行年代フィルタ"></div>
-        </div>
+
+          <div id="filter-panel-body" class="filter-panel-body" hidden>
+            <!-- 発行年（10年ごとの年代マルチセレクト） -->
+            <div class="filter-group">
+              <span id="decade-label" class="filter-label">発行年（複数選択可）</span>
+              <div id="decade-chips" class="decade-chips" role="group" aria-label="発行年代フィルタ"></div>
+            </div>
+
+            <!-- 著者マルチセレクト -->
+            <div class="filter-group">
+              <span id="author-filter-label" class="filter-label">著者（複数選択可）</span>
+              <div id="author-chips" class="decade-chips author-chips" role="group" aria-label="著者フィルタ"></div>
+            </div>
+
+            <!-- その他の情報（発行機関・資料有無） -->
+            <div class="filter-group">
+              <span id="other-filter-label" class="filter-label">その他（発行機関・資料）</span>
+              <div id="other-chips" class="decade-chips" role="group" aria-label="その他フィルタ"></div>
+            </div>
+          </div>
+        </section>
 
         <!-- 背景地図切替 -->
         <div class="basemap-row" role="group" aria-label="背景地図の切り替え">
@@ -191,7 +227,10 @@
         </a>
       </div>
       <div class="legend-sidebar-body">
-        <img id="legend-image" class="legend-image" src="" alt="地質図凡例" loading="lazy">
+        <div id="legend-zoom-wrapper" class="legend-zoom-wrapper">
+          <img id="legend-image" class="legend-image" src="" alt="地質図凡例" loading="lazy">
+          <div id="legend-loupe" class="legend-loupe" hidden aria-hidden="true"></div>
+        </div>
       </div>
     </aside>
   </div>
