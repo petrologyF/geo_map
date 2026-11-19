@@ -3,6 +3,22 @@
 import re
 
 
+def clean_author_name(name: str) -> str:
+    """著者名から分割時に残った不対の括弧などを除去する。"""
+    cleaned = re.sub(r"[\s　]+", " ", str(name or "")).strip()
+    if not cleaned:
+        return ""
+    if (cleaned.startswith("(") and ")" not in cleaned) or (cleaned.startswith("（") and "）" not in cleaned):
+        cleaned = cleaned[1:].strip()
+    if (cleaned.endswith(")") and "(" not in cleaned) or (cleaned.endswith("）") and "（" not in cleaned):
+        cleaned = cleaned[:-1].strip()
+    if (cleaned.startswith("(") and cleaned.endswith(")")) or (cleaned.startswith("（") and cleaned.endswith("）")):
+        inner = cleaned[1:-1].strip()
+        if inner:
+            cleaned = inner
+    return cleaned
+
+
 def to_int_year(value) -> int | None:
     """発行年を安全に整数へ変換する。"""
     if isinstance(value, bool):
@@ -68,9 +84,9 @@ def normalize_gsj_50k(raw: dict) -> dict:
             "scale_denominator": 50000,
             "series": raw.get("series_ja") or raw.get("series_en") or "地域地質研究報告（5万分の1地質図幅）",
             "published_year": to_int_year(raw.get("published_year")),
-            "authors": raw.get("authors_ja") or raw.get("authors_en") or [],
-            "authors_ja": raw.get("authors_ja") or [],
-            "authors_en": raw.get("authors_en") or [],
+            "authors": [a for a in (clean_author_name(x) for x in (raw.get("authors_ja") or raw.get("authors_en") or [])) if a],
+            "authors_ja": [a for a in (clean_author_name(x) for x in (raw.get("authors_ja") or [])) if a],
+            "authors_en": [a for a in (clean_author_name(x) for x in (raw.get("authors_en") or [])) if a],
             "publisher": raw.get("publisher_ja") or raw.get("publisher_en") or "",
             "publisher_ja": raw.get("publisher_ja") or "",
             "publisher_en": raw.get("publisher_en") or "",

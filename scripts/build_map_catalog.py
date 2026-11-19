@@ -12,6 +12,7 @@ import argparse
 import json
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from urllib.parse import urljoin
 
@@ -257,12 +258,15 @@ def extract_japanese_metadata(catalog_url: str) -> dict:
 
     raw_authors = kv.get("著者", "")
     if raw_authors:
+        cleaned_raw = re.sub(r"^[\s　]*[（(](.+)[）)][\s　]*$", r"\1", raw_authors.strip())
         authors = [
-            re.sub(r"[\s　]+", " ", a).strip()
-            for a in re.split(r"[・,、]", raw_authors)
+            re.sub(r"[\s　]+", " ", a).strip(" ()（）")
+            if ("(" in a) != (")" in a) or ("（" in a) != ("）" in a)
+            else re.sub(r"[\s　]+", " ", a).strip()
+            for a in re.split(r"[・,、]", cleaned_raw)
             if a.strip()
         ]
-        result["authors_ja"] = authors
+        result["authors_ja"] = [a for a in authors if a]
 
     result["publisher_ja"] = kv.get("発行者", "")
     result["series_ja"] = series_ja
@@ -422,6 +426,14 @@ def record_to_geojson_feature(record: dict) -> dict | None:
     }
 
 
+def discover_series_map_ids(series: str) -> list[str]:
+    """GSJ LD のシリーズ一覧ページからすべての map_id を抽出する。"""
+    index_url = f"https://gbank.gsj.jp/ld/resource/publication/map/{series}/"
+    html = fetch_text(index_url)
+    ids = set(re.findall(rf"/{re.escape(series)}/map(\d+)", html))
+    return sorted(ids, key=lambda x: int(x))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="GSJ 5万分の1地質図幅のメタデータから Leaflet 用 map_catalog.json を生成する"
@@ -429,8 +441,13 @@ def main() -> None:
     parser.add_argument(
         "--map-id",
         nargs="+",
-        required=True,
+        default=[],
         help="GSJ の map_id（例: 507 または 00507）",
+    )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="指定シリーズ一覧ページから全図幅の map_id を自動取得して収集する",
     )
     parser.add_argument(
         "--series",
@@ -450,27 +467,77 @@ def main() -> None:
     parser.add_argument(
         "--delay",
         type=float,
-        default=1.0,
+        default=0.2,
         help="複数図幅取得時のリクエスト間隔（秒）",
+    )
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=8,
+        help="並列取得のワーカー数（既定: 8）",
     )
     args = parser.parse_args()
 
-    records: list[dict] = []
+    target_ids: list[str] = list(args.map_id)
+    if args.all:
+        discovered = discover_series_map_ids(args.series)
+        print(f"シリーズ {args.series} から {len(discovered)} 件の map_id を検出しました。")
+        seen = set(target_ids)
+        for mid in discovered:
+            if mid not in seen:
+                target_ids.append(mid)
+                seen.add(mid)
 
-    for index, raw_map_id in enumerate(args.map_id):
+    if not target_ids:
+        parser.error("--map-id または --all のいずれかを指定してください。")
+
+    def fetch_one(index: int, raw_map_id: str) -> tuple[int, str, dict | None, str]:
         padded_id = str(raw_map_id).strip().zfill(5)
         metadata_url = BASE_URL.format(series=args.series, map_id=padded_id)
-        print(f"取得中: {metadata_url}")
-
+        if args.delay > 0 and args.workers <= 1 and index > 0:
+            time.sleep(args.delay)
         try:
             record = build_record(metadata_url, args.series)
-            records.append(record)
-            print(f"  OK: {record['map_name_en'] or record['layer_name']}")
+            return index, metadata_url, record, ""
         except Exception as error:
-            print(f"  ERROR: {error}")
+            return index, metadata_url, None, str(error)
 
-        if index < len(args.map_id) - 1 and args.delay > 0:
-            time.sleep(args.delay)
+    indexed_records: list[tuple[int, dict]] = []
+    errors: list[tuple[str, str]] = []
+
+    if args.workers > 1:
+        with ThreadPoolExecutor(max_workers=args.workers) as executor:
+            futures = [
+                executor.submit(fetch_one, idx, mid)
+                for idx, mid in enumerate(target_ids)
+            ]
+            done_count = 0
+            for future in as_completed(futures):
+                idx, url, record, err = future.result()
+                done_count += 1
+                if record is not None:
+                    indexed_records.append((idx, record))
+                    if done_count % 50 == 0 or done_count == len(target_ids):
+                        print(f"進捗: {done_count}/{len(target_ids)} (成功: {len(indexed_records)}, スキップ/エラー: {len(errors)})")
+                else:
+                    errors.append((url, err))
+    else:
+        for idx, mid in enumerate(target_ids):
+            _, url, record, err = fetch_one(idx, mid)
+            if record is not None:
+                indexed_records.append((idx, record))
+                print(f"  OK ({len(indexed_records)}): {record['map_name_en'] or record['layer_name']}")
+            else:
+                errors.append((url, err))
+                print(f"  ERROR: {url} -> {err}")
+
+    indexed_records.sort(key=lambda item: item[0])
+    records: list[dict] = [rec for _, rec in indexed_records]
+
+    if errors:
+        print(f"スキップ/エラー件数: {len(errors)} 件（先頭5件）:")
+        for url, err in errors[:5]:
+            print(f"  - {url}: {err}")
 
     output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -496,7 +563,7 @@ def main() -> None:
             )
         print(f"GeoJSON を保存しました: {geojson_path}")
 
-    print(f"取得成功: {len(records)} 件 / 対象: {len(args.map_id)} 件")
+    print(f"取得成功: {len(records)} 件 / 対象: {len(target_ids)} 件")
 
 
 if __name__ == "__main__":

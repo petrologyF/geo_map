@@ -30,9 +30,9 @@ class TestSchemaAndProviders(unittest.TestCase):
         self.geojson = json.loads(self.geojson_path.read_text(encoding="utf-8"))
 
     def test_existing_data_passes_strict_validation(self) -> None:
-        """既存の map_catalog.json (20件) と map_index.geojson (19件) がすべて厳格スキーマ検証を通過すること。"""
-        self.assertEqual(len(self.catalog), 20)
-        self.assertEqual(len(self.geojson["features"]), 19)
+        """既存の map_catalog.json と map_index.geojson の全件が厳格スキーマ検証を通過すること。"""
+        self.assertGreaterEqual(len(self.catalog), 770)
+        self.assertGreaterEqual(len(self.geojson["features"]), 769)
         for rec in self.catalog:
             validate_common_record(rec)
         for feat in self.geojson["features"]:

@@ -7,7 +7,14 @@
   const CONFIG = {
     GEOJSON_URL: 'data/map_index.geojson',
     SEAMLESS_PROVIDER_URL: 'data/providers/gsj_seamless_200k.json',
+    SEAMLESS_LEGEND_API_URL: 'https://gbank.gsj.jp/seamless/v2/api/1.2/legend.json',
     BASEMAPS: {
+      blank: {
+        url: 'https://cyberjapandata.gsi.go.jp/xyz/blank/{z}/{x}/{y}.png',
+        attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer">地理院タイル（白地図）</a>',
+        maxNativeZoom: 14,
+        maxZoom: 18
+      },
       pale: {
         url: 'https://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png',
         attribution: '<a href="https://maps.gsi.go.jp/development/ichiran.html" target="_blank" rel="noopener noreferrer">地理院タイル（淡色）</a>',
@@ -32,8 +39,21 @@
     MAX_LIST_ITEMS: 100,
     MAX_SUGGESTIONS: 10,
     MAX_OVERLAYS: 4,
-    LOUPE_ZOOM: 2.5,
+    LOUPE_ZOOM: 2.8,
     DEFAULT_OVERLAY_OPACITY: 0.85,
+    DEFAULT_SEAMLESS_OPACITY: 0.65,
+    SETTINGS_STORAGE_KEY: 'geomap_settings_v1',
+    DEFAULT_SETTINGS: {
+      basemap: 'blank',
+      showIndexFrames: true,
+      viewportOnly: false,
+      seamless200k: false,
+      seamlessOpacity: 0.65,
+      seamlessQueryPriority: false,
+      overlayOpacity: 0.85,
+      theme: '',
+      lang: 'ja'
+    },
     WMS_OPTIONS: {
       layers: 'geo_A',
       transparent: true,
@@ -42,25 +62,25 @@
     },
     POLYGON_STYLE: {
       default: {
-        color: '#1a73e8',
-        weight: 1.5,
-        opacity: 0.55,
-        fillColor: '#1a73e8',
-        fillOpacity: 0.03
-      },
-      hover: {
-        color: '#174ea6',
-        weight: 2.2,
+        color: '#1557b0',
+        weight: 1.8,
         opacity: 0.85,
         fillColor: '#1a73e8',
-        fillOpacity: 0.12
+        fillOpacity: 0.08
+      },
+      hover: {
+        color: '#0d47a1',
+        weight: 2.6,
+        opacity: 0.98,
+        fillColor: '#1a73e8',
+        fillOpacity: 0.2
       },
       selected: {
-        color: '#1967d2',
-        weight: 2.5,
-        opacity: 0.95,
+        color: '#0b57d0',
+        weight: 3,
+        opacity: 1,
         fillColor: '#1a73e8',
-        fillOpacity: 0.08
+        fillOpacity: 0.14
       }
     }
   };
@@ -70,8 +90,7 @@
    */
   const I18N = {
     ja: {
-      appTitle: '地質図検索',
-      searchPlaceholder: '図幅名・火山名・著者で検索',
+      searchPlaceholder: '図幅名・火山名・著者・地域で検索',
       mapTypeLabel: '地図種別',
       mapTypeAll: 'すべて',
       mapTypes: {
@@ -88,24 +107,30 @@
       },
       viewportOnlyLabel: '表示範囲内のみ',
       showIndexLabel: '図郭枠を表示',
-      seamless200kLabel: '20万分の1 シームレス (全国WMS)',
+      seamless200kLabel: '20万分の1 シームレス地質図 V2',
+      seamlessOpacityLabel: 'シームレス透過度',
+      seamlessQueryLabel: '地点の地質を調べる',
+      seamlessLoading: '地質情報を取得中...',
+      seamlessNoData: 'この地点の地質データはありません（海域・範囲外）',
+      seamlessFetchError: '地質情報の取得に失敗しました。',
+      seamlessGroupLabel: '大区分',
+      seamlessAgeLabel: '時代',
+      seamlessLithologyLabel: '岩相',
       filterAccordionLabel: '詳細フィルター',
       decadeLabel: '発行年',
       scaleFilterLabel: '縮尺・シリーズ',
-      regionFilterLabel: '地域（複数選択可）',
-      authorFilterLabel: '著者（複数選択可）',
-      otherFilterLabel: 'その他（発行機関・資料）',
+      otherFilterLabel: '資料有無',
       flagPdf: '説明書PDFあり',
       flagLegend: '凡例あり',
       flagOriginal: '原図JPGあり',
       reset: 'リセット',
       basemapLabel: '背景地図',
+      basemapBlank: '白地図',
       basemapPale: '淡色',
       basemapStd: '標準',
-      basemapPhoto: '航空写真',
-      activeMapsTitle: (n, max) => `表示中の地質図 (${n}/${max})`,
+      basemapPhoto: '写真',
+      activeMapsTitle: (n, max) => (n > 0 ? `表示中の地質図 (${n}/${max})` : '図幅インスペクタ'),
       clearAll: 'すべて閉じる',
-      opacity: '透過度',
       resultListLabel: '該当図幅一覧',
       resultCount: (v, t) => `${v} / ${t} 件`,
       noMatch: '条件に一致する図幅がありません',
@@ -113,7 +138,12 @@
       badgeMap: '図幅',
       badgeVolcano: '火山',
       badgeAuthor: '著者',
-      eyebrow: '表示中の図幅詳細',
+      badgeRegion: '地域',
+      suggestionGroupMaps: '図幅・火山',
+      suggestionGroupRegions: '地域',
+      suggestionGroupAuthors: '著者',
+      pinnedLabel: '固定',
+      unpinTitle: '固定を解除して自動追従に戻す',
       mapTypeFieldLabel: '種別',
       volcanoLabel: '火山名',
       yearLabel: '発行年',
@@ -128,10 +158,9 @@
       linkPdf: '説明書を見る',
       linkFullPdf: '詳細版PDF',
       linkOriginal: '原図JPG',
-      legendTitle: '地質凡例',
-      sectionTitle: '地質断面図',
       tabLegend: '凡例',
       tabSections: '断面図',
+      tabDetail: '詳細・PDF',
       legendOpen: '拡大',
       legendNone: '凡例画像なし',
       unknownAuthor: '不明',
@@ -139,30 +168,29 @@
       moveDownTitle: '背面へ移動',
       zoomTitle: 'この図幅にズーム',
       closeTitle: 'この地質図を閉じる',
-      fitAllTitle: '表示中の全図幅にズーム (f)',
-      themeToggleTitle: 'ダークモード切り替え (d)',
-      shortcutHelpTitle: 'キーボードショートカット (?)',
-      closeDetailTitle: '詳細パネルを閉じる',
-      shortcutModalTitle: 'キーボードショートカット',
-      shortcuts: [
-        [['/', 'Ctrl+K'], '検索欄にフォーカス'],
-        [['m'], '地図にフォーカスを移動'],
-        [['l'], '該当図幅一覧にフォーカスを移動'],
-        [['↑', '↓'], '一覧内の図幅を上下移動'],
-        [['f'], '表示中の全図幅にズーム'],
-        [['i'], '図郭枠の表示/非表示を切り替え'],
-        [['s'], '20万分の1シームレスを切り替え'],
-        [['b'], '背景地図（淡色/標準/写真）を切り替え'],
-        [['[', ']'], '透過度を 10% 減少 / 増加'],
-        [['x'], '表示中の地質図をすべて閉じる'],
-        [['d'], 'ダークモード / ライトモード切替'],
-        [['?'], 'ショートカット一覧を表示/閉じる'],
-        [['Esc'], 'ヘルプ・検索・フォーカスを解除']
-      ]
+      fitAllTitle: '絞り込み中の全図幅にズーム',
+      collapseRightTitle: 'パネルを折りたたむ',
+      reopenRightLabel: '凡例',
+      reopenRightTitle: '凡例・詳細パネルを開く',
+      toggleDrawerCollapse: '検索・一覧パネルを閉じる',
+      toggleDrawerExpand: '検索・一覧パネルを開く',
+      layersBtnTitle: '背景地図・レイヤー',
+      prefsBtnTitle: '環境設定',
+      prefsThemeLabel: 'テーマ',
+      prefsThemeLight: 'ライト',
+      prefsThemeDark: 'ダーク',
+      prefsLangLabel: '表示言語',
+      prefsResetLabel: '初期設定に戻す',
+      mobileTabMap: '地図',
+      mobileTabSearch: '検索・一覧',
+      mobileTabLegend: '凡例・詳細',
+      loadErrorCount: '読込エラー',
+      loadErrorMessage: '図幅データの読み込みに失敗しました。',
+      tileErrorMessage: (name) => `「${name}」の地質図タイルを取得できませんでした。`,
+      seamlessMissingMessage: '20万分の1シームレス地質図の設定が読み込まれていません。'
     },
     en: {
-      appTitle: 'GeoMap Search',
-      searchPlaceholder: 'Search map, volcano, or author',
+      searchPlaceholder: 'Search map, volcano, author, or region',
       mapTypeLabel: 'Map Type',
       mapTypeAll: 'All',
       mapTypes: {
@@ -179,24 +207,30 @@
       },
       viewportOnlyLabel: 'In map view only',
       showIndexLabel: 'Show map frames',
-      seamless200kLabel: '1:200K Seamless (WMS)',
+      seamless200kLabel: '1:200K Seamless GeoMap V2',
+      seamlessOpacityLabel: 'Seamless opacity',
+      seamlessQueryLabel: 'Inspect point geology',
+      seamlessLoading: 'Loading geology...',
+      seamlessNoData: 'No geological data at this point',
+      seamlessFetchError: 'Failed to fetch point geology.',
+      seamlessGroupLabel: 'Group',
+      seamlessAgeLabel: 'Age',
+      seamlessLithologyLabel: 'Lithology',
       filterAccordionLabel: 'Filters',
       decadeLabel: 'Published Year',
       scaleFilterLabel: 'Scale / Series',
-      regionFilterLabel: 'Region (Multi-select)',
-      authorFilterLabel: 'Authors (Multi-select)',
-      otherFilterLabel: 'Other (Publisher / Resources)',
+      otherFilterLabel: 'Resources',
       flagPdf: 'Has PDF',
       flagLegend: 'Has Legend',
       flagOriginal: 'Has Original JPG',
       reset: 'Reset',
       basemapLabel: 'Basemap',
+      basemapBlank: 'Blank',
       basemapPale: 'Pale',
       basemapStd: 'Std',
       basemapPhoto: 'Photo',
-      activeMapsTitle: (n, max) => `Active Maps (${n}/${max})`,
+      activeMapsTitle: (n, max) => (n > 0 ? `Active Maps (${n}/${max})` : 'Map Inspector'),
       clearAll: 'Clear all',
-      opacity: 'Opacity',
       resultListLabel: 'Matching Maps',
       resultCount: (v, t) => `${v} / ${t} maps`,
       noMatch: 'No matching maps found',
@@ -204,7 +238,12 @@
       badgeMap: 'Map',
       badgeVolcano: 'Volcano',
       badgeAuthor: 'Author',
-      eyebrow: 'Active Map Details',
+      badgeRegion: 'Region',
+      suggestionGroupMaps: 'Maps & Volcanoes',
+      suggestionGroupRegions: 'Regions',
+      suggestionGroupAuthors: 'Authors',
+      pinnedLabel: 'Pin',
+      unpinTitle: 'Unpin (resume auto-follow)',
       mapTypeFieldLabel: 'Type',
       volcanoLabel: 'Volcano',
       yearLabel: 'Year',
@@ -219,10 +258,9 @@
       linkPdf: 'View Manual',
       linkFullPdf: 'Full PDF',
       linkOriginal: 'Original JPG',
-      legendTitle: 'Legend',
-      sectionTitle: 'Sections',
       tabLegend: 'Legend',
       tabSections: 'Sections',
+      tabDetail: 'Details & PDF',
       legendOpen: 'Open',
       legendNone: 'No legend image',
       unknownAuthor: 'Unknown',
@@ -230,26 +268,26 @@
       moveDownTitle: 'Send backward',
       zoomTitle: 'Zoom to map',
       closeTitle: 'Close overlay',
-      fitAllTitle: 'Fit all visible maps (f)',
-      themeToggleTitle: 'Toggle dark mode (d)',
-      shortcutHelpTitle: 'Keyboard shortcuts (?)',
-      closeDetailTitle: 'Close details panel',
-      shortcutModalTitle: 'Keyboard Shortcuts',
-      shortcuts: [
-        [['/', 'Ctrl+K'], 'Focus search box'],
-        [['m'], 'Focus map container'],
-        [['l'], 'Focus matching maps list'],
-        [['↑', '↓'], 'Navigate items in list'],
-        [['f'], 'Fit all visible maps'],
-        [['i'], 'Toggle map frames'],
-        [['s'], 'Toggle 1:200K Seamless WMS'],
-        [['b'], 'Cycle basemap (Pale/Std/Photo)'],
-        [['[', ']'], 'Decrease / increase opacity by 10%'],
-        [['x'], 'Clear all active overlays'],
-        [['d'], 'Toggle dark / light mode'],
-        [['?'], 'Toggle shortcut help'],
-        [['Esc'], 'Close help / blur focus']
-      ]
+      fitAllTitle: 'Fit all matching maps',
+      collapseRightTitle: 'Collapse panel',
+      reopenRightLabel: 'Legend',
+      reopenRightTitle: 'Open legend & details panel',
+      toggleDrawerCollapse: 'Collapse search panel',
+      toggleDrawerExpand: 'Expand search panel',
+      layersBtnTitle: 'Basemap & Layers',
+      prefsBtnTitle: 'Preferences',
+      prefsThemeLabel: 'Theme',
+      prefsThemeLight: 'Light',
+      prefsThemeDark: 'Dark',
+      prefsLangLabel: 'Language',
+      prefsResetLabel: 'Reset to defaults',
+      mobileTabMap: 'Map',
+      mobileTabSearch: 'Search',
+      mobileTabLegend: 'Legend',
+      loadErrorCount: 'Load Error',
+      loadErrorMessage: 'Failed to load geological map index data.',
+      tileErrorMessage: (name) => `Failed to load geological map tiles for "${name}".`,
+      seamlessMissingMessage: '1:200K Seamless WMS configuration is not loaded.'
     }
   };
 
@@ -271,7 +309,7 @@
 
   const PROVIDER_EN_MAP = {
     '産業技術総合研究所 地質調査総合センター': 'Geological Survey of Japan, AIST',
-    '北海道立総合研究機構 エネルギー・環境・地質研究所': ' Geological Survey of Hokkaido, HRO'
+    '北海道立総合研究機構 エネルギー・環境・地質研究所': 'Geological Survey of Hokkaido, HRO'
   };
 
   /**
@@ -282,38 +320,47 @@
     theme: 'light',
     map: null,
     activeBaseLayer: null,
-    activeBasemapKey: 'pale',
-    lastFocusedBeforeModal: null,
+    activeBasemapKey: 'blank',
     indexLayerGroup: null,
     allItems: [],
     filteredItems: [],
     yearRange: {
       minBound: 1950,
-      maxBound: new Date().getFullYear(),
+      maxBound: 2026,
+      dataMaxYear: 2026,
       currentMin: 1950,
-      currentMax: new Date().getFullYear()
+      currentMax: 2026
     },
-    viewportOnly: false,
-    showIndexFrames: true,
     selectedMapType: 'all',
     selectedScales: new Set(),
-    selectedRegions: new Set(),
-    selectedAuthors: new Set(),
-    selectedPublishers: new Set(),
     selectedResourceFlags: new Set(),
-    suggestionPool: [],
-    currentSuggestions: [],
-    activeSuggestionIndex: -1,
+    viewportOnly: false,
+    showIndexFrames: true,
+    isLeftDrawerCollapsed: true,
+    isRightInspectorCollapsed: false,
+    hoveredListItem: null,
     activeOverlays: [],
     selectedItem: null,
-    loadingLayerCount: 0,
+    inspectedItem: null,
+    pinnedInspectItem: null,
     seamlessLayer: null,
     seamlessMeta: null,
     seamlessVirtualItem: null,
-    dominantLegendItem: null,
-    visualMode: 'legend',
+    seamlessOpacity: CONFIG.DEFAULT_SEAMLESS_OPACITY,
+    seamlessQueryPriority: false,
+    seamlessPointMarker: null,
+    seamlessPopup: null,
+    seamlessAbortController: null,
+    seamlessPointCache: new Map(),
+    lastSeamlessPoint: null,
+    loadingLayerCount: 0,
+    suggestionPool: [],
+    currentSuggestions: [],
+    activeSuggestionIndex: -1,
+    inspectorTab: 'legend',
     activeSectionIndex: 0,
-    overlayOpacity: CONFIG.DEFAULT_OVERLAY_OPACITY
+    overlayOpacity: CONFIG.DEFAULT_OVERLAY_OPACITY,
+    settings: { ...CONFIG.DEFAULT_SETTINGS }
   };
 
   /**
@@ -324,74 +371,88 @@
     mapEl: document.getElementById('map'),
     mobileNavButtons: document.querySelectorAll('.mobile-nav-btn[data-mobile-view]'),
     mobileLegendTab: document.getElementById('mobile-legend-tab'),
-    appTitle: document.getElementById('app-title'),
-    langButtons: document.querySelectorAll('.segmented-btn[data-lang]'),
-    fitAllBtn: document.getElementById('fit-all-btn'),
-    themeToggleBtn: document.getElementById('theme-toggle-btn'),
-    shortcutHelpBtn: document.getElementById('shortcut-help-btn'),
-    shortcutModal: document.getElementById('shortcut-modal'),
-    shortcutModalTitle: document.getElementById('shortcut-modal-title'),
-    closeShortcutModal: document.getElementById('close-shortcut-modal'),
-    shortcutList: document.getElementById('shortcut-list'),
+    leftDrawer: document.getElementById('left-drawer'),
+    leftDrawerWrap: document.getElementById('left-drawer-wrap'),
+    leftDrawerBody: document.getElementById('left-drawer-body'),
+    toggleLeftDrawerBtn: document.getElementById('toggle-left-drawer-btn'),
+    drawerFilterDot: document.getElementById('drawer-filter-dot'),
     searchInput: document.getElementById('search-input'),
     searchSuggestions: document.getElementById('search-suggestions'),
     mapTypeLabel: document.getElementById('map-type-label'),
     mapTypeChips: document.getElementById('map-type-chips'),
     viewportOnlyToggle: document.getElementById('viewport-only-toggle'),
     viewportOnlyLabel: document.getElementById('viewport-only-label'),
-    showIndexToggle: document.getElementById('show-index-toggle'),
-    showIndexLabel: document.getElementById('show-index-label'),
-    seamless200kToggle: document.getElementById('seamless-200k-toggle'),
-    seamless200kLabel: document.getElementById('seamless-200k-label'),
     toggleFiltersBtn: document.getElementById('toggle-filters-btn'),
     filterAccordionLabel: document.getElementById('filter-accordion-label'),
     activeFilterBadge: document.getElementById('active-filter-badge'),
+    filterPanelWrap: document.getElementById('filter-panel-wrap'),
     filterPanelBody: document.getElementById('filter-panel-body'),
     decadeLabel: document.getElementById('decade-label'),
     yearRangeDisplay: document.getElementById('year-range-display'),
     yearRangeTrack: document.getElementById('year-range-track'),
     yearRangeMin: document.getElementById('year-range-min'),
     yearRangeMax: document.getElementById('year-range-max'),
+    yearRangeTicks: document.getElementById('year-range-ticks'),
+    yearRangeLabels: document.getElementById('year-range-labels'),
     scaleFilterLabel: document.getElementById('scale-filter-label'),
     scaleChips: document.getElementById('scale-chips'),
-    regionFilterLabel: document.getElementById('region-filter-label'),
-    regionChips: document.getElementById('region-chips'),
-    authorFilterLabel: document.getElementById('author-filter-label'),
-    authorChips: document.getElementById('author-chips'),
     otherFilterLabel: document.getElementById('other-filter-label'),
     otherChips: document.getElementById('other-chips'),
     resetFiltersBtn: document.getElementById('reset-filters'),
-    basemapLabel: document.getElementById('basemap-label'),
-    basemapButtons: document.querySelectorAll('.segmented-btn[data-basemap]'),
+    statusMessage: document.getElementById('status-message'),
+    resultListLabel: document.getElementById('result-list-label'),
     resultCount: document.getElementById('result-count'),
-    activeWmsBar: document.getElementById('active-wms-bar'),
+    fitAllBtn: document.getElementById('fit-all-btn'),
+    resultList: document.getElementById('result-list'),
+    rightInspector: document.getElementById('right-inspector'),
     wmsStatusDot: document.getElementById('wms-status-dot'),
     activeWmsName: document.getElementById('active-wms-name'),
-    activeOverlayList: document.getElementById('active-overlay-list'),
     clearWmsBtn: document.getElementById('clear-wms-btn'),
-    opacityLabel: document.getElementById('opacity-label'),
-    wmsOpacitySlider: document.getElementById('wms-opacity'),
-    wmsOpacityValue: document.getElementById('wms-opacity-value'),
-    legendSidebar: document.getElementById('legend-sidebar'),
-    closeDominantBtn: document.getElementById('close-dominant-btn'),
-    dominantInfoEyebrow: document.getElementById('dominant-info-eyebrow'),
+    collapseRightBtn: document.getElementById('collapse-right-btn'),
+    reopenRightBtn: document.getElementById('reopen-right-btn'),
+    reopenRightLabel: document.getElementById('reopen-right-label'),
+    activeOverlaysSection: document.getElementById('active-overlays-section'),
+    activeOverlayList: document.getElementById('active-overlay-list'),
+    tabLegendBtn: document.getElementById('tab-legend-btn'),
+    tabSectionBtn: document.getElementById('tab-section-btn'),
+    tabDetailBtn: document.getElementById('tab-detail-btn'),
+    legendOpenLink: document.getElementById('legend-open-link'),
+    inspectorVisualPane: document.getElementById('inspector-visual-pane'),
+    inspectorDetailPane: document.getElementById('inspector-detail-pane'),
+    legendMapName: document.getElementById('legend-map-name'),
+    seamlessPointCard: document.getElementById('seamless-point-card'),
+    sectionChips: document.getElementById('section-chips'),
+    legendZoomWrapper: document.getElementById('legend-zoom-wrapper'),
+    legendImage: document.getElementById('legend-image'),
+    legendLensIndicator: document.getElementById('legend-lens-indicator'),
+    legendLoupe: document.getElementById('legend-loupe'),
+    mapBottomRightControls: document.getElementById('map-bottom-right-controls'),
     dominantInfoTitle: document.getElementById('dominant-info-title'),
     dominantInfoSubtitle: document.getElementById('dominant-info-subtitle'),
     dominantInfoMeta: document.getElementById('dominant-info-meta'),
     dominantInfoLinks: document.getElementById('dominant-info-links'),
-    legendPanelTitle: document.getElementById('legend-panel-title'),
-    legendMapName: document.getElementById('legend-map-name'),
-    visualModeTabs: document.getElementById('visual-mode-tabs'),
-    tabLegendBtn: document.getElementById('tab-legend-btn'),
-    tabSectionBtn: document.getElementById('tab-section-btn'),
-    sectionChips: document.getElementById('section-chips'),
-    legendOpenLink: document.getElementById('legend-open-link'),
-    legendZoomWrapper: document.getElementById('legend-zoom-wrapper'),
-    legendImage: document.getElementById('legend-image'),
-    legendLoupe: document.getElementById('legend-loupe'),
-    resultListLabel: document.getElementById('result-list-label'),
-    resultList: document.getElementById('result-list'),
-    statusMessage: document.getElementById('status-message')
+    layersPopoverBtn: document.getElementById('layers-popover-btn'),
+    layersPopover: document.getElementById('layers-popover'),
+    basemapLabel: document.getElementById('basemap-label'),
+    basemapButtons: document.querySelectorAll('.segmented-btn[data-basemap]'),
+    showIndexToggle: document.getElementById('show-index-toggle'),
+    showIndexLabel: document.getElementById('show-index-label'),
+    seamless200kToggle: document.getElementById('seamless-200k-toggle'),
+    seamless200kLabel: document.getElementById('seamless-200k-label'),
+    seamlessOpacityRow: document.getElementById('seamless-opacity-row'),
+    seamlessOpacityLabel: document.getElementById('seamless-opacity-label'),
+    seamlessOpacitySlider: document.getElementById('seamless-opacity'),
+    seamlessOpacityValue: document.getElementById('seamless-opacity-value'),
+    seamlessQueryRow: document.getElementById('seamless-query-row'),
+    seamlessQueryLabel: document.getElementById('seamless-query-label'),
+    seamlessQueryToggle: document.getElementById('seamless-query-toggle'),
+    prefsPopoverBtn: document.getElementById('prefs-popover-btn'),
+    prefsPopover: document.getElementById('prefs-popover'),
+    prefsThemeLabel: document.getElementById('prefs-theme-label'),
+    themeChoiceButtons: document.querySelectorAll('.segmented-btn[data-theme-choice]'),
+    prefsLangLabel: document.getElementById('prefs-lang-label'),
+    langButtons: document.querySelectorAll('.segmented-btn[data-lang]'),
+    resetSettingsBtn: document.getElementById('reset-settings-btn')
   };
 
   /**
@@ -584,9 +645,6 @@
 
   /**
    * 地図種別と縮尺分母に応じた図郭ポリゴンのデフォルトスタイルを返す
-   * @param {number|null} scaleDenominator - 縮尺分母
-   * @param {string} [mapType='geological_map_sheet'] - 地図種別
-   * @returns {Object} Leaflet Path オプション
    */
   function styleByScale(scaleDenominator, mapType = 'geological_map_sheet') {
     if (mapType === 'volcanic_geological_map') {
@@ -609,12 +667,83 @@
   }
 
   /**
-   * 現在の言語に応じた図幅タイトル・著者・発行者・検索トークンを返す
-   * @param {Object} meta - normalizeProperties() の返却オブジェクト
+   * 検索用の文字列正規化（NFKC正規化・小文字化・カタカナ→ひらがな統一）
+   */
+  function normalizeSearchText(text) {
+    if (!text) {
+      return '';
+    }
+    return String(text)
+      .normalize('NFKC')
+      .toLowerCase()
+      .replace(/[\u30a1-\u30f6]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0x60));
+  }
+
+  /**
+   * 縮尺を短縮表記（例: 1/5万 / 英語: 1:50k）へ変換する
+   */
+  function formatScaleAbbrev(scaleDenominator, scale, isEn = false) {
+    let denom = Number(scaleDenominator);
+    if (!(denom > 0) && scale && /^1:\d/.test(scale)) {
+      denom = Number(scale.replace(/^1:/, '').replace(/,/g, ''));
+    }
+    if (denom > 0) {
+      if (isEn) {
+        if (denom >= 1000000 && denom % 1000000 === 0) {
+          return `1:${denom / 1000000}M`;
+        }
+        if (denom >= 1000 && denom % 1000 === 0) {
+          return `1:${denom / 1000}k`;
+        }
+        return `1:${denom.toLocaleString('en-US')}`;
+      }
+      if (denom % 10000 === 0 || denom === 25000 || denom === 75000) {
+        return `1/${denom / 10000}万`;
+      }
+      return `1:${denom.toLocaleString('en-US')}`;
+    }
+    return scale || '';
+  }
+
+  /**
+   * 図幅名から装飾を除いた核となる図名を取り出す
+   */
+  function extractCoreMapName(rawTitle) {
+    if (!rawTitle) {
+      return '';
+    }
+    const bracketMatch = rawTitle.match(/「([^」]+)」/);
+    if (bracketMatch && bracketMatch[1]) {
+      return bracketMatch[1].trim();
+    }
+    return rawTitle
+      .replace(/^Geological Map of Japan\s+1:[\d,]+,?\s*/i, '')
+      .trim();
+  }
+
+  /**
+   * 図幅名をサジェスト・ホバー用の簡潔な略称形式（例: 1/5万 槍ヶ岳）へ整形する
+   */
+  function formatShortMapTitle(rawTitle, scaleDenominator, scale, mapType, isEn = false) {
+    const core = extractCoreMapName(rawTitle);
+    const scaleAbbrev = formatScaleAbbrev(scaleDenominator, scale, isEn);
+    if (!core) {
+      return rawTitle || '';
+    }
+    if (mapType === 'geological_map_sheet' || core !== rawTitle) {
+      return scaleAbbrev ? `${scaleAbbrev} ${core}` : core;
+    }
+    return rawTitle;
+  }
+
+  /**
+   * 現在の言語に応じた図幅タイトル・略称・著者・発行者・検索トークンを返す
    */
   function getLocalizedMeta(meta) {
     const isEn = state.lang === 'en';
     const title = isEn ? meta.mapNameEn : meta.mapNameJa;
+    const coreTitle = extractCoreMapName(title);
+    const shortTitle = formatShortMapTitle(title, meta.scaleDenominator, meta.scale, meta.mapType, isEn);
     const subtitle = isEn
       ? (meta.mapNameJa !== meta.mapNameEn ? meta.mapNameJa : '')
       : (meta.mapNameEn !== meta.mapNameJa ? meta.mapNameEn : '');
@@ -634,16 +763,24 @@
     const region = isEn
       ? (regionList.length > 0 ? regionList.join(', ') : (REGION_EN_MAP[meta.prefectures] || meta.prefectures))
       : meta.prefectures;
-    const searchTokens = isEn
-      ? `${meta.searchTokensEn} ${region.toLowerCase()} ${providerName.toLowerCase()}`
-      : meta.searchTokensJa;
+    const searchTokens = normalizeSearchText([
+      title,
+      shortTitle,
+      coreTitle,
+      meta.mapNameJa,
+      meta.mapNameEn,
+      meta.searchTokensJa,
+      meta.searchTokensEn,
+      meta.publishedYear,
+      region,
+      providerName
+    ].filter(Boolean).join(' '));
 
-    return { title, subtitle, authors, authorList, publisher, providerName, region, regionList, searchTokens };
+    return { title, shortTitle, coreTitle, subtitle, authors, authorList, publisher, providerName, region, regionList, searchTokens };
   }
 
   /**
-   * ステータスメッセージ（エラー等）を表示または非表示にする
-   * @param {string} message - 表示するメッセージ（空文字で非表示）
+   * ステータスメッセージを表示または非表示にする
    */
   function setStatusMessage(message) {
     if (!message) {
@@ -657,20 +794,137 @@
 
   /**
    * 表示中の図幅件数バッジを更新する
-   * @param {number} visibleCount - 現在の表示件数
-   * @param {number} totalCount - 全図幅件数
    */
   function updateResultCount(visibleCount, totalCount) {
     dom.resultCount.textContent = t().resultCount(visibleCount, totalCount);
   }
 
+  let settingsSaveTimer = null;
+
+  /**
+   * 設定を localStorage へ遅延保存する（スライダードラッグ中のフレーム落ち防止）
+   */
+  function debouncedSaveSettings() {
+    if (settingsSaveTimer) {
+      clearTimeout(settingsSaveTimer);
+    }
+    settingsSaveTimer = setTimeout(() => {
+      settingsSaveTimer = null;
+      saveSettings();
+    }, 200);
+  }
+
+  /**
+   * 設定を localStorage へ保存する
+   */
+  function saveSettings() {
+    if (settingsSaveTimer) {
+      clearTimeout(settingsSaveTimer);
+      settingsSaveTimer = null;
+    }
+    try {
+      localStorage.setItem(CONFIG.SETTINGS_STORAGE_KEY, JSON.stringify(state.settings));
+    } catch {
+      // ignore storage errors
+    }
+  }
+
+  /**
+   * localStorage から設定を読み込む
+   */
+  function loadSettings() {
+    let parsed = null;
+    try {
+      const raw = localStorage.getItem(CONFIG.SETTINGS_STORAGE_KEY);
+      if (raw) {
+        parsed = JSON.parse(raw);
+      }
+    } catch {
+      parsed = null;
+    }
+
+    const merged = {
+      ...CONFIG.DEFAULT_SETTINGS,
+      ...(parsed && typeof parsed === 'object' ? parsed : {})
+    };
+    if (!CONFIG.BASEMAPS[merged.basemap]) {
+      merged.basemap = CONFIG.DEFAULT_SETTINGS.basemap;
+    }
+    const opacity = Number(merged.overlayOpacity);
+    merged.overlayOpacity = Number.isFinite(opacity)
+      ? Math.min(1, Math.max(0, opacity))
+      : CONFIG.DEFAULT_SETTINGS.overlayOpacity;
+    const seamlessOpacity = Number(merged.seamlessOpacity);
+    merged.seamlessOpacity = Number.isFinite(seamlessOpacity)
+      ? Math.min(1, Math.max(0, seamlessOpacity))
+      : CONFIG.DEFAULT_SETTINGS.seamlessOpacity;
+
+    state.settings = merged;
+    state.showIndexFrames = Boolean(merged.showIndexFrames);
+    state.viewportOnly = Boolean(merged.viewportOnly);
+    state.overlayOpacity = merged.overlayOpacity;
+    state.seamlessOpacity = merged.seamlessOpacity;
+    state.seamlessQueryPriority = Boolean(merged.seamlessQueryPriority);
+  }
+
+  /**
+   * 各種設定コントロールの表示状態を state.settings と同期する
+   */
+  function syncSettingsUI() {
+    const s = state.settings;
+    if (dom.showIndexToggle) {
+      dom.showIndexToggle.checked = Boolean(state.showIndexFrames);
+    }
+    if (dom.viewportOnlyToggle) {
+      dom.viewportOnlyToggle.checked = Boolean(state.viewportOnly);
+    }
+    if (dom.seamless200kToggle) {
+      dom.seamless200kToggle.checked = Boolean(s.seamless200k);
+    }
+    const seamlessPct = Math.round(state.seamlessOpacity * 100);
+    if (dom.seamlessOpacitySlider) {
+      dom.seamlessOpacitySlider.value = String(seamlessPct);
+    }
+    if (dom.seamlessOpacityValue) {
+      dom.seamlessOpacityValue.textContent = `${seamlessPct}%`;
+    }
+    if (dom.seamlessOpacityRow) {
+      dom.seamlessOpacityRow.hidden = !Boolean(s.seamless200k);
+    }
+    if (dom.seamlessQueryRow) {
+      dom.seamlessQueryRow.hidden = !Boolean(s.seamless200k);
+    }
+    if (dom.seamlessQueryToggle) {
+      dom.seamlessQueryToggle.checked = Boolean(state.seamlessQueryPriority);
+    }
+    if (dom.mapEl) {
+      dom.mapEl.classList.toggle('map-query-cursor', Boolean(s.seamless200k && state.seamlessQueryPriority));
+    }
+    dom.basemapButtons.forEach((btn) => {
+      btn.classList.toggle('is-active', btn.dataset.basemap === state.activeBasemapKey);
+    });
+    dom.themeChoiceButtons.forEach((btn) => {
+      btn.classList.toggle('is-active', btn.dataset.themeChoice === state.theme);
+    });
+    dom.langButtons.forEach((btn) => {
+      btn.classList.toggle('is-active', btn.dataset.lang === state.lang);
+    });
+  }
+
   /**
    * ベースマップ（背景地図）を切り替える
-   * @param {'pale'|'std'|'photo'} key - CONFIG.BASEMAPS のキー
    */
   function switchBasemap(key) {
     const basemap = CONFIG.BASEMAPS[key];
     if (!basemap || !state.map) {
+      return;
+    }
+
+    state.settings.basemap = key;
+    saveSettings();
+
+    if (state.activeBasemapKey === key && state.activeBaseLayer) {
+      syncSettingsUI();
       return;
     }
 
@@ -679,29 +933,48 @@
     }
 
     state.activeBasemapKey = key;
-    state.activeBaseLayer = L.tileLayer(basemap.url, {
+    const layerOptions = {
       attribution: basemap.attribution,
-      maxZoom: basemap.maxZoom
-    }).addTo(state.map);
-
-    state.activeBaseLayer.bringToBack();
-
-    dom.basemapButtons.forEach((btn) => {
-      btn.classList.toggle('is-active', btn.dataset.basemap === key);
-    });
+      maxZoom: basemap.maxZoom,
+      zIndex: 1,
+      updateWhenZooming: false,
+      updateWhenIdle: false,
+      keepBuffer: 6
+    };
+    if (basemap.maxNativeZoom) {
+      layerOptions.maxNativeZoom = basemap.maxNativeZoom;
+    }
+    state.activeBaseLayer = L.tileLayer(basemap.url, layerOptions).addTo(state.map);
+    syncOverlayZIndices();
+    syncSettingsUI();
   }
 
   /**
-   * 表示中の全図幅が画面内に収まるようにズーム・パンする
+   * 開いている左右パネルを考慮した fitBounds 用パディングを返す
    */
-  function fitAllVisibleItems() {
-    if (!state.map) {
+  function getMapFitPadding() {
+    if (window.innerWidth <= 720) {
+      return { paddingTopLeft: [24, 60], paddingBottomRight: [24, 48] };
+    }
+    const leftWidth = state.isLeftDrawerCollapsed ? 28 : (window.innerWidth <= 960 ? 304 : 344);
+    const hasRight = dom.rightInspector.classList.contains('is-open') && !state.isRightInspectorCollapsed;
+    const rightWidth = hasRight ? (window.innerWidth <= 960 ? 314 : 364) : 48;
+    return {
+      paddingTopLeft: [leftWidth, 36],
+      paddingBottomRight: [rightWidth, 48]
+    };
+  }
+
+  /**
+   * 指定した図幅配列が画面内に収まるように滑らかにズーム・パンする
+   */
+  function fitBoundsForItems(items, { animate = true } = {}) {
+    if (!state.map || !Array.isArray(items) || items.length === 0) {
       return;
     }
-    const targetItems = state.filteredItems.length > 0 ? state.filteredItems : state.allItems;
     const combinedBounds = L.latLngBounds([]);
 
-    targetItems.forEach((item) => {
+    items.forEach((item) => {
       const bounds = getItemBounds(item);
       if (bounds && bounds.isValid()) {
         combinedBounds.extend(bounds);
@@ -709,43 +982,93 @@
     });
 
     if (combinedBounds.isValid()) {
-      state.map.fitBounds(combinedBounds, { padding: [48, 48], maxZoom: 11 });
+      state.map.stop();
+      const pad = getMapFitPadding();
+      if (!animate) {
+        state.map.fitBounds(combinedBounds, { ...pad, maxZoom: 12, animate: false });
+      } else {
+        state.map.flyToBounds(combinedBounds, { ...pad, maxZoom: 12, duration: 0.65, easeLinearity: 0.25 });
+      }
     }
   }
 
   /**
-   * Leafletマップと地理院淡色地図ベースレイヤーを初期化する
-   * @returns {L.Map} 初期化されたLeafletマップインスタンス
+   * 絞り込み中の全図幅が画面内に収まるようにズーム・パンする
+   */
+  function fitAllVisibleItems(options = {}) {
+    fitBoundsForItems(state.filteredItems, options);
+  }
+
+  /**
+   * Leafletマップを Canvas レンダラー＋60fps+ 連続ズーム設定で初期化する
    */
   function initMap() {
+    const canvasRenderer = L.canvas({ padding: 0.8, tolerance: 4 });
     const map = L.map('map', {
       center: CONFIG.INITIAL_CENTER,
       zoom: CONFIG.INITIAL_ZOOM,
       minZoom: CONFIG.MIN_ZOOM,
       maxZoom: CONFIG.MAX_ZOOM,
-      zoomControl: false
+      zoomControl: false,
+      preferCanvas: true,
+      renderer: canvasRenderer,
+      zoomSnap: 0.25,
+      zoomDelta: 0.5,
+      wheelPxPerZoomLevel: 100,
+      wheelDebounceTime: 16,
+      inertia: true,
+      inertiaDeceleration: 2200,
+      inertiaMaxSpeed: 2200,
+      easeLinearity: 0.2,
+      zoomAnimation: true,
+      fadeAnimation: true,
+      markerZoomAnimation: true
     });
 
     state.map = map;
 
-    // 地理院地図（淡色地図）を初期ベースマップとして追加
-    switchBasemap('pale');
+    switchBasemap(state.settings.basemap);
 
-    // ズームコントロールを画面右下に配置
     L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-    // メートル法のスケールバーを画面左下に配置
+    if (dom.mapBottomRightControls) {
+      const BottomRightToolbar = L.Control.extend({
+        options: { position: 'bottomright' },
+        onAdd: () => {
+          L.DomEvent.disableClickPropagation(dom.mapBottomRightControls);
+          L.DomEvent.disableScrollPropagation(dom.mapBottomRightControls);
+          return dom.mapBottomRightControls;
+        }
+      });
+      new BottomRightToolbar().addTo(map);
+    }
     L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
 
-    // 図郭ポリゴン管理用のレイヤーグループを追加
-    state.indexLayerGroup = L.layerGroup().addTo(map);
+    state.indexLayerGroup = L.layerGroup();
+    if (state.showIndexFrames) {
+      state.indexLayerGroup.addTo(map);
+    }
 
-    // 地図移動・ズーム完了時に表示範囲フィルタと凡例を更新
     map.on('moveend', () => {
       if (state.viewportOnly) {
         applyFilters();
       }
-      updateDominantLegend();
+      updateAutoInspectedItem();
+    });
+
+    map.on('click', (event) => {
+      if (state.seamlessLayer && event && event.latlng) {
+        querySeamlessPointGeology(event.latlng);
+      }
+    });
+
+    map.on('popupclose', (event) => {
+      if (event && event.popup === state.seamlessPopup) {
+        if (state.seamlessPointMarker && state.map) {
+          state.map.removeLayer(state.seamlessPointMarker);
+        }
+        state.seamlessPointMarker = null;
+        state.seamlessPopup = null;
+      }
     });
 
     return map;
@@ -753,32 +1076,26 @@
 
   /**
    * GeoJSONファイルを非同期で読み込む
-   * @param {string} url - GeoJSONファイルのURL
-   * @returns {Promise<Object>} GeoJSONオブジェクト
    */
   async function fetchMapIndex(url) {
-    const response = await fetch(url);
+    const response = await fetch(url, { cache: 'no-cache' });
     if (!response.ok) {
-      throw new Error(`図幅インデックスの読み込みに失敗しました (HTTP ${response.status})`);
+      throw new Error(t().loadErrorMessage);
     }
     return response.json();
   }
 
   /**
    * ホバーツールチップ用のテキストを生成する
-   * @param {Object} meta - normalizeProperties() の返却オブジェクト
-   * @returns {string} ツールチップ文字列
    */
   function buildTooltipText(meta) {
     const loc = getLocalizedMeta(meta);
     const yearSuffix = meta.publishedYear != null ? ` (${meta.publishedYear})` : '';
-    return `${loc.title}${yearSuffix}`;
+    return `${loc.shortTitle}${yearSuffix}`;
   }
 
   /**
    * 図幅アイテムの LatLngBounds を取得する
-   * @param {Object} item - { layer, meta } オブジェクト
-   * @returns {L.LatLngBounds|null} 境界オブジェクト
    */
   function getItemBounds(item) {
     if (!item) {
@@ -798,10 +1115,7 @@
   }
 
   /**
-   * 2つの LatLngBounds の交差面積（緯度経度矩形の積）を計算する
-   * @param {L.LatLngBounds} boundsA
-   * @param {L.LatLngBounds} boundsB
-   * @returns {number} 交差面積（交差しない場合は 0）
+   * 2つの LatLngBounds の交差面積を計算する
    */
   function computeIntersectionArea(boundsA, boundsB) {
     if (!boundsA || !boundsB || !boundsA.isValid() || !boundsB.isValid()) {
@@ -819,8 +1133,7 @@
   }
 
   /**
-   * モバイル表示時のアクティブパネル（地図 / 検索・一覧 / 詳細・凡例）を切り替える
-   * @param {'map'|'search'|'legend'} view
+   * モバイル表示時のアクティブパネルを切り替える
    */
   function switchMobileView(view) {
     dom.appLayout.dataset.mobileView = view;
@@ -828,35 +1141,158 @@
       btn.classList.toggle('is-active', btn.dataset.mobileView === view);
     });
     if (view === 'map' && state.map) {
-      setTimeout(() => state.map.invalidateSize(), 50);
+      setTimeout(() => state.map.invalidateSize({ animate: false, pan: false }), 50);
     }
   }
 
   /**
-   * 凡例画像の拡大鏡（ルーペ）を非表示にする
+   * 左検索・一覧ドロワーの折りたたみ状態を切り替える
    */
-  function hideLegendLoupe() {
-    dom.legendLoupe.hidden = true;
+  function setLeftDrawerCollapsed(collapsed) {
+    state.isLeftDrawerCollapsed = Boolean(collapsed);
+    dom.leftDrawer.classList.toggle('is-collapsed', state.isLeftDrawerCollapsed);
+    if (dom.leftDrawerWrap) {
+      dom.leftDrawerWrap.inert = state.isLeftDrawerCollapsed;
+    }
+    dom.toggleLeftDrawerBtn.setAttribute('aria-expanded', String(!state.isLeftDrawerCollapsed));
+    const title = state.isLeftDrawerCollapsed ? t().toggleDrawerExpand : t().toggleDrawerCollapse;
+    dom.toggleLeftDrawerBtn.title = title;
+    dom.toggleLeftDrawerBtn.setAttribute('aria-label', title);
   }
 
   /**
-   * 凡例画像のホバー位置に合わせて拡大鏡（ルーペ）を更新する
-   * @param {MouseEvent} event - マウス移動イベント
+   * 右インスペクタの折りたたみ状態を切り替える（オーバーレイ自体は維持）
    */
-  function updateLegendLoupe(event) {
+  function setRightInspectorCollapsed(collapsed) {
+    state.isRightInspectorCollapsed = Boolean(collapsed);
+    if (state.isRightInspectorCollapsed) {
+      hideLegendLoupe();
+    }
+    renderSeamlessPointCard();
+    syncRightInspectorVisibility();
+  }
+
+  /**
+   * 右インスペクタと再展開タブの表示状態を同期する
+   */
+  function syncRightInspectorVisibility() {
+    const hasContent = Boolean(state.inspectedItem) || state.activeOverlays.length > 0;
+    if (!hasContent) {
+      hideLegendLoupe();
+      dom.rightInspector.classList.remove('is-open');
+      dom.rightInspector.inert = true;
+      dom.reopenRightBtn.classList.remove('is-open');
+      dom.reopenRightBtn.inert = true;
+      dom.mobileLegendTab.hidden = true;
+      dom.appLayout.classList.remove('has-right-inspector');
+      if (dom.appLayout.dataset.mobileView === 'legend') {
+        switchMobileView('map');
+      }
+      return;
+    }
+
+    dom.mobileLegendTab.hidden = false;
+    if (state.isRightInspectorCollapsed) {
+      dom.rightInspector.classList.remove('is-open');
+      dom.rightInspector.inert = true;
+      dom.reopenRightBtn.classList.add('is-open');
+      dom.reopenRightBtn.inert = false;
+      dom.appLayout.classList.remove('has-right-inspector');
+    } else {
+      dom.rightInspector.classList.add('is-open');
+      dom.rightInspector.inert = false;
+      dom.reopenRightBtn.classList.remove('is-open');
+      dom.reopenRightBtn.inert = true;
+      dom.appLayout.classList.add('has-right-inspector');
+    }
+  }
+
+  /**
+   * ポップオーバー（レイヤー / 環境設定）の開閉を管理する
+   */
+  function closeAllPopovers() {
+    if (dom.layersPopover) {
+      dom.layersPopover.classList.remove('is-open');
+      dom.layersPopover.inert = true;
+      dom.layersPopoverBtn.setAttribute('aria-expanded', 'false');
+    }
+    if (dom.prefsPopover) {
+      dom.prefsPopover.classList.remove('is-open');
+      dom.prefsPopover.inert = true;
+      dom.prefsPopoverBtn.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  function togglePopover(popoverEl, triggerBtn) {
+    const willOpen = !popoverEl.classList.contains('is-open');
+    closeAllPopovers();
+    if (willOpen) {
+      popoverEl.classList.add('is-open');
+      popoverEl.inert = false;
+      triggerBtn.setAttribute('aria-expanded', 'true');
+    }
+  }
+
+  const loupeCache = {
+    legendRect: null,
+    inspectorRect: null,
+    rafId: 0,
+    lastClientX: 0,
+    lastClientY: 0,
+    activeSrc: ''
+  };
+
+  /**
+   * 凡例画像と右インスペクタの座標矩形キャッシュを更新する
+   */
+  function refreshLoupeRects() {
+    if (dom.legendImage && !dom.legendImage.hidden) {
+      loupeCache.legendRect = dom.legendImage.getBoundingClientRect();
+    } else {
+      loupeCache.legendRect = null;
+    }
+    if (dom.rightInspector && dom.rightInspector.classList.contains('is-open')) {
+      loupeCache.inspectorRect = dom.rightInspector.getBoundingClientRect();
+    } else {
+      loupeCache.inspectorRect = null;
+    }
+  }
+
+  /**
+   * 凡例ルーペを非表示にする
+   */
+  function hideLegendLoupe() {
+    if (loupeCache.rafId) {
+      cancelAnimationFrame(loupeCache.rafId);
+      loupeCache.rafId = 0;
+    }
+    if (dom.legendLoupe) {
+      dom.legendLoupe.classList.remove('is-visible');
+    }
+    if (dom.legendLensIndicator) {
+      dom.legendLensIndicator.classList.remove('is-visible');
+    }
+  }
+
+  /**
+   * requestAnimationFrame 内で 1フレーム1回だけルーペ位置・背景を更新する
+   */
+  function renderLoupeFrame() {
+    loupeCache.rafId = 0;
     if (dom.legendImage.hidden || !dom.legendImage.src || !dom.legendImage.complete || dom.legendImage.naturalWidth === 0) {
       hideLegendLoupe();
       return;
     }
 
-    const rect = dom.legendImage.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) {
+    const rect = loupeCache.legendRect || dom.legendImage.getBoundingClientRect();
+    loupeCache.legendRect = rect;
+    if (!rect || rect.width === 0 || rect.height === 0) {
       hideLegendLoupe();
       return;
     }
 
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    const x = loupeCache.lastClientX - rect.left;
+    const y = loupeCache.lastClientY - rect.top;
 
     if (x < 0 || y < 0 || x > rect.width || y > rect.height) {
       hideLegendLoupe();
@@ -864,43 +1300,111 @@
     }
 
     const zoom = CONFIG.LOUPE_ZOOM;
-    dom.legendLoupe.hidden = false;
-    const loupeW = dom.legendLoupe.offsetWidth || 180;
-    const loupeH = dom.legendLoupe.offsetHeight || 180;
-    const halfW = loupeW / 2;
-    const halfH = loupeH / 2;
+    const size = 220;
+    const half = size / 2;
+    const margin = 12;
 
-    const loupeX = rect.width > loupeW
-      ? Math.max(halfW, Math.min(rect.width - halfW, x))
-      : rect.width / 2;
-    const loupeY = rect.height > loupeH
-      ? Math.max(halfH, Math.min(rect.height - halfH, y))
-      : rect.height / 2;
+    let loupeCenterX;
+    if (window.innerWidth > 720 && dom.rightInspector.classList.contains('is-open')) {
+      const inspectorRect = loupeCache.inspectorRect || dom.rightInspector.getBoundingClientRect();
+      loupeCache.inspectorRect = inspectorRect;
+      loupeCenterX = Math.max(margin + half, inspectorRect.left - 12 - half);
+    } else {
+      loupeCenterX = Math.min(window.innerWidth - margin - half, Math.max(margin + half, loupeCache.lastClientX));
+    }
+    const loupeCenterY = Math.min(window.innerHeight - margin - half, Math.max(margin + half, loupeCache.lastClientY));
 
-    dom.legendLoupe.style.left = `${loupeX}px`;
-    dom.legendLoupe.style.top = `${loupeY}px`;
-    dom.legendLoupe.style.backgroundImage = `url("${dom.legendImage.src}")`;
+    if (loupeCache.activeSrc !== dom.legendImage.src) {
+      loupeCache.activeSrc = dom.legendImage.src;
+      dom.legendLoupe.style.backgroundImage = `url("${dom.legendImage.src}")`;
+    }
     dom.legendLoupe.style.backgroundSize = `${rect.width * zoom}px ${rect.height * zoom}px`;
-    dom.legendLoupe.style.backgroundPosition = `${-(x * zoom - halfW)}px ${-(y * zoom - halfH)}px`;
+    dom.legendLoupe.style.backgroundPosition = `${-(x * zoom - half)}px ${-(y * zoom - half)}px`;
+    dom.legendLoupe.style.transform = `translate3d(${loupeCenterX - half}px, ${loupeCenterY - half}px, 0) scale(1)`;
+    dom.legendLoupe.classList.add('is-visible');
+
+    if (dom.legendLensIndicator) {
+      const lensSize = size / zoom;
+      const lensHalf = lensSize / 2;
+      dom.legendLensIndicator.style.width = `${lensSize}px`;
+      dom.legendLensIndicator.style.height = `${lensSize}px`;
+      dom.legendLensIndicator.style.transform = `translate3d(${x - lensHalf}px, ${y - lensHalf}px, 0)`;
+      dom.legendLensIndicator.classList.add('is-visible');
+    }
   }
 
   /**
-   * 右サイドバー（最広表示図幅の詳細情報 & 地質凡例）の表示内容を更新する
-   * @param {Object|null} item - 表示対象の図幅アイテム（nullで非表示）
-   * @param {boolean} [forceUpdate=false] - 同一アイテムでも強制再描画するか
+   * 凡例・断面図画像上のマウス位置に応じて rAF でルーペ更新をスケジュールする
    */
-  function renderLegendPanel(item, forceUpdate = false) {
-    const wasHidden = dom.legendSidebar.hidden;
+  function updateLegendLoupe(event) {
+    loupeCache.lastClientX = event.clientX;
+    loupeCache.lastClientY = event.clientY;
+    if (!loupeCache.rafId) {
+      loupeCache.rafId = requestAnimationFrame(renderLoupeFrame);
+    }
+  }
+
+  /**
+   * 右インスペクタのタブ（凡例 / 断面図 / 詳細・PDF）を切り替える
+   */
+  function switchInspectorTab(tab) {
+    hideLegendLoupe();
+    state.inspectorTab = tab;
+    if (state.inspectedItem) {
+      renderInspectorDetail(state.inspectedItem, true);
+    }
+  }
+
+  /**
+   * 表示範囲と交差面積が最大のオーバーレイを自動選択する（手動ピン留め時は画面内にある間維持）
+   */
+  function updateAutoInspectedItem() {
+    if (!state.map) {
+      return;
+    }
+    const viewBounds = state.map.getBounds();
+    const prevPinned = state.pinnedInspectItem;
+
+    if (state.pinnedInspectItem) {
+      const stillActive = state.activeOverlays.some((e) => e.item === state.pinnedInspectItem)
+        || state.selectedItem === state.pinnedInspectItem;
+      const pinArea = stillActive ? computeIntersectionArea(viewBounds, getItemBounds(state.pinnedInspectItem)) : 0;
+      if (stillActive && pinArea > 0) {
+        return;
+      }
+      state.pinnedInspectItem = null;
+    }
+
+    let bestItem = null;
+    let bestArea = 0;
+    state.activeOverlays.forEach((entry) => {
+      const area = computeIntersectionArea(viewBounds, getItemBounds(entry.item));
+      if (area > bestArea) {
+        bestArea = area;
+        bestItem = entry.item;
+      }
+    });
+
+    const pinChanged = prevPinned !== state.pinnedInspectItem;
+    if (bestItem && bestItem !== state.inspectedItem) {
+      renderInspectorDetail(bestItem);
+      renderActiveOverlayList();
+    } else if (!bestItem && state.activeOverlays.length === 0 && state.seamlessLayer && state.seamlessVirtualItem && !state.inspectedItem) {
+      renderInspectorDetail(state.seamlessVirtualItem);
+    } else if (pinChanged) {
+      renderActiveOverlayList();
+    }
+  }
+
+  /**
+   * インスペクタ下部の表示（凡例/断面図 または 詳細・PDF）を更新する
+   */
+  function renderInspectorDetail(item, forceUpdate = false) {
     const dict = t();
 
     if (!item) {
-      state.dominantLegendItem = null;
+      state.inspectedItem = null;
       hideLegendLoupe();
-      dom.legendSidebar.hidden = true;
-      dom.mobileLegendTab.hidden = true;
-      if (dom.appLayout.dataset.mobileView === 'legend') {
-        switchMobileView('map');
-      }
       dom.dominantInfoTitle.textContent = '';
       dom.dominantInfoSubtitle.textContent = '';
       dom.dominantInfoSubtitle.hidden = true;
@@ -909,21 +1413,46 @@
       dom.legendMapName.textContent = '';
       dom.legendImage.removeAttribute('src');
       dom.legendOpenLink.href = '#';
-      if (!wasHidden && state.map) {
-        state.map.invalidateSize();
-      }
-      return;
-    }
-
-    if (!forceUpdate && state.dominantLegendItem === item && !dom.legendSidebar.hidden) {
+      renderSeamlessPointCard();
+      syncRightInspectorVisibility();
       return;
     }
 
     const { meta } = item;
     const loc = getLocalizedMeta(meta);
-    state.dominantLegendItem = item;
+    const isNewItem = state.inspectedItem !== item;
+    state.inspectedItem = item;
 
-    // 上段：詳細情報
+    if (!forceUpdate && isNewItem) {
+      state.activeSectionIndex = 0;
+      if (state.inspectorTab === 'section' && meta.sectionImages.length === 0) {
+        state.inspectorTab = 'legend';
+      }
+      if (state.inspectorTab === 'legend' && !meta.legendImageUrl && meta.sectionImages.length > 0) {
+        state.inspectorTab = 'section';
+      }
+    }
+
+    const hasSections = meta.sectionImages.length > 0;
+    if (state.inspectorTab === 'section' && !hasSections) {
+      state.inspectorTab = 'legend';
+    }
+
+    // タブ状態
+    dom.tabLegendBtn.textContent = dict.tabLegend;
+    dom.tabSectionBtn.textContent = hasSections ? `${dict.tabSections} (${meta.sectionImages.length})` : dict.tabSections;
+    dom.tabSectionBtn.hidden = !hasSections;
+    dom.tabDetailBtn.textContent = dict.tabDetail;
+
+    const activeTab = state.inspectorTab;
+    dom.tabLegendBtn.classList.toggle('is-active', activeTab === 'legend');
+    dom.tabLegendBtn.setAttribute('aria-selected', String(activeTab === 'legend'));
+    dom.tabSectionBtn.classList.toggle('is-active', activeTab === 'section');
+    dom.tabSectionBtn.setAttribute('aria-selected', String(activeTab === 'section'));
+    dom.tabDetailBtn.classList.toggle('is-active', activeTab === 'detail');
+    dom.tabDetailBtn.setAttribute('aria-selected', String(activeTab === 'detail'));
+
+    // 詳細・PDFタブの内容
     dom.dominantInfoTitle.textContent = loc.title;
     if (loc.subtitle) {
       dom.dominantInfoSubtitle.textContent = loc.subtitle;
@@ -933,36 +1462,23 @@
       dom.dominantInfoSubtitle.hidden = true;
     }
 
-    dom.dominantInfoMeta.innerHTML = '';
-    const yearValue = meta.publishedYear != null
-      ? `${meta.publishedYear}${dict.yearSuffix}`
-      : dict.yearUnknown;
-    const mapTypeLabel = dict.mapTypes?.[meta.mapType] || meta.mapType;
+    const yearText = meta.publishedYear != null ? `${meta.publishedYear}${dict.yearSuffix}` : dict.yearUnknown;
+    const typeLabel = dict.mapTypes[meta.mapType] || meta.mapType;
     const volcanoName = state.lang === 'en'
       ? (meta.volcanoNameEn || meta.volcanoNameJa)
       : (meta.volcanoNameJa || meta.volcanoNameEn);
-
     const metaEntries = [
-      [dict.mapTypeFieldLabel, mapTypeLabel],
-      [dict.yearLabel, yearValue],
-      [dict.authorsLabel, loc.authors]
-    ];
-    if (volcanoName) {
-      metaEntries.splice(1, 0, [dict.volcanoLabel, volcanoName]);
-    }
-    if (meta.scale) {
-      metaEntries.push([dict.scaleLabel, meta.scale]);
-    }
-    if (loc.providerName) {
-      metaEntries.push([dict.providerLabel, loc.providerName]);
-    }
-    if (loc.publisher) {
-      metaEntries.push([dict.publisherLabel, loc.publisher]);
-    }
-    if (loc.region) {
-      metaEntries.push([dict.regionLabel, loc.region]);
-    }
+      [dict.mapTypeFieldLabel, typeLabel],
+      ...(volcanoName ? [[dict.volcanoLabel, volcanoName]] : []),
+      [dict.yearLabel, yearText],
+      [dict.scaleLabel, meta.scale],
+      [dict.authorsLabel, loc.authors],
+      [dict.providerLabel, loc.providerName],
+      [dict.publisherLabel, loc.publisher],
+      [dict.regionLabel, loc.region]
+    ].filter(([, value]) => Boolean(value));
 
+    dom.dominantInfoMeta.innerHTML = '';
     metaEntries.forEach(([label, value]) => {
       const dt = document.createElement('dt');
       dt.textContent = label;
@@ -991,189 +1507,73 @@
       dom.dominantInfoLinks.appendChild(a);
     });
 
-    // 下段：凡例 / 断面図切り替え表示
-    if (!forceUpdate) {
-      state.activeSectionIndex = 0;
-      if (meta.sectionImages.length === 0) {
-        state.visualMode = 'legend';
-      } else if (!meta.legendImageUrl) {
-        state.visualMode = 'section';
-      }
-    }
-    renderVisualArea(meta);
-
-    dom.legendSidebar.hidden = false;
-    dom.mobileLegendTab.hidden = false;
-
-    if (wasHidden && state.map) {
-      state.map.invalidateSize();
-    }
-  }
-
-  /**
-   * 右サイドバー下段（凡例 / 断面図のタブ・チップ・画像・ルーペ）を描画する
-   * @param {Object} meta - normalizeProperties() の返却オブジェクト
-   */
-  function renderVisualArea(meta) {
-    const dict = t();
-    const loc = getLocalizedMeta(meta);
-    const hasSections = meta.sectionImages.length > 0;
-
+    // ペイン切り替え
     hideLegendLoupe();
-
-    dom.tabLegendBtn.textContent = dict.tabLegend;
-    dom.tabSectionBtn.textContent = hasSections
-      ? `${dict.tabSections} (${meta.sectionImages.length})`
-      : dict.tabSections;
-
-    dom.visualModeTabs.hidden = !hasSections;
-
-    const isSectionMode = state.visualMode === 'section' && hasSections;
-    dom.tabLegendBtn.classList.toggle('is-active', !isSectionMode);
-    dom.tabLegendBtn.setAttribute('aria-selected', String(!isSectionMode));
-    dom.tabSectionBtn.classList.toggle('is-active', isSectionMode);
-    dom.tabSectionBtn.setAttribute('aria-selected', String(isSectionMode));
-
-    if (isSectionMode) {
-      dom.legendPanelTitle.textContent = dict.sectionTitle;
-      dom.sectionChips.innerHTML = '';
-      const fragment = document.createDocumentFragment();
-      meta.sectionImages.forEach((sec, idx) => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = idx === state.activeSectionIndex ? 'decade-chip is-selected' : 'decade-chip';
-        btn.textContent = sec.label;
-        btn.addEventListener('click', () => {
-          state.activeSectionIndex = idx;
-          renderVisualArea(meta);
-        });
-        fragment.appendChild(btn);
-      });
-      dom.sectionChips.appendChild(fragment);
-      dom.sectionChips.hidden = false;
-
-      const currentSec = meta.sectionImages[state.activeSectionIndex] || meta.sectionImages[0];
-      dom.legendMapName.textContent = `${loc.title} (${currentSec.label})`;
-      dom.legendImage.src = currentSec.url;
-      dom.legendImage.alt = `${loc.title} ${currentSec.label}`;
-      dom.legendImage.hidden = false;
-      dom.legendOpenLink.href = currentSec.url;
-      dom.legendOpenLink.hidden = false;
+    if (activeTab === 'detail') {
+      dom.inspectorVisualPane.hidden = true;
+      dom.inspectorDetailPane.hidden = false;
+      dom.legendOpenLink.hidden = true;
     } else {
-      dom.legendPanelTitle.textContent = dict.legendTitle;
-      dom.sectionChips.hidden = true;
-      dom.sectionChips.innerHTML = '';
+      dom.inspectorVisualPane.hidden = false;
+      dom.inspectorDetailPane.hidden = true;
 
-      if (meta.legendImageUrl) {
-        dom.legendMapName.textContent = loc.title;
-        dom.legendImage.src = meta.legendImageUrl;
-        dom.legendImage.alt = `${loc.title} ${dict.legendTitle}`;
+      if (activeTab === 'section' && hasSections) {
+        dom.sectionChips.innerHTML = '';
+        const fragment = document.createDocumentFragment();
+        meta.sectionImages.forEach((sec, idx) => {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = idx === state.activeSectionIndex ? 'decade-chip is-selected' : 'decade-chip';
+          btn.textContent = sec.label;
+          btn.addEventListener('click', () => {
+            state.activeSectionIndex = idx;
+            renderInspectorDetail(item, true);
+          });
+          fragment.appendChild(btn);
+        });
+        dom.sectionChips.appendChild(fragment);
+        dom.sectionChips.hidden = false;
+
+        const currentSec = meta.sectionImages[state.activeSectionIndex] || meta.sectionImages[0];
+        dom.legendMapName.textContent = `${loc.title} (${currentSec.label})`;
+        dom.legendImage.src = currentSec.url;
+        dom.legendImage.alt = `${loc.title} ${currentSec.label}`;
         dom.legendImage.hidden = false;
-        dom.legendOpenLink.href = meta.legendImageUrl;
+        dom.legendOpenLink.href = currentSec.url;
         dom.legendOpenLink.hidden = false;
       } else {
-        dom.legendMapName.textContent = dict.legendNone;
-        dom.legendImage.removeAttribute('src');
-        dom.legendImage.hidden = true;
-        dom.legendOpenLink.href = '#';
-        dom.legendOpenLink.hidden = true;
+        dom.sectionChips.hidden = true;
+        dom.sectionChips.innerHTML = '';
+        dom.legendMapName.textContent = loc.title;
+        if (meta.legendImageUrl) {
+          dom.legendImage.src = meta.legendImageUrl;
+          dom.legendImage.alt = `${loc.title} ${dict.tabLegend}`;
+          dom.legendImage.hidden = false;
+          dom.legendOpenLink.href = meta.legendImageUrl;
+          dom.legendOpenLink.hidden = false;
+        } else {
+          dom.legendMapName.textContent = `${loc.title} — ${dict.legendNone}`;
+          dom.legendImage.removeAttribute('src');
+          dom.legendImage.hidden = true;
+          dom.legendOpenLink.href = '#';
+          dom.legendOpenLink.hidden = true;
+        }
       }
     }
+
+    renderSeamlessPointCard();
+    syncRightInspectorVisibility();
   }
 
   /**
-   * 右サイドバーの「凡例 / 断面図」表示モードを切り替える
-   * @param {'legend'|'section'} mode
-   */
-  function switchVisualMode(mode) {
-    if (state.visualMode === mode) {
-      return;
-    }
-    state.visualMode = mode;
-    if (state.dominantLegendItem) {
-      renderVisualArea(state.dominantLegendItem.meta);
-    }
-  }
-
-  /**
-   * 現在オーバーレイ表示されている地質図の中で最も広く表示されているものを特定し、右サイドバーを更新する
-   */
-  function updateDominantLegend() {
-    if (!state.map) {
-      renderLegendPanel(null);
-      return;
-    }
-
-    const viewBounds = state.map.getBounds();
-
-    if (state.activeOverlays.length === 0) {
-      if (state.selectedItem && computeIntersectionArea(viewBounds, getItemBounds(state.selectedItem)) > 0) {
-        renderLegendPanel(state.selectedItem);
-      } else if (state.seamlessLayer && state.seamlessVirtualItem) {
-        renderLegendPanel(state.seamlessVirtualItem);
-      } else {
-        renderLegendPanel(null);
-      }
-      return;
-    }
-
-    let bestItem = null;
-    let bestScore = 0;
-
-    state.activeOverlays.forEach(({ item }) => {
-      const itemBounds = getItemBounds(item);
-      const area = computeIntersectionArea(viewBounds, itemBounds);
-      if (area <= 0) {
-        return;
-      }
-      const totalArea = computeIntersectionArea(itemBounds, itemBounds);
-      const weight = item.meta.geometryModel === 'continuous_polygon' && totalArea > 0
-        ? 1 / Math.sqrt(totalArea)
-        : 1;
-      const score = area * weight;
-      if (score >= bestScore) {
-        bestScore = score;
-        bestItem = item;
-      }
-    });
-
-    renderLegendPanel(bestItem);
-  }
-
-  /**
-   * 右サイドバーの閉じるボタン押下時に、現在表示中の詳細パネル・選択状態を解除する
-   */
-  function closeDominantDetail() {
-    const current = state.dominantLegendItem;
-    if (current && state.activeOverlays.some((e) => e.item === current)) {
-      removeOverlayByItem(current);
-      return;
-    }
-    if (state.selectedItem) {
-      if (state.selectedItem.layer && !state.activeOverlays.some((e) => e.item === state.selectedItem)) {
-        state.selectedItem.layer.setStyle(
-          styleByScale(state.selectedItem.meta.scaleDenominator, state.selectedItem.meta.mapType)
-        );
-      }
-      state.selectedItem = null;
-      syncSelectedListItem();
-      updateDominantLegend();
-      return;
-    }
-    renderLegendPanel(null);
-  }
-
-  /**
-   * 指定した図幅アイテムが現在オーバーレイ表示中または選択中か判定する
-   * @param {Object} item - 図幅アイテム
-   * @returns {boolean} 表示中・選択中ならtrue
+   * オーバーレイ中の図幅かどうかを判定する
    */
   function isItemOverlayed(item) {
-    return item === state.selectedItem || state.activeOverlays.some((entry) => entry.item === item);
+    return state.activeOverlays.some((entry) => entry.item === item) || state.selectedItem === item;
   }
 
   /**
-   * activeOverlays の配列順に応じて全レイヤーの zIndex を同期する（末尾が最前面）
+   * オーバーレイ配列の順番に応じて Leaflet の zIndex を同期する（配列末尾が最前面）
    */
   function syncOverlayZIndices() {
     state.activeOverlays.forEach((entry, idx) => {
@@ -1185,8 +1585,6 @@
 
   /**
    * オーバーレイの重ね順を上下に入れ替える
-   * @param {number} index - state.activeOverlays 内の現在インデックス
-   * @param {number} delta - +1 で前面へ、-1 で背面へ
    */
   function moveOverlayOrder(index, delta) {
     const targetIndex = index + delta;
@@ -1200,21 +1598,22 @@
   }
 
   /**
-   * 左サイドバーの「表示中の地質図（最大4件）」リストを描画する（上が最前面）
+   * 右インスペクタ上部の「表示中の地質図（最大4件）」コンパクトリストを描画する
    */
   function renderActiveOverlayList() {
-    dom.activeOverlayList.innerHTML = '';
     const dict = t();
+    dom.activeOverlayList.innerHTML = '';
+    dom.activeWmsName.textContent = dict.activeMapsTitle(state.activeOverlays.length, CONFIG.MAX_OVERLAYS);
 
     if (state.activeOverlays.length === 0) {
-      dom.activeWmsBar.hidden = true;
-      dom.activeWmsName.textContent = '';
+      dom.activeOverlaysSection.hidden = true;
+      dom.clearWmsBtn.hidden = true;
       return;
     }
 
-    dom.activeWmsBar.hidden = false;
-    dom.activeWmsName.textContent = dict.activeMapsTitle(state.activeOverlays.length, CONFIG.MAX_OVERLAYS);
-
+    dom.activeOverlaysSection.hidden = false;
+    dom.clearWmsBtn.hidden = false;
+    const showOrderButtons = state.activeOverlays.length >= 2;
     const fragment = document.createDocumentFragment();
 
     // 最前面（配列末尾）をリストの一番上に表示
@@ -1225,6 +1624,9 @@
       const loc = getLocalizedMeta(meta);
       const li = document.createElement('li');
       li.className = 'active-overlay-item';
+      if (state.inspectedItem === item) {
+        li.classList.add('is-inspecting');
+      }
 
       const topRow = document.createElement('div');
       topRow.className = 'active-overlay-top';
@@ -1233,28 +1635,53 @@
       label.className = 'active-overlay-label';
       label.textContent = loc.title;
       label.title = loc.title;
-      label.addEventListener('click', () => zoomToMapItem(item));
+      label.addEventListener('click', () => {
+        state.selectedItem = item;
+        state.pinnedInspectItem = item;
+        renderInspectorDetail(item);
+        renderActiveOverlayList();
+        syncSelectedListItem();
+      });
 
       const btns = document.createElement('div');
       btns.className = 'active-overlay-btns';
 
-      const upBtn = document.createElement('button');
-      upBtn.type = 'button';
-      upBtn.className = 'icon-button';
-      upBtn.title = dict.moveUpTitle;
-      upBtn.disabled = i === state.activeOverlays.length - 1;
-      upBtn.setAttribute('aria-label', `${loc.title} ${dict.moveUpTitle}`);
-      upBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
-      upBtn.addEventListener('click', () => moveOverlayOrder(i, 1));
+      if (state.pinnedInspectItem === item) {
+        const pinBadge = document.createElement('button');
+        pinBadge.type = 'button';
+        pinBadge.className = 'overlay-pin-badge';
+        pinBadge.textContent = dict.pinnedLabel;
+        pinBadge.title = dict.unpinTitle;
+        pinBadge.setAttribute('aria-label', dict.unpinTitle);
+        pinBadge.addEventListener('click', (event) => {
+          event.stopPropagation();
+          state.pinnedInspectItem = null;
+          updateAutoInspectedItem();
+        });
+        btns.appendChild(pinBadge);
+      }
 
-      const downBtn = document.createElement('button');
-      downBtn.type = 'button';
-      downBtn.className = 'icon-button';
-      downBtn.title = dict.moveDownTitle;
-      downBtn.disabled = i === 0;
-      downBtn.setAttribute('aria-label', `${loc.title} ${dict.moveDownTitle}`);
-      downBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
-      downBtn.addEventListener('click', () => moveOverlayOrder(i, -1));
+      if (showOrderButtons) {
+        const upBtn = document.createElement('button');
+        upBtn.type = 'button';
+        upBtn.className = 'icon-button';
+        upBtn.title = dict.moveUpTitle;
+        upBtn.disabled = i === state.activeOverlays.length - 1;
+        upBtn.setAttribute('aria-label', `${loc.title} ${dict.moveUpTitle}`);
+        upBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
+        upBtn.addEventListener('click', () => moveOverlayOrder(i, 1));
+
+        const downBtn = document.createElement('button');
+        downBtn.type = 'button';
+        downBtn.className = 'icon-button';
+        downBtn.title = dict.moveDownTitle;
+        downBtn.disabled = i === 0;
+        downBtn.setAttribute('aria-label', `${loc.title} ${dict.moveDownTitle}`);
+        downBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+        downBtn.addEventListener('click', () => moveOverlayOrder(i, -1));
+
+        btns.append(upBtn, downBtn);
+      }
 
       const zoomBtn = document.createElement('button');
       zoomBtn.type = 'button';
@@ -1262,20 +1689,26 @@
       zoomBtn.title = dict.zoomTitle;
       zoomBtn.setAttribute('aria-label', `${loc.title} ${dict.zoomTitle}`);
       zoomBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line><line x1="11" y1="8" x2="11" y2="14"></line><line x1="8" y1="11" x2="14" y2="11"></line></svg>';
-      zoomBtn.addEventListener('click', () => zoomToMapItem(item));
+      zoomBtn.addEventListener('click', () => {
+        state.selectedItem = item;
+        state.pinnedInspectItem = item;
+        renderInspectorDetail(item);
+        renderActiveOverlayList();
+        zoomToMapItem(item);
+      });
 
       const removeBtn = document.createElement('button');
       removeBtn.type = 'button';
-      removeBtn.className = 'icon-button';
+      removeBtn.className = 'icon-button is-close';
       removeBtn.title = dict.closeTitle;
       removeBtn.setAttribute('aria-label', `${loc.title} ${dict.closeTitle}`);
       removeBtn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
       removeBtn.addEventListener('click', () => removeOverlayByItem(item));
 
-      btns.append(upBtn, downBtn, zoomBtn, removeBtn);
+      btns.append(zoomBtn, removeBtn);
       topRow.append(label, btns);
 
-      // 個別透過度スライダー行
+      // 個別透過度スライダー（最新調整値を既定透過度として保存）
       const opacityRow = document.createElement('div');
       opacityRow.className = 'overlay-item-opacity';
       const currentPct = Math.round((entry.opacity ?? state.overlayOpacity) * 100);
@@ -1294,43 +1727,23 @@
 
       itemSlider.addEventListener('input', () => {
         const pct = Number(itemSlider.value);
-        entry.opacity = pct / 100;
+        const nextOpacity = pct / 100;
+        entry.opacity = nextOpacity;
+        state.overlayOpacity = nextOpacity;
+        state.settings.overlayOpacity = nextOpacity;
         itemVal.textContent = `${pct}%`;
         if (layer && typeof layer.setOpacity === 'function') {
-          layer.setOpacity(entry.opacity);
+          layer.setOpacity(nextOpacity);
         }
+        debouncedSaveSettings();
+      });
+      itemSlider.addEventListener('change', () => {
+        saveSettings();
+        syncSettingsUI();
       });
 
       opacityRow.append(itemSlider, itemVal);
-
-      const metaRow = document.createElement('div');
-      metaRow.className = 'active-overlay-meta';
-      const yearText = meta.publishedYear != null ? `${meta.publishedYear}${dict.yearSuffix}` : dict.yearUnknown;
-      const infoSpan = document.createElement('span');
-      infoSpan.textContent = `${yearText} / ${loc.authors}`;
-      metaRow.appendChild(infoSpan);
-
-      if (meta.detailUrl) {
-        const detailLink = document.createElement('a');
-        detailLink.className = 'active-overlay-link';
-        detailLink.href = meta.detailUrl;
-        detailLink.target = '_blank';
-        detailLink.rel = 'noopener noreferrer';
-        detailLink.textContent = dict.linkDetail;
-        metaRow.appendChild(detailLink);
-      }
-
-      if (meta.preferredPdf) {
-        const pdfLink = document.createElement('a');
-        pdfLink.className = 'active-overlay-link';
-        pdfLink.href = meta.preferredPdf;
-        pdfLink.target = '_blank';
-        pdfLink.rel = 'noopener noreferrer';
-        pdfLink.textContent = dict.linkPdf;
-        metaRow.appendChild(pdfLink);
-      }
-
-      li.append(topRow, opacityRow, metaRow);
+      li.append(topRow, opacityRow);
       fragment.appendChild(li);
     }
 
@@ -1338,8 +1751,20 @@
   }
 
   /**
+   * 削除後などにフォールバックとなるインスペクタ表示対象を返す
+   */
+  function getFallbackInspectorItem() {
+    if (state.activeOverlays.length > 0) {
+      return state.activeOverlays[state.activeOverlays.length - 1].item;
+    }
+    if (state.seamlessLayer && state.seamlessVirtualItem) {
+      return state.seamlessVirtualItem;
+    }
+    return null;
+  }
+
+  /**
    * 指定された図幅のオーバーレイを解除する
-   * @param {Object} item - 解除対象の図幅アイテム
    */
   function removeOverlayByItem(item) {
     const idx = state.activeOverlays.findIndex((entry) => entry.item === item);
@@ -1360,20 +1785,32 @@
       }
       state.map.removeLayer(removed.layer);
     }
-    if (state.selectedItem === item) {
-      state.selectedItem = null;
-    }
-    if (removed.item.layer && !isItemOverlayed(removed.item)) {
+    if (removed.item.layer) {
       removed.item.layer.setStyle(styleByScale(removed.item.meta.scaleDenominator, removed.item.meta.mapType));
     }
 
+    if (state.pinnedInspectItem === item) {
+      state.pinnedInspectItem = null;
+    }
+    if (state.selectedItem === item) {
+      state.selectedItem = state.activeOverlays.length > 0
+        ? state.activeOverlays[state.activeOverlays.length - 1].item
+        : null;
+    }
+    if (state.inspectedItem === item) {
+      state.inspectedItem = getFallbackInspectorItem();
+    }
+
+    syncOverlayZIndices();
     renderActiveOverlayList();
     syncSelectedListItem();
-    updateDominantLegend();
+    renderInspectorDetail(state.inspectedItem);
+    updateAutoInspectedItem();
+    setStatusMessage('');
   }
 
   /**
-   * 選択中のすべての地質図オーバーレイおよびポリゴン強調を解除する
+   * すべての地質図オーバーレイを閉じる
    */
   function clearAllOverlays() {
     state.activeOverlays.forEach(({ item, layer }) => {
@@ -1388,33 +1825,37 @@
       }
     });
     state.activeOverlays = [];
+    state.loadingLayerCount = 0;
+    dom.wmsStatusDot.classList.remove('is-loading');
+
     if (state.selectedItem && state.selectedItem.layer) {
       state.selectedItem.layer.setStyle(styleByScale(state.selectedItem.meta.scaleDenominator, state.selectedItem.meta.mapType));
     }
     state.selectedItem = null;
-    state.loadingLayerCount = 0;
-    dom.wmsStatusDot.classList.remove('is-loading');
+    state.pinnedInspectItem = null;
+    state.inspectedItem = getFallbackInspectorItem();
+
     renderActiveOverlayList();
     syncSelectedListItem();
-    updateDominantLegend();
+    renderInspectorDetail(state.inspectedItem);
+    setStatusMessage('');
   }
 
   /**
-   * display.tile_type（xyz / wms / raster）に応じて Leaflet レイヤーを生成する
-   * @param {Object} meta - normalizeProperties() の返却オブジェクト
-   * @param {L.LatLngBounds|null} [layerBounds] - 表示範囲制限
-   * @param {number} [zIndex] - レイヤー重ね順
-   * @returns {L.Layer|null}
+   * 共通スキーマの display 設定から Leaflet レイヤーを生成する
    */
-  function createGeologicalLayer(meta, layerBounds = null, zIndex = 300) {
+  function createGeologicalLayer(meta, layerBounds = null, zIndex = 300, customOpacity = null) {
     if (!meta.overlayType || !meta.overlayUrl) {
       return null;
     }
 
     const commonOptions = {
-      opacity: state.overlayOpacity,
+      opacity: typeof customOpacity === 'number' ? customOpacity : state.overlayOpacity,
       attribution: meta.attribution,
       zIndex,
+      updateWhenZooming: false,
+      updateWhenIdle: false,
+      keepBuffer: 6,
       ...(layerBounds && layerBounds.isValid() ? { bounds: layerBounds } : {})
     };
 
@@ -1423,7 +1864,8 @@
         ...commonOptions,
         minZoom: CONFIG.MIN_ZOOM,
         maxNativeZoom: meta.zoomMax,
-        maxZoom: CONFIG.MAX_ZOOM
+        maxZoom: CONFIG.MAX_ZOOM,
+        errorTileUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'
       });
     }
 
@@ -1450,15 +1892,227 @@
   }
 
   /**
-   * 20万分の1日本シームレス地質図（全国WMS）の表示/非表示を切り替える
+   * シームレス地質図の地点マーカー・ポップアップ・進行中リクエストを片付ける
+   */
+  function clearSeamlessPointUI() {
+    if (state.seamlessAbortController) {
+      state.seamlessAbortController.abort();
+      state.seamlessAbortController = null;
+    }
+    if (state.map && state.seamlessPopup) {
+      state.map.closePopup(state.seamlessPopup);
+      state.seamlessPopup = null;
+    }
+    if (state.map && state.seamlessPointMarker) {
+      state.map.removeLayer(state.seamlessPointMarker);
+      state.seamlessPointMarker = null;
+    }
+    state.lastSeamlessPoint = null;
+    renderSeamlessPointCard();
+  }
+
+  /**
+   * 地点地質レスポンスから表示用の DOM ノードを構築する
+   */
+  function buildSeamlessGeologyNode(record) {
+    const dict = t();
+    const isEn = state.lang === 'en';
+    const wrap = document.createElement('div');
+    wrap.className = 'seamless-popup';
+
+    if (!record || record.status === 'loading') {
+      const msg = document.createElement('div');
+      msg.className = 'seamless-popup-status';
+      msg.textContent = dict.seamlessLoading;
+      wrap.appendChild(msg);
+      return wrap;
+    }
+
+    if (record.status === 'error') {
+      const msg = document.createElement('div');
+      msg.className = 'seamless-popup-status';
+      msg.textContent = dict.seamlessFetchError;
+      wrap.appendChild(msg);
+      return wrap;
+    }
+
+    const data = record.data;
+    if (!data || !data.symbol) {
+      const msg = document.createElement('div');
+      msg.className = 'seamless-popup-status';
+      msg.textContent = dict.seamlessNoData;
+      wrap.appendChild(msg);
+      return wrap;
+    }
+
+    const header = document.createElement('div');
+    header.className = 'seamless-geology-header';
+
+    const swatch = document.createElement('span');
+    swatch.className = 'seamless-swatch';
+    const r = Number(data.r);
+    const g = Number(data.g);
+    const b = Number(data.b);
+    if (!Number.isNaN(r) && !Number.isNaN(g) && !Number.isNaN(b)) {
+      swatch.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+    }
+
+    const symbol = document.createElement('span');
+    symbol.className = 'seamless-symbol';
+    symbol.textContent = data.symbol;
+
+    const coords = document.createElement('span');
+    coords.className = 'seamless-coords';
+    coords.textContent = `${record.lat.toFixed(4)}, ${record.lng.toFixed(4)}`;
+
+    header.append(swatch, symbol, coords);
+    wrap.appendChild(header);
+
+    const groupVal = isEn ? (data.group_en || data.group_ja) : (data.group_ja || data.group_en);
+    const ageVal = isEn ? (data.formationAge_en || data.formationAge_ja) : (data.formationAge_ja || data.formationAge_en);
+    const lithVal = isEn ? (data.lithology_en || data.lithology_ja) : (data.lithology_ja || data.lithology_en);
+
+    const dl = document.createElement('dl');
+    dl.className = 'seamless-geology-meta';
+    [
+      [dict.seamlessGroupLabel, groupVal],
+      [dict.seamlessAgeLabel, ageVal],
+      [dict.seamlessLithologyLabel, lithVal]
+    ].forEach(([label, value]) => {
+      if (!value) {
+        return;
+      }
+      const dt = document.createElement('dt');
+      dt.textContent = label;
+      const dd = document.createElement('dd');
+      dd.textContent = value;
+      dl.append(dt, dd);
+    });
+    wrap.appendChild(dl);
+    return wrap;
+  }
+
+  /**
+   * 右インスペクタがシームレス表示中のとき、直近クリック地点の地質サマリーを更新する
+   */
+  function renderSeamlessPointCard() {
+    if (!dom.seamlessPointCard) {
+      return;
+    }
+    const isInspectingSeamless = Boolean(
+      state.seamlessLayer &&
+      state.seamlessVirtualItem &&
+      state.inspectedItem === state.seamlessVirtualItem &&
+      state.lastSeamlessPoint
+    );
+    if (!isInspectingSeamless) {
+      dom.seamlessPointCard.hidden = true;
+      dom.seamlessPointCard.innerHTML = '';
+      return;
+    }
+    dom.seamlessPointCard.innerHTML = '';
+    dom.seamlessPointCard.appendChild(buildSeamlessGeologyNode(state.lastSeamlessPoint));
+    dom.seamlessPointCard.hidden = false;
+  }
+
+  /**
+   * クリック地点のシームレス地質図 V2 凡例を API v1.2 から取得して表示する
+   */
+  async function querySeamlessPointGeology(latlng) {
+    if (!state.map || !state.seamlessLayer || !latlng) {
+      return;
+    }
+    const lat = Number(latlng.lat);
+    const lng = Number(latlng.lng);
+    const cacheKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+
+    if (state.seamlessAbortController) {
+      state.seamlessAbortController.abort();
+      state.seamlessAbortController = null;
+    }
+
+    if (state.seamlessPointMarker) {
+      state.seamlessPointMarker.setLatLng(latlng);
+    } else {
+      state.seamlessPointMarker = L.circleMarker(latlng, {
+        radius: 6,
+        color: '#1a73e8',
+        weight: 2,
+        fillColor: '#ffffff',
+        fillOpacity: 0.9,
+        interactive: false
+      }).addTo(state.map);
+    }
+
+    if (!state.seamlessPopup) {
+      state.seamlessPopup = L.popup({
+        className: 'seamless-leaflet-popup',
+        maxWidth: 300,
+        offset: [0, -6]
+      });
+    }
+
+    const showResult = (record) => {
+      state.lastSeamlessPoint = record;
+      if (state.seamlessPopup && state.map) {
+        state.seamlessPopup
+          .setLatLng(latlng)
+          .setContent(buildSeamlessGeologyNode(record))
+          .openOn(state.map);
+      }
+      renderSeamlessPointCard();
+    };
+
+    if (state.seamlessPointCache.has(cacheKey)) {
+      showResult({ status: 'ok', lat, lng, data: state.seamlessPointCache.get(cacheKey) });
+      return;
+    }
+
+    showResult({ status: 'loading', lat, lng, data: null });
+
+    const controller = new AbortController();
+    state.seamlessAbortController = controller;
+
+    try {
+      const url = `${CONFIG.SEAMLESS_LEGEND_API_URL}?point=${lat.toFixed(6)},${lng.toFixed(6)}`;
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      const text = await response.text();
+      const data = text.trim() ? JSON.parse(text) : {};
+      state.seamlessPointCache.set(cacheKey, data);
+      if (state.seamlessAbortController === controller) {
+        state.seamlessAbortController = null;
+        showResult({ status: 'ok', lat, lng, data });
+      }
+    } catch (error) {
+      if (error && error.name === 'AbortError') {
+        return;
+      }
+      console.warn('Seamless V2 legend query failed:', error);
+      if (state.seamlessAbortController === controller) {
+        state.seamlessAbortController = null;
+        showResult({ status: 'error', lat, lng, data: null });
+      }
+    }
+  }
+
+  /**
+   * 20万分の1日本シームレス地質図 V2 の表示/非表示を切り替える
    */
   function toggleSeamless200k() {
     const enabled = dom.seamless200kToggle.checked;
+    state.settings.seamless200k = enabled;
+    saveSettings();
+    syncSettingsUI();
+
     if (!state.map) {
       return;
     }
 
     if (!enabled) {
+      clearSeamlessPointUI();
       if (state.seamlessLayer) {
         if (typeof state.seamlessLayer.off === 'function') {
           state.seamlessLayer.off();
@@ -1466,43 +2120,50 @@
         state.map.removeLayer(state.seamlessLayer);
         state.seamlessLayer = null;
       }
-      updateDominantLegend();
+      if (state.inspectedItem === state.seamlessVirtualItem) {
+        state.inspectedItem = getFallbackInspectorItem();
+      }
+      renderInspectorDetail(state.inspectedItem);
       return;
     }
 
     if (!state.seamlessMeta) {
       dom.seamless200kToggle.checked = false;
-      setStatusMessage('20万分の1シームレス地質図の設定が読み込まれていません。');
+      state.settings.seamless200k = false;
+      saveSettings();
+      syncSettingsUI();
+      setStatusMessage(t().seamlessMissingMessage);
       return;
     }
 
     if (!state.seamlessLayer) {
-      state.seamlessLayer = createGeologicalLayer(state.seamlessMeta, null, 200);
+      state.seamlessLayer = createGeologicalLayer(state.seamlessMeta, null, 200, state.seamlessOpacity);
       if (state.seamlessLayer) {
         state.seamlessLayer.addTo(state.map);
       }
     }
-    updateDominantLegend();
+    if (!state.inspectedItem && state.seamlessVirtualItem) {
+      state.isRightInspectorCollapsed = false;
+      renderInspectorDetail(state.seamlessVirtualItem);
+    }
   }
 
   /**
-   * 図幅を選択し、タイル/WMSがある場合はオーバーレイ追加（最大4図幅）、
-   * タイル未配信の場合は詳細・凡例パネル表示のみを行う
-   * @param {Object} item - { layer, meta } オブジェクト
+   * 図幅を選択し、オーバーレイ追加（最大4図幅）または詳細・凡例表示を行う
    */
   function addOverlayForItem(item) {
     const { meta } = item;
-
-    // 以前の選択図幅がオーバーレイ中でなければスタイルをデフォルトに戻す
     const prevSelected = state.selectedItem;
     state.selectedItem = item;
+    state.pinnedInspectItem = null;
+    state.isRightInspectorCollapsed = false;
+
     if (prevSelected && prevSelected !== item && !state.activeOverlays.some((e) => e.item === prevSelected)) {
       if (prevSelected.layer) {
         prevSelected.layer.setStyle(styleByScale(prevSelected.meta.scaleDenominator, prevSelected.meta.mapType));
       }
     }
 
-    // すでにオーバーレイ表示中の場合は最前面へ移動し、配列順も最新へ揃えて終了
     const existing = state.activeOverlays.find((entry) => entry.item === item);
     if (existing) {
       if (existing.layer && typeof existing.layer.bringToFront === 'function') {
@@ -1510,9 +2171,9 @@
       }
       state.activeOverlays.push(...state.activeOverlays.splice(state.activeOverlays.indexOf(existing), 1));
       syncOverlayZIndices();
+      renderInspectorDetail(item);
       renderActiveOverlayList();
       syncSelectedListItem();
-      updateDominantLegend();
       return;
     }
 
@@ -1521,26 +2182,29 @@
 
     setStatusMessage('');
 
-    // タイル未配信（tile_type: "none" 等）の場合はオーバーレイ配列には入れず、選択状態＋右サイドバー表示（再クリックで解除）を行う
+    // タイル未配信（tile_type: "none" 等）の場合はオーバーレイ配列には入れず選択・凡例表示のみ
     if (!overlayLayer) {
-      if (prevSelected === item && !dom.legendSidebar.hidden) {
+      if (prevSelected === item && dom.rightInspector.classList.contains('is-open') && !state.isRightInspectorCollapsed) {
         if (item.layer) {
           item.layer.setStyle(styleByScale(item.meta.scaleDenominator, item.meta.mapType));
         }
+        if (state.pinnedInspectItem === item) {
+          state.pinnedInspectItem = null;
+        }
         state.selectedItem = null;
+        state.inspectedItem = getFallbackInspectorItem();
         syncSelectedListItem();
-        updateDominantLegend();
+        renderInspectorDetail(state.inspectedItem);
         return;
       }
       if (item.layer) {
         item.layer.setStyle(CONFIG.POLYGON_STYLE.selected);
       }
       syncSelectedListItem();
-      renderLegendPanel(item, true);
+      renderInspectorDetail(item, true);
       return;
     }
 
-    // 最大4図幅に達している場合、最も古いオーバーレイを1つ外す
     if (state.activeOverlays.length >= CONFIG.MAX_OVERLAYS) {
       removeOverlayByItem(state.activeOverlays[0].item);
     }
@@ -1576,7 +2240,8 @@
         dom.wmsStatusDot.classList.remove('is-loading');
       }
       if (loadedTileCount === 0 && errorTileCount > 0) {
-        setStatusMessage(`「${meta.mapNameJa}」の地質図タイル取得中にエラーが発生しました。`);
+        const loc = getLocalizedMeta(meta);
+        setStatusMessage(t().tileErrorMessage(loc.shortTitle));
       }
     });
 
@@ -1587,19 +2252,25 @@
       item.layer.setStyle(CONFIG.POLYGON_STYLE.selected);
     }
 
+    renderInspectorDetail(item, true);
     renderActiveOverlayList();
     syncSelectedListItem();
-    updateDominantLegend();
   }
 
   /**
-   * 選択中の図幅の範囲（bounds優先）へマップをズームする
-   * @param {Object} item - { layer, meta } オブジェクト
+   * 選択中の図幅の範囲へマップをズームする
    */
   function zoomToMapItem(item) {
     const bounds = getItemBounds(item);
-    if (bounds && bounds.isValid()) {
-      state.map.fitBounds(bounds, { padding: [48, 48], maxZoom: item.meta.zoomMax });
+    if (bounds && bounds.isValid() && state.map) {
+      state.map.stop();
+      const pad = getMapFitPadding();
+      state.map.flyToBounds(bounds, {
+        ...pad,
+        maxZoom: item.meta.zoomMax || CONFIG.MAX_ZOOM,
+        duration: 0.65,
+        easeLinearity: 0.25
+      });
     }
   }
 
@@ -1615,18 +2286,19 @@
   }
 
   /**
-   * 絞り込み結果リストを描画する（常時表示）
+   * 絞り込み結果リストを描画する
    */
   function renderResultList() {
     const dict = t();
     dom.resultList.innerHTML = '';
 
-    // リスト再描画時にホバー中だったポリゴンのハイライト残留をリセット
-    state.allItems.forEach((item) => {
-      if (!isItemOverlayed(item) && item.layer) {
-        item.layer.setStyle(styleByScale(item.meta.scaleDenominator, item.meta.mapType));
+    if (state.hoveredListItem) {
+      const prev = state.hoveredListItem;
+      state.hoveredListItem = null;
+      if (!isItemOverlayed(prev) && prev.layer) {
+        prev.layer.setStyle(styleByScale(prev.meta.scaleDenominator, prev.meta.mapType));
       }
-    });
+    }
 
     const fragment = document.createDocumentFragment();
     const displayItems = state.filteredItems.slice(0, CONFIG.MAX_LIST_ITEMS);
@@ -1661,11 +2333,18 @@
 
       button.append(mainSpan, yearSpan);
       const highlightItem = () => {
+        if (state.hoveredListItem && state.hoveredListItem !== item && !isItemOverlayed(state.hoveredListItem) && state.hoveredListItem.layer) {
+          state.hoveredListItem.layer.setStyle(styleByScale(state.hoveredListItem.meta.scaleDenominator, state.hoveredListItem.meta.mapType));
+        }
+        state.hoveredListItem = item;
         if (!isItemOverlayed(item) && state.showIndexFrames) {
           item.layer.setStyle(CONFIG.POLYGON_STYLE.hover);
         }
       };
       const unhighlightItem = () => {
+        if (state.hoveredListItem === item) {
+          state.hoveredListItem = null;
+        }
         if (!isItemOverlayed(item) && state.showIndexFrames) {
           item.layer.setStyle(styleByScale(item.meta.scaleDenominator, item.meta.mapType));
         }
@@ -1676,8 +2355,8 @@
       button.addEventListener('focus', highlightItem);
       button.addEventListener('blur', unhighlightItem);
       button.addEventListener('click', () => {
-        zoomToMapItem(item);
         addOverlayForItem(item);
+        zoomToMapItem(item);
       });
 
       li.appendChild(button);
@@ -1700,77 +2379,65 @@
   }
 
   /**
-   * 発行年デュアルレンジスライダーの見た目（選択範囲バー・年表示）を更新する
+   * 第一階層フィルター：地図種別チップを生成する（state.allItems のみに基づく）
    */
-  function updateYearSliderUI() {
+  function renderMapTypeChips() {
     const dict = t();
-    const { minBound, maxBound, currentMin, currentMax } = state.yearRange;
-    const span = Math.max(1, maxBound - minBound);
-    const leftPct = ((currentMin - minBound) / span) * 100;
-    const rightPct = ((currentMax - minBound) / span) * 100;
+    dom.mapTypeChips.innerHTML = '';
 
-    dom.yearRangeTrack.style.left = `${leftPct}%`;
-    dom.yearRangeTrack.style.width = `${Math.max(0, rightPct - leftPct)}%`;
-    dom.yearRangeDisplay.textContent = `${currentMin}${dict.yearSuffix} 〜 ${currentMax}${dict.yearSuffix}`;
-  }
+    const typesSet = new Set();
+    state.allItems.forEach(({ meta }) => {
+      if (meta.mapType) {
+        typesSet.add(meta.mapType);
+      }
+    });
 
-  /**
-   * データ内の最小発行年から現在年（例: 2026年、2030年なら2030年）まで
-   * 発行年デュアルレンジスライダーを初期化する
-   */
-  function initYearSlider() {
-    const years = state.allItems
-      .map(({ meta }) => Number(meta.publishedYear))
-      .filter((year) => !Number.isNaN(year) && year > 0);
+    const entries = [
+      ['all', dict.mapTypeAll],
+      ...[...typesSet].map((typeKey) => [typeKey, dict.mapTypes[typeKey] || typeKey])
+    ];
 
-    const currentYear = new Date().getFullYear();
-    const minBound = years.length > 0 ? Math.min(...years) : currentYear;
-    const maxBound = Math.max(years.length > 0 ? Math.max(...years) : currentYear, currentYear);
-
-    state.yearRange = {
-      minBound,
-      maxBound,
-      currentMin: minBound,
-      currentMax: maxBound
-    };
-
-    dom.yearRangeMin.min = String(minBound);
-    dom.yearRangeMin.max = String(maxBound);
-    dom.yearRangeMin.value = String(minBound);
-
-    dom.yearRangeMax.min = String(minBound);
-    dom.yearRangeMax.max = String(maxBound);
-    dom.yearRangeMax.value = String(maxBound);
-
-    updateYearSliderUI();
-  }
-
-  /**
-   * 発行年デュアルレンジスライダー操作時のクランプおよび即時フィルタリング
-   * @param {'min'|'max'} changedSide - 動かした側のつまみ
-   */
-  function handleYearSliderInput(changedSide) {
-    let minVal = Number(dom.yearRangeMin.value);
-    let maxVal = Number(dom.yearRangeMax.value);
-
-    if (changedSide === 'min' && minVal > maxVal) {
-      minVal = maxVal;
-      dom.yearRangeMin.value = String(minVal);
-    } else if (changedSide === 'max' && maxVal < minVal) {
-      maxVal = minVal;
-      dom.yearRangeMax.value = String(maxVal);
+    if (state.selectedMapType !== 'all' && !typesSet.has(state.selectedMapType)) {
+      state.selectedMapType = 'all';
     }
 
-    state.yearRange.currentMin = minVal;
-    state.yearRange.currentMax = maxVal;
-    updateYearSliderUI();
-    applyFilters();
+    const fragment = document.createDocumentFragment();
+    entries.forEach(([typeKey, label]) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      const isSelected = state.selectedMapType === typeKey;
+      btn.className = isSelected ? 'decade-chip is-selected' : 'decade-chip';
+      btn.textContent = label;
+      btn.dataset.mapType = typeKey;
+      btn.setAttribute('aria-pressed', String(isSelected));
+
+      btn.addEventListener('click', () => {
+        const changed = state.selectedMapType !== typeKey;
+        if (changed) {
+          state.selectedMapType = typeKey;
+          state.selectedScales.clear();
+          renderScaleChips();
+        }
+        dom.mapTypeChips.querySelectorAll('.decade-chip').forEach((c) => {
+          c.classList.remove('is-selected');
+          c.setAttribute('aria-pressed', 'false');
+        });
+        btn.classList.add('is-selected');
+        btn.setAttribute('aria-pressed', 'true');
+        applyFilters();
+      });
+
+      fragment.appendChild(btn);
+    });
+
+    dom.mapTypeChips.appendChild(fragment);
   }
 
   /**
-   * 縮尺・シリーズのマルチセレクトチップを生成する
+   * 詳細フィルター：縮尺・シリーズマルチセレクトチップを生成する
    */
   function renderScaleChips() {
+    dom.scaleChips.innerHTML = '';
     const scalesSet = new Set();
     state.allItems.forEach(({ meta }) => {
       if (meta.scale) {
@@ -1778,12 +2445,17 @@
       }
     });
 
-    dom.scaleChips.innerHTML = '';
+    const sortedScales = [...scalesSet].sort((a, b) => {
+      const numA = parseInt(a.replace(/[^\d]/g, ''), 10) || Number.MAX_SAFE_INTEGER;
+      const numB = parseInt(b.replace(/[^\d]/g, ''), 10) || Number.MAX_SAFE_INTEGER;
+      return numA - numB || a.localeCompare(b, state.lang);
+    });
+
     const fragment = document.createDocumentFragment();
-    [...scalesSet].sort().forEach((scale) => {
-      const isSelected = state.selectedScales.has(scale);
+    sortedScales.forEach((scale) => {
       const btn = document.createElement('button');
       btn.type = 'button';
+      const isSelected = state.selectedScales.has(scale);
       btn.className = isSelected ? 'decade-chip is-selected' : 'decade-chip';
       btn.textContent = scale;
       btn.setAttribute('aria-pressed', String(isSelected));
@@ -1808,195 +2480,23 @@
   }
 
   /**
-   * 第一階層フィルター：地図種別 (map_type) チップを生成する
-   */
-  function renderMapTypeChips() {
-    const dict = t();
-    const presentTypes = new Set();
-    state.allItems.forEach(({ meta }) => {
-      if (meta.mapType) {
-        presentTypes.add(meta.mapType);
-      }
-    });
-    if (state.seamlessMeta?.mapType) {
-      presentTypes.add(state.seamlessMeta.mapType);
-    }
-
-    const orderedKeys = [
-      'geological_map_sheet',
-      'seamless_geological_map',
-      'volcanic_geological_map',
-      ...[...presentTypes].filter(
-        (k) => !['geological_map_sheet', 'seamless_geological_map', 'volcanic_geological_map'].includes(k)
-      )
-    ].filter((k) => presentTypes.has(k));
-
-    dom.mapTypeChips.innerHTML = '';
-    const fragment = document.createDocumentFragment();
-
-    const options = [['all', dict.mapTypeAll], ...orderedKeys.map((k) => [k, dict.mapTypes[k] || k])];
-    options.forEach(([typeKey, label]) => {
-      const isSelected = state.selectedMapType === typeKey;
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = isSelected ? 'decade-chip is-selected' : 'decade-chip';
-      btn.textContent = label;
-      btn.setAttribute('aria-pressed', String(isSelected));
-
-      btn.addEventListener('click', () => {
-        const changed = state.selectedMapType !== typeKey;
-        if (changed) {
-          state.selectedMapType = typeKey;
-          state.selectedScales.clear();
-          renderScaleChips();
-        }
-        dom.mapTypeChips.querySelectorAll('.decade-chip').forEach((c) => {
-          c.classList.remove('is-selected');
-          c.setAttribute('aria-pressed', 'false');
-        });
-        btn.classList.add('is-selected');
-        btn.setAttribute('aria-pressed', 'true');
-        applyFilters();
-        if (changed && !state.viewportOnly && state.filteredItems.length > 0) {
-          fitAllVisibleItems();
-        }
-      });
-
-      fragment.appendChild(btn);
-    });
-
-    dom.mapTypeChips.appendChild(fragment);
-  }
-
-  /**
-   * 第二階層フィルター：地域・都道府県マルチセレクトチップを生成する
-   */
-  function renderRegionChips() {
-    const regionsSet = new Set();
-    state.allItems.forEach(({ meta }) => {
-      getLocalizedMeta(meta).regionList.forEach((r) => regionsSet.add(r));
-    });
-
-    dom.regionChips.innerHTML = '';
-    const fragment = document.createDocumentFragment();
-
-    [...regionsSet].sort((a, b) => a.localeCompare(b, state.lang)).forEach((region) => {
-      const isSelected = state.selectedRegions.has(region);
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = isSelected ? 'decade-chip is-selected' : 'decade-chip';
-      btn.textContent = region;
-      btn.setAttribute('aria-pressed', String(isSelected));
-
-      btn.addEventListener('click', () => {
-        if (state.selectedRegions.has(region)) {
-          state.selectedRegions.delete(region);
-          btn.classList.remove('is-selected');
-          btn.setAttribute('aria-pressed', 'false');
-        } else {
-          state.selectedRegions.add(region);
-          btn.classList.add('is-selected');
-          btn.setAttribute('aria-pressed', 'true');
-        }
-        applyFilters();
-      });
-
-      fragment.appendChild(btn);
-    });
-
-    dom.regionChips.appendChild(fragment);
-  }
-
-  /**
-   * 現在の言語の著者一覧からマルチセレクトチップを生成する
-   */
-  function renderAuthorChips() {
-    const authorsSet = new Set();
-    state.allItems.forEach(({ meta }) => {
-      getLocalizedMeta(meta).authorList.forEach((author) => authorsSet.add(author));
-    });
-
-    const sortedAuthors = [...authorsSet].sort((a, b) => a.localeCompare(b, state.lang));
-    dom.authorChips.innerHTML = '';
-
-    const fragment = document.createDocumentFragment();
-    sortedAuthors.forEach((author) => {
-      const isSelected = state.selectedAuthors.has(author);
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = isSelected ? 'decade-chip is-selected' : 'decade-chip';
-      btn.textContent = author;
-      btn.setAttribute('aria-pressed', String(isSelected));
-
-      btn.addEventListener('click', () => {
-        if (state.selectedAuthors.has(author)) {
-          state.selectedAuthors.delete(author);
-          btn.classList.remove('is-selected');
-          btn.setAttribute('aria-pressed', 'false');
-        } else {
-          state.selectedAuthors.add(author);
-          btn.classList.add('is-selected');
-          btn.setAttribute('aria-pressed', 'true');
-        }
-        applyFilters();
-      });
-
-      fragment.appendChild(btn);
-    });
-
-    dom.authorChips.appendChild(fragment);
-  }
-
-  /**
-   * 発行機関および資料有無（PDF・凡例・原図）のマルチセレクトチップを生成する
+   * 詳細フィルター：資料有無チップを生成する
    */
   function renderOtherChips() {
     const dict = t();
-    const publishers = new Set();
-    state.allItems.forEach(({ meta }) => {
-      const pub = getLocalizedMeta(meta).publisher;
-      if (pub) {
-        publishers.add(pub);
-      }
-    });
-
     dom.otherChips.innerHTML = '';
-    const fragment = document.createDocumentFragment();
 
-    [...publishers].sort((a, b) => a.localeCompare(b, state.lang)).forEach((pub) => {
-      const isSelected = state.selectedPublishers.has(pub);
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = isSelected ? 'decade-chip is-selected' : 'decade-chip';
-      btn.textContent = pub;
-      btn.setAttribute('aria-pressed', String(isSelected));
-
-      btn.addEventListener('click', () => {
-        if (state.selectedPublishers.has(pub)) {
-          state.selectedPublishers.delete(pub);
-          btn.classList.remove('is-selected');
-          btn.setAttribute('aria-pressed', 'false');
-        } else {
-          state.selectedPublishers.add(pub);
-          btn.classList.add('is-selected');
-          btn.setAttribute('aria-pressed', 'true');
-        }
-        applyFilters();
-      });
-
-      fragment.appendChild(btn);
-    });
-
-    const resourceFlags = [
+    const flagDefs = [
       ['pdf', dict.flagPdf],
       ['legend', dict.flagLegend],
       ['original', dict.flagOriginal]
     ];
 
-    resourceFlags.forEach(([flagKey, label]) => {
-      const isSelected = state.selectedResourceFlags.has(flagKey);
+    const fragment = document.createDocumentFragment();
+    flagDefs.forEach(([flagKey, label]) => {
       const btn = document.createElement('button');
       btn.type = 'button';
+      const isSelected = state.selectedResourceFlags.has(flagKey);
       btn.className = isSelected ? 'decade-chip is-selected' : 'decade-chip';
       btn.textContent = label;
       btn.setAttribute('aria-pressed', String(isSelected));
@@ -2021,45 +2521,203 @@
   }
 
   /**
-   * 適用中の詳細フィルター数バッジを更新する
+   * 5年刻みの目盛りドットと20年節目の年号ラベル（位置一致）を描画する
    */
-  function updateActiveFilterBadge() {
-    const hasYearFilter =
-      state.yearRange.currentMin > state.yearRange.minBound ||
-      state.yearRange.currentMax < state.yearRange.maxBound;
+  function renderYearTicks() {
+    const { minBound, maxBound } = state.yearRange;
+    const span = Math.max(5, maxBound - minBound);
 
-    const count =
-      (hasYearFilter ? 1 : 0) +
-      state.selectedScales.size +
-      state.selectedRegions.size +
-      state.selectedAuthors.size +
-      state.selectedPublishers.size +
-      state.selectedResourceFlags.size;
+    if (dom.yearRangeTicks) {
+      dom.yearRangeTicks.innerHTML = '';
+      const frag = document.createDocumentFragment();
+      for (let y = minBound; y <= maxBound; y += 5) {
+        const dot = document.createElement('span');
+        dot.className = 'year-tick-dot';
+        if (y % 20 === 0) {
+          dot.classList.add('is-major');
+        }
+        dot.dataset.year = String(y);
+        dot.style.left = `${((y - minBound) / span) * 100}%`;
+        frag.appendChild(dot);
+      }
+      dom.yearRangeTicks.appendChild(frag);
+    }
 
-    if (count > 0) {
-      dom.activeFilterBadge.textContent = String(count);
-      dom.activeFilterBadge.hidden = false;
-    } else {
-      dom.activeFilterBadge.textContent = '0';
-      dom.activeFilterBadge.hidden = true;
+    if (dom.yearRangeLabels) {
+      dom.yearRangeLabels.innerHTML = '';
+      for (let y = minBound; y <= maxBound; y += 5) {
+        if (y % 20 !== 0) {
+          continue;
+        }
+        const spanEl = document.createElement('span');
+        spanEl.className = 'year-tick-label';
+        spanEl.textContent = String(y);
+        spanEl.style.left = `${((y - minBound) / span) * 100}%`;
+        dom.yearRangeLabels.appendChild(spanEl);
+      }
     }
   }
 
   /**
-   * 詳細フィルターの折りたたみ状態を切り替える
+   * デュアルレンジスライダーの表示ラベル・アクティブトラック・ドット・重なり優先度を更新する
+   */
+  function updateYearSliderUI() {
+    const { minBound, maxBound, dataMaxYear, currentMin, currentMax } = state.yearRange;
+    const suffix = t().yearSuffix;
+    const displayMax = currentMax >= maxBound ? dataMaxYear : currentMax;
+    dom.yearRangeDisplay.textContent = `${currentMin}${suffix} 〜 ${displayMax}${suffix}`;
+
+    const span = Math.max(1, maxBound - minBound);
+    const leftPct = ((currentMin - minBound) / span) * 100;
+    const rightPct = ((currentMax - minBound) / span) * 100;
+    dom.yearRangeTrack.style.left = `${leftPct}%`;
+    dom.yearRangeTrack.style.width = `${Math.max(0, rightPct - leftPct)}%`;
+
+    if (dom.yearRangeTicks) {
+      dom.yearRangeTicks.querySelectorAll('.year-tick-dot').forEach((dot) => {
+        const y = Number(dot.dataset.year);
+        dot.classList.toggle('is-in-range', y >= currentMin && y <= currentMax);
+      });
+    }
+
+    // 両つまみが右端付近で重なった場合に min つまみがロックされないよう z-index を切り替える
+    if (currentMin >= maxBound - 5) {
+      dom.yearRangeMin.style.zIndex = '4';
+      dom.yearRangeMax.style.zIndex = '3';
+    } else {
+      dom.yearRangeMin.style.zIndex = '3';
+      dom.yearRangeMax.style.zIndex = '4';
+    }
+  }
+
+  /**
+   * 発行年の最小・最大値（5年単位スナップ＋実データ最大年保持）からスライダーを初期化する
+   */
+  function initYearSlider() {
+    const years = state.allItems
+      .map((item) => Number(item.meta.publishedYear))
+      .filter((y) => !Number.isNaN(y) && y > 0);
+
+    const rawMin = years.length > 0 ? Math.min(...years) : 1950;
+    const rawMax = years.length > 0 ? Math.max(...years) : 2026;
+    const minYear = Math.floor(rawMin / 5) * 5;
+    const maxYear = Math.ceil(rawMax / 5) * 5;
+
+    state.yearRange = {
+      minBound: minYear,
+      maxBound: maxYear,
+      dataMaxYear: rawMax,
+      currentMin: minYear,
+      currentMax: maxYear
+    };
+
+    dom.yearRangeMin.min = String(minYear);
+    dom.yearRangeMin.max = String(maxYear);
+    dom.yearRangeMin.step = '5';
+    dom.yearRangeMin.value = String(minYear);
+
+    dom.yearRangeMax.min = String(minYear);
+    dom.yearRangeMax.max = String(maxYear);
+    dom.yearRangeMax.step = '5';
+    dom.yearRangeMax.value = String(maxYear);
+
+    renderYearTicks();
+    updateYearSliderUI();
+  }
+
+  let yearFilterTimer = null;
+
+  /**
+   * デュアルレンジスライダー操作時の補正とデバウンス付き再フィルタリング
+   */
+  function handleYearSliderInput(changedHandle) {
+    let minVal = Number(dom.yearRangeMin.value);
+    let maxVal = Number(dom.yearRangeMax.value);
+
+    if (changedHandle === 'min' && minVal > maxVal) {
+      minVal = maxVal;
+      dom.yearRangeMin.value = String(minVal);
+    } else if (changedHandle === 'max' && maxVal < minVal) {
+      maxVal = minVal;
+      dom.yearRangeMax.value = String(maxVal);
+    }
+
+    state.yearRange.currentMin = minVal;
+    state.yearRange.currentMax = maxVal;
+    updateYearSliderUI();
+    if (yearFilterTimer) {
+      clearTimeout(yearFilterTimer);
+    }
+    yearFilterTimer = setTimeout(() => {
+      yearFilterTimer = null;
+      applyFilters();
+    }, 70);
+  }
+
+  /**
+   * 折りたたみ式詳細フィルターパネルの開閉を切り替える
    */
   function toggleFiltersPanel() {
-    const willExpand = dom.filterPanelBody.hidden;
-    dom.filterPanelBody.hidden = !willExpand;
-    dom.toggleFiltersBtn.setAttribute('aria-expanded', String(willExpand));
+    const isExpanded = dom.toggleFiltersBtn.getAttribute('aria-expanded') === 'true';
+    const nextExpanded = !isExpanded;
+    dom.toggleFiltersBtn.setAttribute('aria-expanded', String(nextExpanded));
+    if (dom.filterPanelWrap) {
+      dom.filterPanelWrap.classList.toggle('is-open', nextExpanded);
+      dom.filterPanelWrap.inert = !nextExpanded;
+    }
+  }
+
+  /**
+   * 適用中の詳細フィルター件数バッジを更新する
+   */
+  function updateActiveFilterBadge() {
+    const { minBound, maxBound, currentMin, currentMax } = state.yearRange;
+    let count = 0;
+    if (currentMin > minBound || currentMax < maxBound) {
+      count += 1;
+    }
+    count += state.selectedScales.size;
+    count += state.selectedResourceFlags.size;
+
+    dom.activeFilterBadge.textContent = String(count);
+    dom.activeFilterBadge.hidden = count === 0;
+  }
+
+  /**
+   * GeoJSON Feature のバウンディングボックス面積を計算する
+   */
+  function getFeatureBboxArea(feature) {
+    const b = feature?.properties?.map?.bounds || feature?.properties?.tile?.bounds;
+    if (Array.isArray(b) && b.length === 4) {
+      return Math.abs((Number(b[2]) - Number(b[0])) * (Number(b[3]) - Number(b[1])));
+    }
+    const ring = feature?.geometry?.coordinates?.[0];
+    if (Array.isArray(ring) && ring.length > 0) {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      ring.forEach(([x, y]) => {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      });
+      return Math.abs((maxX - minX) * (maxY - minY));
+    }
+    return 0;
   }
 
   /**
    * GeoJSONデータからポリゴンレイヤー群を生成してマップに描画する
-   * @param {Object} geojsonData - GeoJSON FeatureCollection
+   * （面積降順に事前ソートして登録することで広い図幅を背面・狭い図幅を前面に保つ）
    */
   function renderGeoJsonFeatures(geojsonData) {
-    L.geoJSON(geojsonData, {
+    const sortedGeoJson = geojsonData && Array.isArray(geojsonData.features)
+      ? {
+        ...geojsonData,
+        features: [...geojsonData.features].sort((a, b) => getFeatureBboxArea(b) - getFeatureBboxArea(a))
+      }
+      : geojsonData;
+
+    L.geoJSON(sortedGeoJson, {
       style: (feature) => styleByScale(
         feature?.properties?.map?.scale_denominator ?? null,
         feature?.properties?.map?.map_type ?? 'geological_map_sheet'
@@ -2068,7 +2726,6 @@
         const meta = normalizeProperties(feature.properties);
         const item = { layer, meta };
 
-        // ホバー時の図幅名ツールチップ
         layer.bindTooltip(buildTooltipText(meta), {
           sticky: true,
           direction: 'top',
@@ -2076,7 +2733,6 @@
           className: 'map-hover-tooltip'
         });
 
-        // ホバー時のハイライト
         layer.on('mouseover', () => {
           if (!isItemOverlayed(item)) {
             layer.setStyle(CONFIG.POLYGON_STYLE.hover);
@@ -2089,8 +2745,12 @@
           }
         });
 
-        // クリック時は左サイドバーのオーバーレイ管理へ追加（最大4図幅）
-        layer.on('click', () => {
+        layer.on('click', (event) => {
+          L.DomEvent.stopPropagation(event);
+          if (state.seamlessLayer && state.seamlessQueryPriority && event.latlng) {
+            querySeamlessPointGeology(event.latlng);
+            return;
+          }
           addOverlayForItem(item);
         });
 
@@ -2101,28 +2761,22 @@
 
     state.filteredItems = [...state.allItems];
 
-    // 標準では5万分の1地質図幅(geological_map_sheet + 1:50,000)のみ表示する
+    // 初期表示は「地質図幅」のみ選択（詳細フィルターバッジは 0 のまま）
     if (state.allItems.some(({ meta }) => meta.mapType === 'geological_map_sheet')) {
       state.selectedMapType = 'geological_map_sheet';
-    }
-    if (state.allItems.some(({ meta }) => meta.scale === '1:50,000')) {
-      state.selectedScales.add('1:50,000');
     }
 
     renderMapTypeChips();
     initYearSlider();
     renderScaleChips();
-    renderRegionChips();
-    renderAuthorChips();
     renderOtherChips();
     buildSuggestionPool();
     applyFilters();
-    fitAllVisibleItems();
-    updateDominantLegend();
+    fitAllVisibleItems({ animate: false });
   }
 
   /**
-   * 図幅名および著者名のサジェスト候補プールを構築する
+   * 図幅名・火山名・著者名・地域名のサジェスト候補プールを構築する
    */
   function buildSuggestionPool() {
     const dict = t();
@@ -2133,17 +2787,20 @@
       const { meta } = item;
       const loc = getLocalizedMeta(meta);
       const mapKey = `map:${meta.mapId || `${loc.title}_${meta.scale}_${meta.publishedYear}`}`;
-      const metaTags = [meta.scale, meta.publishedYear].filter(Boolean).join(' / ');
-      const suffix = metaTags ? ` (${metaTags})` : '';
+      const suffix = meta.publishedYear ? ` (${meta.publishedYear})` : '';
 
       if (!seenKeys.has(mapKey)) {
         seenKeys.add(mapKey);
+        const coreJa = extractCoreMapName(meta.mapNameJa);
+        const coreEn = extractCoreMapName(meta.mapNameEn);
         pool.push({
           type: 'map',
-          label: `${loc.title}${suffix}`,
-          filterValue: loc.title,
+          label: `${loc.shortTitle}${suffix}`,
+          filterValue: loc.coreTitle || loc.title,
           badge: dict.badgeMap,
-          searchText: `${loc.title} ${meta.mapCode} ${meta.scale}`.toLowerCase(),
+          coreNormalized: normalizeSearchText(loc.coreTitle || loc.title),
+          primaryText: normalizeSearchText([loc.coreTitle, loc.shortTitle, loc.title, coreJa, coreEn].filter(Boolean).join(' ')),
+          searchText: loc.searchTokens,
           item
         });
       }
@@ -2160,7 +2817,9 @@
             label: `${volcanoName}${suffix}`,
             filterValue: volcanoName,
             badge: dict.badgeVolcano,
-            searchText: `${meta.volcanoNameJa} ${meta.volcanoNameEn}`.toLowerCase(),
+            coreNormalized: normalizeSearchText(volcanoName),
+            primaryText: normalizeSearchText(`${meta.volcanoNameJa} ${meta.volcanoNameEn}`),
+            searchText: normalizeSearchText(`${meta.volcanoNameJa} ${meta.volcanoNameEn} ${meta.publishedYear || ''}`),
             item
           });
         }
@@ -2170,12 +2829,33 @@
         const authorKey = `author:${author}`;
         if (!seenKeys.has(authorKey)) {
           seenKeys.add(authorKey);
+          const normAuthor = normalizeSearchText(author);
           pool.push({
             type: 'author',
             label: author,
             filterValue: author,
             badge: dict.badgeAuthor,
-            searchText: author.toLowerCase(),
+            coreNormalized: normAuthor,
+            primaryText: normAuthor,
+            searchText: normAuthor,
+            item: null
+          });
+        }
+      });
+
+      loc.regionList.forEach((region) => {
+        const regionKey = `region:${region}`;
+        if (!seenKeys.has(regionKey)) {
+          seenKeys.add(regionKey);
+          const normRegion = normalizeSearchText(region);
+          pool.push({
+            type: 'region',
+            label: region,
+            filterValue: region,
+            badge: dict.badgeRegion,
+            coreNormalized: normRegion,
+            primaryText: normRegion,
+            searchText: normRegion,
             item: null
           });
         }
@@ -2189,7 +2869,7 @@
    * サジェストドロップダウンを閉じる
    */
   function hideSuggestions() {
-    dom.searchSuggestions.hidden = true;
+    dom.searchSuggestions.classList.remove('is-open');
     dom.searchInput.setAttribute('aria-expanded', 'false');
     state.currentSuggestions = [];
     state.activeSuggestionIndex = -1;
@@ -2197,7 +2877,6 @@
 
   /**
    * サジェスト候補を選択した際の処理
-   * @param {Object} suggestion - サジェスト候補オブジェクト
    */
   function selectSuggestion(suggestion) {
     if (!suggestion) {
@@ -2209,14 +2888,10 @@
     applyFilters();
 
     if ((suggestion.type === 'map' || suggestion.type === 'volcano') && suggestion.item) {
-      // 現在の詳細フィルタ・種別フィルタで非表示になっていれば自動調整して確実に表示する
       if (!state.filteredItems.includes(suggestion.item)) {
         state.selectedMapType = suggestion.item.meta.mapType || 'all';
         renderMapTypeChips();
         state.selectedScales.clear();
-        state.selectedRegions.clear();
-        state.selectedAuthors.clear();
-        state.selectedPublishers.clear();
         state.selectedResourceFlags.clear();
         state.yearRange.currentMin = state.yearRange.minBound;
         state.yearRange.currentMax = state.yearRange.maxBound;
@@ -2224,71 +2899,181 @@
         dom.yearRangeMax.value = String(state.yearRange.maxBound);
         updateYearSliderUI();
         renderScaleChips();
-        renderRegionChips();
-        renderAuthorChips();
         renderOtherChips();
         applyFilters();
       }
-      zoomToMapItem(suggestion.item);
       addOverlayForItem(suggestion.item);
+      zoomToMapItem(suggestion.item);
     } else {
+      if (state.isLeftDrawerCollapsed) {
+        setLeftDrawerCollapsed(false);
+      }
       fitAllVisibleItems();
     }
   }
 
   /**
-   * 現在の検索入力値に応じたサジェスト候補を描画する
+   * サジェストラベル内の一致部分を <mark> でハイライトする
+   */
+  function buildHighlightedLabel(label, rawTokens) {
+    const frag = document.createDocumentFragment();
+    if (!rawTokens || rawTokens.length === 0) {
+      frag.appendChild(document.createTextNode(label));
+      return frag;
+    }
+
+    const escaped = rawTokens
+      .filter(Boolean)
+      .map((tok) => tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+    if (escaped.length === 0) {
+      frag.appendChild(document.createTextNode(label));
+      return frag;
+    }
+
+    const regex = new RegExp(`(${escaped.join('|')})`, 'gi');
+    let lastIndex = 0;
+    let match;
+    while ((match = regex.exec(label)) !== null) {
+      if (match.index > lastIndex) {
+        frag.appendChild(document.createTextNode(label.slice(lastIndex, match.index)));
+      }
+      const mark = document.createElement('mark');
+      mark.className = 'suggestion-highlight';
+      mark.textContent = match[0];
+      frag.appendChild(mark);
+      lastIndex = regex.lastIndex;
+    }
+    if (lastIndex < label.length) {
+      frag.appendChild(document.createTextNode(label.slice(lastIndex)));
+    }
+    return frag;
+  }
+
+  /**
+   * サジェスト候補の関連度スコアを計算する
+   */
+  function scoreSuggestion(entry, tokens) {
+    if (!tokens.every((tok) => entry.searchText.includes(tok))) {
+      return -1;
+    }
+    const typeBonus = { map: 4, volcano: 3, region: 2, author: 1 }[entry.type] || 0;
+    const first = tokens[0];
+    let score = typeBonus;
+
+    if (tokens.length === 1 && entry.coreNormalized === first) {
+      score += 120;
+    } else if (entry.coreNormalized && entry.coreNormalized.startsWith(first)) {
+      score += 70;
+    } else if (entry.primaryText && entry.primaryText.includes(first)) {
+      score += 40;
+    } else {
+      score += 15;
+    }
+    return score;
+  }
+
+  /**
+   * 現在の検索入力値に応じたサジェスト候補をカテゴリ別・関連度順に描画する
    */
   function renderSuggestions() {
-    const query = dom.searchInput.value.trim().toLowerCase();
-    const candidates = query
-      ? state.suggestionPool.filter((entry) => entry.searchText.includes(query))
-      : state.suggestionPool;
+    const rawQuery = dom.searchInput.value.trim();
+    const rawTokens = rawQuery.split(/[\s\u3000]+/).filter(Boolean);
+    const normTokens = normalizeSearchText(rawQuery).split(/\s+/).filter(Boolean);
 
-    const limited = candidates.slice(0, CONFIG.MAX_SUGGESTIONS);
-    state.currentSuggestions = limited;
-    state.activeSuggestionIndex = -1;
-
-    if (limited.length === 0) {
+    if (normTokens.length === 0) {
       hideSuggestions();
       return;
     }
 
+    const dict = t();
+    const mapMatches = [];
+    const regionMatches = [];
+    const authorMatches = [];
+
+    for (const entry of state.suggestionPool) {
+      const matchScore = scoreSuggestion(entry, normTokens);
+      if (matchScore < 0) {
+        continue;
+      }
+      const scored = { ...entry, matchScore };
+      if (entry.type === 'map' || entry.type === 'volcano') {
+        mapMatches.push(scored);
+      } else if (entry.type === 'region') {
+        regionMatches.push(scored);
+      } else if (entry.type === 'author') {
+        authorMatches.push(scored);
+      }
+    }
+
+    const sortFn = (a, b) => b.matchScore - a.matchScore || a.label.localeCompare(b.label, state.lang);
+    mapMatches.sort(sortFn);
+    regionMatches.sort(sortFn);
+    authorMatches.sort(sortFn);
+
+    const groups = [
+      { title: dict.suggestionGroupMaps, items: mapMatches.slice(0, 5) },
+      { title: dict.suggestionGroupRegions, items: regionMatches.slice(0, 3) },
+      { title: dict.suggestionGroupAuthors, items: authorMatches.slice(0, 3) }
+    ].filter((g) => g.items.length > 0);
+
+    if (groups.length === 0) {
+      hideSuggestions();
+      return;
+    }
+
+    const flatItems = [];
     dom.searchSuggestions.innerHTML = '';
     const fragment = document.createDocumentFragment();
+    const badgeClassMap = {
+      map: 'is-map',
+      volcano: 'is-volcano',
+      region: 'is-region',
+      author: 'is-author'
+    };
 
-    limited.forEach((entry, index) => {
-      const li = document.createElement('li');
-      li.className = 'suggestion-item';
-      li.setAttribute('role', 'option');
-      li.setAttribute('aria-selected', 'false');
+    groups.forEach((group) => {
+      const headerLi = document.createElement('li');
+      headerLi.className = 'suggestion-group-header';
+      headerLi.setAttribute('role', 'presentation');
+      headerLi.textContent = group.title;
+      fragment.appendChild(headerLi);
 
-      const textSpan = document.createElement('span');
-      textSpan.className = 'suggestion-text';
-      textSpan.textContent = entry.label;
+      group.items.forEach((entry) => {
+        const itemIndex = flatItems.length;
+        flatItems.push(entry);
 
-      const badgeSpan = document.createElement('span');
-      const badgeClass = entry.type === 'map'
-        ? 'is-map'
-        : (entry.type === 'volcano' ? 'is-volcano' : 'is-author');
-      badgeSpan.className = `suggestion-badge ${badgeClass}`;
-      badgeSpan.textContent = entry.badge;
+        const li = document.createElement('li');
+        li.className = 'suggestion-item';
+        li.setAttribute('role', 'option');
+        li.setAttribute('aria-selected', 'false');
 
-      li.append(textSpan, badgeSpan);
-      li.addEventListener('mousedown', (event) => {
-        event.preventDefault();
-        selectSuggestion(entry);
+        const textSpan = document.createElement('span');
+        textSpan.className = 'suggestion-text';
+        textSpan.appendChild(buildHighlightedLabel(entry.label, rawTokens));
+
+        const badgeSpan = document.createElement('span');
+        const badgeClass = badgeClassMap[entry.type] || 'is-author';
+        badgeSpan.className = `suggestion-badge ${badgeClass}`;
+        badgeSpan.textContent = entry.badge;
+
+        li.append(textSpan, badgeSpan);
+        li.addEventListener('mousedown', (event) => {
+          event.preventDefault();
+          selectSuggestion(entry);
+        });
+        li.addEventListener('mousemove', () => {
+          state.activeSuggestionIndex = itemIndex;
+          updateActiveSuggestionHighlight();
+        });
+
+        fragment.appendChild(li);
       });
-      li.addEventListener('mousemove', () => {
-        state.activeSuggestionIndex = index;
-        updateActiveSuggestionHighlight();
-      });
-
-      fragment.appendChild(li);
     });
 
+    state.currentSuggestions = flatItems;
+    state.activeSuggestionIndex = -1;
     dom.searchSuggestions.appendChild(fragment);
-    dom.searchSuggestions.hidden = false;
+    dom.searchSuggestions.classList.add('is-open');
     dom.searchInput.setAttribute('aria-expanded', 'true');
   }
 
@@ -2307,15 +3092,29 @@
     });
   }
 
+  let searchDebounceTimer = null;
+
   /**
    * 検索欄でのキーボード操作（上下移動・Enter確定・Esc閉じ）を処理する
-   * @param {KeyboardEvent} event - キーダウンイベント
    */
   function handleSearchKeydown(event) {
     if (event.isComposing || event.keyCode === 229) {
       return;
     }
-    if (dom.searchSuggestions.hidden || state.currentSuggestions.length === 0) {
+
+    if (event.key === 'Enter' && (!dom.searchSuggestions.classList.contains('is-open') || state.currentSuggestions.length === 0)) {
+      if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = null;
+      }
+      applyFilters();
+      if (state.isLeftDrawerCollapsed) {
+        setLeftDrawerCollapsed(false);
+      }
+      return;
+    }
+
+    if (!dom.searchSuggestions.classList.contains('is-open') || state.currentSuggestions.length === 0) {
       return;
     }
 
@@ -2328,9 +3127,25 @@
       state.activeSuggestionIndex =
         (state.activeSuggestionIndex - 1 + state.currentSuggestions.length) % state.currentSuggestions.length;
       updateActiveSuggestionHighlight();
-    } else if (event.key === 'Enter' && state.activeSuggestionIndex >= 0) {
-      event.preventDefault();
-      selectSuggestion(state.currentSuggestions[state.activeSuggestionIndex]);
+    } else if (event.key === 'Enter') {
+      if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = null;
+      }
+      if (state.activeSuggestionIndex >= 0) {
+        event.preventDefault();
+        selectSuggestion(state.currentSuggestions[state.activeSuggestionIndex]);
+      } else if (state.currentSuggestions.length === 1 || (state.currentSuggestions[0] && state.currentSuggestions[0].matchScore >= 120)) {
+        event.preventDefault();
+        selectSuggestion(state.currentSuggestions[0]);
+      } else {
+        hideSuggestions();
+        applyFilters();
+        if (state.isLeftDrawerCollapsed) {
+          setLeftDrawerCollapsed(false);
+        }
+        fitAllVisibleItems();
+      }
     } else if (event.key === 'Escape') {
       event.stopPropagation();
       hideSuggestions();
@@ -2338,13 +3153,14 @@
   }
 
   /**
-   * 検索文字列と選択中の年代チップに基づき、図郭ポリゴンを即時フィルタリングする
-   */
-  /**
    * 図郭インデックス枠の表示/非表示を切り替える
    */
   function toggleIndexFrames() {
     state.showIndexFrames = dom.showIndexToggle.checked;
+    state.settings.showIndexFrames = state.showIndexFrames;
+    saveSettings();
+    syncSettingsUI();
+
     if (!state.map || !state.indexLayerGroup) {
       return;
     }
@@ -2358,17 +3174,14 @@
   }
 
   /**
-   * 検索文字列・地図範囲・発行年レンジ・縮尺・著者・その他に基づき即時フィルタリングする
+   * 検索文字列・地図範囲・発行年・縮尺・資料有無に基づき即時フィルタリングする
    */
   function applyFilters() {
-    const query = dom.searchInput.value.trim().toLowerCase();
+    const queryTokens = normalizeSearchText(dom.searchInput.value.trim()).split(/\s+/).filter(Boolean);
     const { minBound, maxBound, currentMin, currentMax } = state.yearRange;
     const hasMapTypeFilter = state.selectedMapType !== 'all';
     const hasYearFilter = currentMin > minBound || currentMax < maxBound;
     const hasScaleFilter = state.selectedScales.size > 0;
-    const hasRegionFilter = state.selectedRegions.size > 0;
-    const hasAuthorFilter = state.selectedAuthors.size > 0;
-    const hasPublisherFilter = state.selectedPublishers.size > 0;
     const hasFlagFilter = state.selectedResourceFlags.size > 0;
     const viewBounds = state.viewportOnly && state.map ? state.map.getBounds() : null;
     const nextFiltered = [];
@@ -2380,12 +3193,9 @@
       const hasValidYear = meta.publishedYear !== null && !Number.isNaN(year);
 
       const matchesMapType = !hasMapTypeFilter || meta.mapType === state.selectedMapType;
-      const matchesText = !query || loc.searchTokens.includes(query);
+      const matchesText = queryTokens.length === 0 || queryTokens.every((tok) => loc.searchTokens.includes(tok));
       const matchesYear = !hasYearFilter || (hasValidYear && year >= currentMin && year <= currentMax);
       const matchesScale = !hasScaleFilter || state.selectedScales.has(meta.scale);
-      const matchesRegion = !hasRegionFilter || loc.regionList.some((r) => state.selectedRegions.has(r));
-      const matchesAuthor = !hasAuthorFilter || loc.authorList.some((a) => state.selectedAuthors.has(a));
-      const matchesPublisher = !hasPublisherFilter || state.selectedPublishers.has(loc.publisher);
       const matchesViewport = !viewBounds || computeIntersectionArea(viewBounds, getItemBounds(item)) > 0;
 
       let matchesFlags = true;
@@ -2406,9 +3216,6 @@
         matchesText &&
         matchesYear &&
         matchesScale &&
-        matchesRegion &&
-        matchesAuthor &&
-        matchesPublisher &&
         matchesFlags &&
         matchesViewport;
 
@@ -2423,6 +3230,19 @@
     });
 
     state.filteredItems = nextFiltered;
+    if (dom.fitAllBtn) {
+      dom.fitAllBtn.disabled = nextFiltered.length === 0;
+    }
+    if (dom.drawerFilterDot) {
+      const hasNarrowing =
+        queryTokens.length > 0 ||
+        state.viewportOnly ||
+        hasYearFilter ||
+        hasScaleFilter ||
+        hasFlagFilter ||
+        (state.selectedMapType !== 'all' && state.selectedMapType !== 'geological_map_sheet');
+      dom.drawerFilterDot.hidden = !hasNarrowing;
+    }
     updateActiveFilterBadge();
     updateResultCount(nextFiltered.length, state.allItems.length);
     renderResultList();
@@ -2437,7 +3257,9 @@
     renderMapTypeChips();
 
     state.viewportOnly = false;
-    dom.viewportOnlyToggle.checked = false;
+    state.settings.viewportOnly = false;
+    saveSettings();
+    syncSettingsUI();
 
     state.yearRange.currentMin = state.yearRange.minBound;
     state.yearRange.currentMax = state.yearRange.maxBound;
@@ -2446,9 +3268,6 @@
     updateYearSliderUI();
 
     state.selectedScales.clear();
-    state.selectedRegions.clear();
-    state.selectedAuthors.clear();
-    state.selectedPublishers.clear();
     state.selectedResourceFlags.clear();
     dom.filterPanelBody.querySelectorAll('.decade-chip.is-selected').forEach((chip) => {
       chip.classList.remove('is-selected');
@@ -2458,125 +3277,24 @@
   }
 
   /**
-   * オーバーレイレイヤーの不透明度を更新する
+   * シームレス地質図の透過度を更新する
    */
-  function handleOpacityChange() {
-    const percent = Number(dom.wmsOpacitySlider.value);
-    state.overlayOpacity = percent / 100;
-    dom.wmsOpacityValue.textContent = `${percent}%`;
-
+  function handleSeamlessOpacityChange() {
+    const percent = Number(dom.seamlessOpacitySlider.value);
+    const nextOpacity = percent / 100;
+    state.seamlessOpacity = nextOpacity;
+    state.settings.seamlessOpacity = nextOpacity;
+    if (dom.seamlessOpacityValue) {
+      dom.seamlessOpacityValue.textContent = `${percent}%`;
+    }
     if (state.seamlessLayer && typeof state.seamlessLayer.setOpacity === 'function') {
-      state.seamlessLayer.setOpacity(state.overlayOpacity);
+      state.seamlessLayer.setOpacity(nextOpacity);
     }
-
-    state.activeOverlays.forEach((entry) => {
-      entry.opacity = state.overlayOpacity;
-      if (entry.layer && typeof entry.layer.setOpacity === 'function') {
-        entry.layer.setOpacity(state.overlayOpacity);
-      }
-    });
-
-    renderActiveOverlayList();
+    debouncedSaveSettings();
   }
 
   /**
-   * ヘルプモーダル内のショートカット一覧を描画する
-   */
-  function renderShortcutModal() {
-    const dict = t();
-    dom.shortcutModalTitle.textContent = dict.shortcutModalTitle;
-    dom.shortcutList.innerHTML = '';
-
-    const fragment = document.createDocumentFragment();
-    dict.shortcuts.forEach(([keys, desc]) => {
-      const row = document.createElement('div');
-      row.className = 'shortcut-row';
-
-      const dt = document.createElement('dt');
-      dt.className = 'shortcut-desc';
-      dt.textContent = desc;
-
-      const dd = document.createElement('dd');
-      dd.className = 'shortcut-keys';
-      keys.forEach((k) => {
-        const kbd = document.createElement('kbd');
-        kbd.className = 'shortcut-kbd';
-        kbd.textContent = k;
-        dd.appendChild(kbd);
-      });
-
-      row.append(dt, dd);
-      fragment.appendChild(row);
-    });
-
-    dom.shortcutList.appendChild(fragment);
-  }
-
-  /**
-   * ショートカットヘルプモーダルを開く
-   */
-  function openShortcutModal() {
-    state.lastFocusedBeforeModal = document.activeElement;
-    renderShortcutModal();
-    dom.shortcutModal.hidden = false;
-    dom.closeShortcutModal.focus();
-  }
-
-  /**
-   * ショートカットヘルプモーダルを閉じる
-   */
-  function closeShortcutModal() {
-    if (dom.shortcutModal.hidden) {
-      return;
-    }
-    dom.shortcutModal.hidden = true;
-    if (state.lastFocusedBeforeModal && typeof state.lastFocusedBeforeModal.focus === 'function') {
-      state.lastFocusedBeforeModal.focus();
-    }
-    state.lastFocusedBeforeModal = null;
-  }
-
-  /**
-   * ショートカットヘルプモーダルを開閉する
-   */
-  function toggleShortcutModal() {
-    if (dom.shortcutModal.hidden) {
-      openShortcutModal();
-    } else {
-      closeShortcutModal();
-    }
-  }
-
-  /**
-   * 該当図幅一覧（#result-list）内の矢印キー上下移動を処理する
-   * @param {KeyboardEvent} event - キーダウンイベント
-   */
-  function handleResultListKeydown(event) {
-    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
-      return;
-    }
-    const items = [...dom.resultList.querySelectorAll('.result-list-item')];
-    if (items.length === 0) {
-      return;
-    }
-    const currentIndex = items.indexOf(document.activeElement);
-    if (currentIndex === -1) {
-      return;
-    }
-
-    event.preventDefault();
-    const nextIndex = event.key === 'ArrowDown'
-      ? Math.min(items.length - 1, currentIndex + 1)
-      : Math.max(0, currentIndex - 1);
-
-    const target = items[nextIndex];
-    target.focus();
-    target.scrollIntoView({ block: 'nearest' });
-  }
-
-  /**
-   * テーマ（light / dark）を適用し、アイコンと localStorage を更新する
-   * @param {'light'|'dark'} theme
+   * テーマ（light / dark）を適用する
    */
   function applyTheme(theme) {
     state.theme = theme === 'dark' ? 'dark' : 'light';
@@ -2585,37 +3303,14 @@
     } else {
       document.documentElement.removeAttribute('data-theme');
     }
-
-    const isDark = state.theme === 'dark';
-    dom.themeToggleBtn.setAttribute('aria-pressed', String(isDark));
-    dom.themeToggleBtn.innerHTML = isDark
-      ? '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>'
-      : '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
-  }
-
-  /**
-   * ダークモード / ライトモードを切り替えて保存する
-   */
-  function toggleTheme() {
-    const nextTheme = state.theme === 'dark' ? 'light' : 'dark';
-    applyTheme(nextTheme);
-    try {
-      localStorage.setItem('geomap_theme', nextTheme);
-    } catch {
-      // ignore storage errors
-    }
+    syncSettingsUI();
   }
 
   /**
    * 保存済み設定またはOS設定から初期テーマを適用する
    */
   function initTheme() {
-    let saved = null;
-    try {
-      saved = localStorage.getItem('geomap_theme');
-    } catch {
-      saved = null;
-    }
+    const saved = state.settings.theme;
     if (saved === 'dark' || saved === 'light') {
       applyTheme(saved);
     } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -2626,8 +3321,40 @@
   }
 
   /**
-   * グローバルキーボードショートカットを処理する
-   * @param {KeyboardEvent} event - キーダウンイベント
+   * すべての設定を初期値に戻す
+   */
+  function resetAllSettings() {
+    state.settings = { ...CONFIG.DEFAULT_SETTINGS };
+    state.showIndexFrames = state.settings.showIndexFrames;
+    state.viewportOnly = state.settings.viewportOnly;
+    state.overlayOpacity = state.settings.overlayOpacity;
+    state.seamlessOpacity = state.settings.seamlessOpacity;
+    state.seamlessQueryPriority = state.settings.seamlessQueryPriority;
+
+    if (dom.showIndexToggle) {
+      dom.showIndexToggle.checked = state.showIndexFrames;
+      toggleIndexFrames();
+    }
+    if (dom.viewportOnlyToggle) {
+      dom.viewportOnlyToggle.checked = state.viewportOnly;
+      applyFilters();
+    }
+    if (dom.seamless200kToggle) {
+      dom.seamless200kToggle.checked = state.settings.seamless200k;
+      toggleSeamless200k();
+    }
+
+    switchBasemap(CONFIG.DEFAULT_SETTINGS.basemap);
+    applyTheme('light');
+    if (state.lang !== CONFIG.DEFAULT_SETTINGS.lang) {
+      switchLanguage(CONFIG.DEFAULT_SETTINGS.lang);
+    }
+    saveSettings();
+    syncSettingsUI();
+  }
+
+  /**
+   * 最小限のグローバルキーボードショートカット（`/`・`Ctrl+K`・`Esc`）を処理する
    */
   function handleGlobalKeydown(event) {
     if (event.isComposing || event.keyCode === 229) {
@@ -2638,93 +3365,28 @@
     const hasModifier = event.ctrlKey || event.metaKey || event.altKey;
 
     if (event.key === 'Escape') {
-      if (!dom.shortcutModal.hidden) {
+      if (dom.layersPopover.classList.contains('is-open') || dom.prefsPopover.classList.contains('is-open')) {
         event.preventDefault();
-        closeShortcutModal();
+        closeAllPopovers();
         return;
       }
       if (isInputFocused) {
         activeEl.blur();
         hideSuggestions();
-        return;
-      }
-      if (activeEl?.classList?.contains('result-list-item') || activeEl === dom.mapEl) {
-        activeEl.blur();
       }
       return;
     }
 
     if ((event.key === '/' && !isInputFocused && !hasModifier) || ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k')) {
       event.preventDefault();
-      if (!dom.shortcutModal.hidden) {
-        closeShortcutModal();
-      }
+      closeAllPopovers();
       dom.searchInput.focus();
       dom.searchInput.select();
-      return;
-    }
-
-    if (isInputFocused || hasModifier) {
-      return;
-    }
-
-    if (event.key === '?') {
-      event.preventDefault();
-      toggleShortcutModal();
-      return;
-    }
-
-    if (!dom.shortcutModal.hidden) {
-      return;
-    }
-
-    const lowerKey = event.key.toLowerCase();
-
-    if (lowerKey === 'm') {
-      event.preventDefault();
-      dom.mapEl?.focus();
-    } else if (lowerKey === 'l') {
-      event.preventDefault();
-      const targetItem = dom.resultList.querySelector('.result-list-item.is-selected')
-        || dom.resultList.querySelector('.result-list-item');
-      if (targetItem) {
-        targetItem.focus();
-        targetItem.scrollIntoView({ block: 'nearest' });
-      }
-    } else if (lowerKey === 'f') {
-      event.preventDefault();
-      fitAllVisibleItems();
-    } else if (lowerKey === 'i') {
-      event.preventDefault();
-      dom.showIndexToggle.checked = !dom.showIndexToggle.checked;
-      toggleIndexFrames();
-    } else if (lowerKey === 's') {
-      event.preventDefault();
-      dom.seamless200kToggle.checked = !dom.seamless200kToggle.checked;
-      toggleSeamless200k();
-    } else if (lowerKey === 'b') {
-      event.preventDefault();
-      const order = ['pale', 'std', 'photo'];
-      const nextKey = order[(order.indexOf(state.activeBasemapKey) + 1) % order.length];
-      switchBasemap(nextKey);
-    } else if (event.key === '[' || event.key === ']') {
-      event.preventDefault();
-      const current = Number(dom.wmsOpacitySlider.value);
-      const next = Math.max(0, Math.min(100, current + (event.key === ']' ? 10 : -10)));
-      dom.wmsOpacitySlider.value = String(next);
-      handleOpacityChange();
-    } else if (lowerKey === 'x') {
-      event.preventDefault();
-      clearAllOverlays();
-    } else if (lowerKey === 'd') {
-      event.preventDefault();
-      toggleTheme();
     }
   }
 
   /**
-   * 表示言語（日本語 / 英語）を切り替え、UI・検索・サジェスト・ツールチップを再描画する
-   * @param {'ja'|'en'} lang - 言語コード
+   * 表示言語（日本語 / 英語）を切り替え、UI全体を再描画する
    */
   function switchLanguage(lang) {
     if (!I18N[lang] || state.lang === lang) {
@@ -2732,59 +3394,75 @@
     }
 
     state.lang = lang;
+    state.settings.lang = lang;
+    saveSettings();
     document.documentElement.lang = lang;
     const dict = t();
 
-    dom.langButtons.forEach((btn) => {
-      btn.classList.toggle('is-active', btn.dataset.lang === lang);
-    });
-
-    dom.appTitle.textContent = dict.appTitle;
     dom.searchInput.placeholder = dict.searchPlaceholder;
     dom.searchInput.setAttribute('aria-label', dict.searchPlaceholder);
     dom.mapTypeLabel.textContent = dict.mapTypeLabel;
     dom.viewportOnlyLabel.textContent = dict.viewportOnlyLabel;
     dom.showIndexLabel.textContent = dict.showIndexLabel;
     dom.seamless200kLabel.textContent = dict.seamless200kLabel;
+    dom.seamlessOpacityLabel.textContent = dict.seamlessOpacityLabel;
+    if (dom.seamlessQueryLabel) {
+      dom.seamlessQueryLabel.textContent = dict.seamlessQueryLabel;
+    }
     dom.filterAccordionLabel.textContent = dict.filterAccordionLabel;
     dom.decadeLabel.textContent = dict.decadeLabel;
     dom.scaleFilterLabel.textContent = dict.scaleFilterLabel;
-    dom.regionFilterLabel.textContent = dict.regionFilterLabel;
-    dom.authorFilterLabel.textContent = dict.authorFilterLabel;
     dom.otherFilterLabel.textContent = dict.otherFilterLabel;
     dom.resetFiltersBtn.textContent = dict.reset;
     dom.basemapLabel.textContent = dict.basemapLabel;
     dom.clearWmsBtn.textContent = dict.clearAll;
-    dom.opacityLabel.textContent = dict.opacity;
     dom.resultListLabel.textContent = dict.resultListLabel;
-    dom.dominantInfoEyebrow.textContent = dict.eyebrow;
-    dom.legendPanelTitle.textContent = dict.legendTitle;
     dom.legendOpenLink.textContent = dict.legendOpen;
 
     dom.fitAllBtn.title = dict.fitAllTitle;
     dom.fitAllBtn.setAttribute('aria-label', dict.fitAllTitle);
-    dom.themeToggleBtn.title = dict.themeToggleTitle;
-    dom.themeToggleBtn.setAttribute('aria-label', dict.themeToggleTitle);
-    dom.shortcutHelpBtn.title = dict.shortcutHelpTitle;
-    dom.shortcutHelpBtn.setAttribute('aria-label', dict.shortcutHelpTitle);
-    if (dom.closeDominantBtn) {
-      dom.closeDominantBtn.title = dict.closeDetailTitle;
-      dom.closeDominantBtn.setAttribute('aria-label', dict.closeDetailTitle);
-    }
+    dom.collapseRightBtn.title = dict.collapseRightTitle;
+    dom.collapseRightBtn.setAttribute('aria-label', dict.collapseRightTitle);
+    dom.reopenRightLabel.textContent = dict.reopenRightLabel;
+    dom.reopenRightBtn.title = dict.reopenRightTitle;
+    dom.reopenRightBtn.setAttribute('aria-label', dict.reopenRightTitle);
+    dom.layersPopoverBtn.title = dict.layersBtnTitle;
+    dom.layersPopoverBtn.setAttribute('aria-label', dict.layersBtnTitle);
+    dom.prefsPopoverBtn.title = dict.prefsBtnTitle;
+    dom.prefsPopoverBtn.setAttribute('aria-label', dict.prefsBtnTitle);
+    dom.prefsThemeLabel.textContent = dict.prefsThemeLabel;
+    dom.prefsLangLabel.textContent = dict.prefsLangLabel;
+    dom.resetSettingsBtn.textContent = dict.prefsResetLabel;
+
+    dom.themeChoiceButtons.forEach((btn) => {
+      btn.textContent = btn.dataset.themeChoice === 'dark' ? dict.prefsThemeDark : dict.prefsThemeLight;
+    });
+
+    const mobileLabelMap = {
+      map: dict.mobileTabMap,
+      search: dict.mobileTabSearch,
+      legend: dict.mobileTabLegend
+    };
+    dom.mobileNavButtons.forEach((btn) => {
+      if (mobileLabelMap[btn.dataset.mobileView]) {
+        btn.textContent = mobileLabelMap[btn.dataset.mobileView];
+      }
+    });
 
     const basemapLabelMap = {
+      blank: dict.basemapBlank,
       pale: dict.basemapPale,
       std: dict.basemapStd,
       photo: dict.basemapPhoto
     };
     dom.basemapButtons.forEach((btn) => {
-      const key = btn.dataset.basemap;
-      if (basemapLabelMap[key]) {
-        btn.textContent = basemapLabelMap[key];
+      if (basemapLabelMap[btn.dataset.basemap]) {
+        btn.textContent = basemapLabelMap[btn.dataset.basemap];
       }
     });
 
-    // ホバーツールチップの言語を更新
+    setLeftDrawerCollapsed(state.isLeftDrawerCollapsed);
+
     state.allItems.forEach(({ layer, meta }) => {
       if (typeof layer.setTooltipContent === 'function') {
         layer.setTooltipContent(buildTooltipText(meta));
@@ -2792,55 +3470,75 @@
     });
 
     hideSuggestions();
-    state.selectedRegions.clear();
-    state.selectedAuthors.clear();
-    state.selectedPublishers.clear();
     renderMapTypeChips();
     updateYearSliderUI();
     renderScaleChips();
-    renderRegionChips();
-    renderAuthorChips();
     renderOtherChips();
     buildSuggestionPool();
     applyFilters();
     renderActiveOverlayList();
-    if (state.dominantLegendItem) {
-      renderLegendPanel(state.dominantLegendItem, true);
+    if (state.inspectedItem) {
+      renderInspectorDetail(state.inspectedItem, true);
     }
-    if (!dom.shortcutModal.hidden) {
-      renderShortcutModal();
+    if (state.lastSeamlessPoint && state.seamlessPopup && state.seamlessPopup.isOpen()) {
+      state.seamlessPopup.setContent(buildSeamlessGeologyNode(state.lastSeamlessPoint));
     }
+    renderSeamlessPointCard();
+    syncSettingsUI();
   }
 
   /**
    * UIおよびキーボードイベントリスナーを登録する
    */
   function initEventListeners() {
-    dom.searchInput.addEventListener('input', () => {
-      applyFilters();
+    dom.searchInput.addEventListener('input', (event) => {
+      if (event.isComposing) {
+        return;
+      }
       renderSuggestions();
+      if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer);
+      }
+      searchDebounceTimer = setTimeout(() => {
+        searchDebounceTimer = null;
+        applyFilters();
+      }, 100);
+    });
+    dom.searchInput.addEventListener('compositionend', () => {
+      if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = null;
+      }
+      renderSuggestions();
+      applyFilters();
     });
     dom.searchInput.addEventListener('focus', renderSuggestions);
     dom.searchInput.addEventListener('blur', hideSuggestions);
     dom.searchInput.addEventListener('keydown', handleSearchKeydown);
 
-    dom.resultList.addEventListener('keydown', handleResultListKeydown);
-
-    dom.themeToggleBtn.addEventListener('click', toggleTheme);
-    dom.shortcutHelpBtn.addEventListener('click', openShortcutModal);
-    dom.closeShortcutModal.addEventListener('click', closeShortcutModal);
-    dom.shortcutModal.addEventListener('click', (event) => {
-      if (event.target === dom.shortcutModal) {
-        closeShortcutModal();
-      }
+    dom.toggleLeftDrawerBtn.addEventListener('click', () => {
+      setLeftDrawerCollapsed(!state.isLeftDrawerCollapsed);
     });
 
     dom.viewportOnlyToggle.addEventListener('change', () => {
       state.viewportOnly = dom.viewportOnlyToggle.checked;
+      state.settings.viewportOnly = state.viewportOnly;
+      saveSettings();
+      syncSettingsUI();
       applyFilters();
     });
     dom.showIndexToggle.addEventListener('change', toggleIndexFrames);
     dom.seamless200kToggle.addEventListener('change', toggleSeamless200k);
+    dom.seamlessOpacitySlider.addEventListener('input', handleSeamlessOpacityChange);
+    dom.seamlessOpacitySlider.addEventListener('change', saveSettings);
+    if (dom.seamlessQueryToggle) {
+      dom.seamlessQueryToggle.addEventListener('change', () => {
+        state.seamlessQueryPriority = dom.seamlessQueryToggle.checked;
+        state.settings.seamlessQueryPriority = state.seamlessQueryPriority;
+        saveSettings();
+        syncSettingsUI();
+      });
+    }
 
     dom.yearRangeMin.addEventListener('input', () => handleYearSliderInput('min'));
     dom.yearRangeMax.addEventListener('input', () => handleYearSliderInput('max'));
@@ -2851,10 +3549,15 @@
       resetFilters();
     });
     dom.fitAllBtn.addEventListener('click', fitAllVisibleItems);
-    dom.clearWmsBtn.addEventListener('click', clearAllOverlays);
-    dom.wmsOpacitySlider.addEventListener('input', handleOpacityChange);
 
-    dom.legendZoomWrapper.addEventListener('mouseenter', updateLegendLoupe);
+    dom.clearWmsBtn.addEventListener('click', clearAllOverlays);
+    dom.collapseRightBtn.addEventListener('click', () => setRightInspectorCollapsed(true));
+    dom.reopenRightBtn.addEventListener('click', () => setRightInspectorCollapsed(false));
+
+    dom.legendZoomWrapper.addEventListener('mouseenter', (event) => {
+      refreshLoupeRects();
+      updateLegendLoupe(event);
+    });
     dom.legendZoomWrapper.addEventListener('mousemove', updateLegendLoupe);
     dom.legendZoomWrapper.addEventListener('mouseleave', hideLegendLoupe);
     dom.legendImage.addEventListener('error', () => {
@@ -2863,22 +3566,52 @@
       dom.legendOpenLink.hidden = true;
       dom.legendMapName.textContent = t().legendNone;
     });
-    dom.legendSidebar.addEventListener('scroll', hideLegendLoupe, true);
-    window.addEventListener('resize', hideLegendLoupe);
+    dom.rightInspector.addEventListener('scroll', () => {
+      hideLegendLoupe();
+      refreshLoupeRects();
+    }, true);
+    window.addEventListener('resize', () => {
+      hideLegendLoupe();
+      refreshLoupeRects();
+      if (state.map) {
+        state.map.invalidateSize({ animate: false, pan: false });
+      }
+    });
 
-    dom.tabLegendBtn.addEventListener('click', () => switchVisualMode('legend'));
-    dom.tabSectionBtn.addEventListener('click', () => switchVisualMode('section'));
-    if (dom.closeDominantBtn) {
-      dom.closeDominantBtn.addEventListener('click', closeDominantDetail);
-    }
+    dom.tabLegendBtn.addEventListener('click', () => switchInspectorTab('legend'));
+    dom.tabSectionBtn.addEventListener('click', () => switchInspectorTab('section'));
+    dom.tabDetailBtn.addEventListener('click', () => switchInspectorTab('detail'));
+
+    dom.layersPopoverBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      togglePopover(dom.layersPopover, dom.layersPopoverBtn);
+    });
+    dom.prefsPopoverBtn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      togglePopover(dom.prefsPopover, dom.prefsPopoverBtn);
+    });
+    dom.layersPopover.addEventListener('click', (event) => event.stopPropagation());
+    dom.prefsPopover.addEventListener('click', (event) => event.stopPropagation());
+    document.addEventListener('click', closeAllPopovers);
 
     dom.basemapButtons.forEach((btn) => {
       btn.addEventListener('click', () => switchBasemap(btn.dataset.basemap));
     });
 
+    dom.themeChoiceButtons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const chosen = btn.dataset.themeChoice === 'dark' ? 'dark' : 'light';
+        applyTheme(chosen);
+        state.settings.theme = chosen;
+        saveSettings();
+      });
+    });
+
     dom.langButtons.forEach((btn) => {
       btn.addEventListener('click', () => switchLanguage(btn.dataset.lang));
     });
+
+    dom.resetSettingsBtn.addEventListener('click', resetAllSettings);
 
     dom.mobileNavButtons.forEach((btn) => {
       btn.addEventListener('click', () => switchMobileView(btn.dataset.mobileView));
@@ -2892,7 +3625,7 @@
    */
   async function loadSeamlessProvider() {
     try {
-      const response = await fetch(CONFIG.SEAMLESS_PROVIDER_URL);
+      const response = await fetch(CONFIG.SEAMLESS_PROVIDER_URL, { cache: 'no-cache' });
       if (!response.ok) {
         return;
       }
@@ -2900,12 +3633,13 @@
       if (Array.isArray(records) && records.length > 0) {
         state.seamlessMeta = normalizeProperties(records[0]);
         state.seamlessVirtualItem = { layer: null, meta: state.seamlessMeta };
-        if (state.allItems.length > 0) {
-          renderMapTypeChips();
+        if (state.settings.seamless200k && dom.seamless200kToggle) {
+          dom.seamless200kToggle.checked = true;
+          toggleSeamless200k();
         }
       }
-    } catch (error) {
-      console.warn('Seamless 200k provider config load skipped:', error);
+    } catch {
+      // ignore optional seamless config failure
     }
   }
 
@@ -2913,19 +3647,24 @@
    * アプリケーションのエントリポイント
    */
   async function init() {
+    loadSettings();
     initTheme();
+    syncSettingsUI();
+    setLeftDrawerCollapsed(true);
     switchMobileView('map');
     state.map = initMap();
     initEventListeners();
+    if (state.settings.lang && state.settings.lang !== state.lang) {
+      switchLanguage(state.settings.lang);
+    }
     loadSeamlessProvider();
 
     try {
       const geojsonData = await fetchMapIndex(CONFIG.GEOJSON_URL);
       renderGeoJsonFeatures(geojsonData);
-    } catch (error) {
-      console.error(error);
-      dom.resultCount.textContent = '読込エラー';
-      setStatusMessage(error.message || 'データの読み込み中にエラーが発生しました。');
+    } catch {
+      dom.resultCount.textContent = t().loadErrorCount;
+      setStatusMessage(t().loadErrorMessage);
     }
   }
 

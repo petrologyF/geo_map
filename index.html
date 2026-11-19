@@ -22,78 +22,26 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div class="app-layout">
+  <div class="app-layout" data-mobile-view="map">
     <!-- モバイル用パネル切替バー（720px以下で表示） -->
     <nav id="mobile-nav-bar" class="mobile-nav-bar" aria-label="表示パネル切り替え">
       <button type="button" class="mobile-nav-btn is-active" data-mobile-view="map">地図</button>
       <button type="button" class="mobile-nav-btn" data-mobile-view="search">検索・一覧</button>
-      <button type="button" id="mobile-legend-tab" class="mobile-nav-btn" data-mobile-view="legend" hidden>詳細・凡例</button>
+      <button type="button" id="mobile-legend-tab" class="mobile-nav-btn" data-mobile-view="legend" hidden>凡例・詳細</button>
     </nav>
 
-    <!-- 左サイドバー：検索・年代マルチセレクト・表示中図幅・該当図幅一覧 -->
-    <aside id="left-sidebar" class="sidebar sidebar-left" aria-label="図幅検索・フィルタ">
-      <div class="sidebar-header">
-        <div class="panel-title-group">
-          <span class="panel-icon" aria-hidden="true">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
-              <line x1="8" y1="2" x2="8" y2="18"></line>
-              <line x1="16" y1="6" x2="16" y2="22"></line>
-            </svg>
-          </span>
-          <h1 id="app-title" class="panel-title">地質図検索</h1>
-        </div>
-        <div class="panel-header-actions">
-          <div class="segmented-control lang-switch" role="group" aria-label="表示言語の切り替え">
-            <button type="button" class="segmented-btn is-active" data-lang="ja">JP</button>
-            <button type="button" class="segmented-btn" data-lang="en">EN</button>
-          </div>
-          <span id="result-count" class="result-badge" aria-live="polite">読込中...</span>
-          <button
-            type="button"
-            id="fit-all-btn"
-            class="icon-button subtle"
-            title="表示中の全図幅にズーム"
-            aria-label="表示中の全図幅にズーム"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
-            </svg>
-          </button>
-          <button
-            type="button"
-            id="theme-toggle-btn"
-            class="icon-button subtle"
-            title="ダークモード切り替え (d)"
-            aria-label="ダークモード切り替え"
-            aria-pressed="false"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-            </svg>
-          </button>
-          <button
-            type="button"
-            id="shortcut-help-btn"
-            class="icon-button subtle"
-            title="キーボードショートカット (?)"
-            aria-label="キーボードショートカット一覧"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-              <line x1="12" y1="17" x2="12.01" y2="17"></line>
-            </svg>
-          </button>
-        </div>
-      </div>
+    <!-- 中央マップエリア（フルスクリーン 100vw x 100vh） -->
+    <main class="map-container">
+      <div id="map" tabindex="0" aria-label="地質図幅検索マップ"></div>
+    </main>
 
-      <div class="sidebar-body">
-        <!-- テキスト検索 + サジェスト -->
+    <!-- 左：格納可能な検索・一覧ドロワー（幅 320px、初期状態は検索窓のみ） -->
+    <aside id="left-drawer" class="floating-panel left-drawer is-collapsed" aria-label="図幅検索・一覧">
+      <div class="search-bar-header">
         <div class="search-autocomplete">
           <div class="search-field">
             <span class="search-icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="11" cy="11" r="8"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
@@ -102,41 +50,51 @@
               type="search"
               id="search-input"
               class="text-input"
-              placeholder="図幅名または著者で検索"
+              placeholder="図幅名・火山名・著者・地域で検索"
               autocomplete="off"
-              aria-label="図幅名または著者で検索"
+              aria-label="図幅名・火山名・著者・地域で検索"
               aria-autocomplete="list"
               aria-controls="search-suggestions"
               aria-expanded="false"
             >
-            <kbd class="shortcut-hint" title="検索にフォーカス">/</kbd>
+            <kbd class="shortcut-hint" title="検索にフォーカス (/)">/</kbd>
           </div>
-          <ul id="search-suggestions" class="search-suggestions" role="listbox" hidden></ul>
+          <ul id="search-suggestions" class="search-suggestions" role="listbox"></ul>
         </div>
+        <button
+          type="button"
+          id="toggle-left-drawer-btn"
+          class="icon-button subtle drawer-toggle-btn"
+          title="検索・一覧パネルを開く"
+          aria-label="検索・一覧パネルを開閉"
+          aria-expanded="false"
+          aria-controls="left-drawer-body"
+        >
+          <svg class="drawer-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="18 15 12 9 6 15"></polyline>
+          </svg>
+          <span id="drawer-filter-dot" class="drawer-filter-dot" hidden aria-hidden="true"></span>
+        </button>
+      </div>
 
-        <!-- 第一階層フィルター：地図種別 (map_type) -->
+      <!-- エラー通知用（ドロワー格納時も表示） -->
+      <p id="status-message" class="status-message" role="alert" hidden></p>
+
+      <div id="left-drawer-wrap" class="drawer-body-wrap" inert>
+        <div id="left-drawer-body" class="drawer-body">
+        <!-- 地図種別 + 表示範囲内のみ -->
         <div class="filter-group">
-          <span id="map-type-label" class="filter-label">地図種別</span>
+          <div class="filter-label-row">
+            <span id="map-type-label" class="filter-label">地図種別</span>
+            <label class="toggle-chip-label is-compact">
+              <input type="checkbox" id="viewport-only-toggle" class="toggle-checkbox">
+              <span id="viewport-only-label">表示範囲内のみ</span>
+            </label>
+          </div>
           <div id="map-type-chips" class="decade-chips" role="group" aria-label="地図種別フィルタ"></div>
         </div>
 
-        <!-- クイック表示オプション（地図範囲連動・図郭枠表示・全国シームレス） -->
-        <div class="quick-toggles">
-          <label class="toggle-chip-label">
-            <input type="checkbox" id="viewport-only-toggle" class="toggle-checkbox">
-            <span id="viewport-only-label">表示範囲内のみ</span>
-          </label>
-          <label class="toggle-chip-label">
-            <input type="checkbox" id="show-index-toggle" class="toggle-checkbox" checked>
-            <span id="show-index-label">図郭枠を表示</span>
-          </label>
-          <label class="toggle-chip-label">
-            <input type="checkbox" id="seamless-200k-toggle" class="toggle-checkbox">
-            <span id="seamless-200k-label">20万分の1 シームレス (全国WMS)</span>
-          </label>
-        </div>
-
-        <!-- 折りたたみ式フィルター（発行年レンジ・縮尺・著者・その他） -->
+        <!-- 折りたたみ式詳細フィルター（発行年・縮尺・資料有無の3項目） -->
         <section class="filter-accordion" aria-label="詳細フィルター">
           <div class="filter-accordion-header">
             <button
@@ -147,7 +105,7 @@
               aria-controls="filter-panel-body"
             >
               <span class="filter-toggle-title-group">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
                 </svg>
                 <span id="filter-accordion-label">詳細フィルター</span>
@@ -162,8 +120,9 @@
             </button>
           </div>
 
-          <div id="filter-panel-body" class="filter-panel-body" hidden>
-            <!-- 発行年（デュアルレンジスライダー） -->
+          <div id="filter-panel-wrap" class="filter-panel-wrap" inert>
+            <div id="filter-panel-body" class="filter-panel-body">
+            <!-- 発行年（5年刻みデュアルレンジスライダー） -->
             <div class="filter-group">
               <div class="filter-label-row">
                 <span id="decade-label" class="filter-label">発行年</span>
@@ -172,149 +131,97 @@
               <div class="dual-range-container">
                 <div class="dual-range-track-bg"></div>
                 <div id="year-range-track" class="dual-range-track-active"></div>
-                <input
-                  type="range"
-                  id="year-range-min"
-                  class="dual-range-input"
-                  aria-label="開始年"
-                >
-                <input
-                  type="range"
-                  id="year-range-max"
-                  class="dual-range-input"
-                  aria-label="終了年"
-                >
+                <div id="year-range-ticks" class="year-range-ticks" aria-hidden="true"></div>
+                <input type="range" id="year-range-min" class="dual-range-input" step="5" aria-label="開始年">
+                <input type="range" id="year-range-max" class="dual-range-input" step="5" aria-label="終了年">
               </div>
+              <div id="year-range-labels" class="year-range-labels" aria-hidden="true"></div>
             </div>
 
-            <!-- 縮尺・シリーズマルチセレクト -->
+            <!-- 縮尺 -->
             <div class="filter-group">
               <span id="scale-filter-label" class="filter-label">縮尺・シリーズ</span>
               <div id="scale-chips" class="decade-chips" role="group" aria-label="縮尺フィルタ"></div>
             </div>
 
-            <!-- 地域・都道府県マルチセレクト -->
-            <div class="filter-group">
-              <span id="region-filter-label" class="filter-label">地域（複数選択可）</span>
-              <div id="region-chips" class="decade-chips" role="group" aria-label="地域フィルタ"></div>
-            </div>
-
-            <!-- 著者マルチセレクト -->
-            <div class="filter-group">
-              <span id="author-filter-label" class="filter-label">著者（複数選択可）</span>
-              <div id="author-chips" class="decade-chips author-chips" role="group" aria-label="著者フィルタ"></div>
-            </div>
-
-            <!-- その他の情報（発行機関・資料有無） -->
-            <div class="filter-group">
-              <span id="other-filter-label" class="filter-label">その他（発行機関・資料）</span>
-              <div id="other-chips" class="decade-chips" role="group" aria-label="その他フィルタ"></div>
+              <!-- 資料有無（PDF / 凡例 / 原図） -->
+              <div class="filter-group">
+                <span id="other-filter-label" class="filter-label">資料有無</span>
+                <div id="other-chips" class="decade-chips" role="group" aria-label="資料有無フィルタ"></div>
+              </div>
             </div>
           </div>
         </section>
 
-        <!-- 背景地図切替 -->
-        <div class="basemap-row" role="group" aria-label="背景地図の切り替え">
-          <span id="basemap-label" class="filter-label">背景地図</span>
-          <div class="segmented-control">
-            <button type="button" class="segmented-btn is-active" data-basemap="pale">淡色</button>
-            <button type="button" class="segmented-btn" data-basemap="std">標準</button>
-            <button type="button" class="segmented-btn" data-basemap="photo">航空写真</button>
-          </div>
-        </div>
-
-        <!-- 表示中の地質図オーバーレイ管理（最大4図幅） -->
-        <div id="active-wms-bar" class="active-wms-bar" hidden>
-          <div class="active-wms-header">
-            <div class="active-wms-info">
-              <span id="wms-status-dot" class="wms-dot" aria-hidden="true"></span>
-              <span id="active-wms-name" class="active-wms-name">表示中の地質図 (0/4)</span>
-            </div>
-            <button
-              type="button"
-              id="clear-wms-btn"
-              class="text-button"
-              title="表示中の地質図をすべて閉じる"
-              aria-label="表示中の地質図をすべて閉じる"
-            >
-              すべて閉じる
-            </button>
-          </div>
-
-          <ul id="active-overlay-list" class="active-overlay-list"></ul>
-
-          <div class="wms-opacity-row">
-            <label id="opacity-label" class="wms-opacity-label" for="wms-opacity">透過度</label>
-            <input
-              type="range"
-              id="wms-opacity"
-              class="range-slider"
-              min="0"
-              max="100"
-              value="85"
-              aria-label="地質図の不透明度"
-            >
-            <span id="wms-opacity-value" class="wms-opacity-value">85%</span>
-          </div>
-        </div>
-
-        <!-- エラー・ステータス通知用 -->
-        <p id="status-message" class="status-message" role="status" hidden></p>
-
-        <!-- 該当図幅一覧（常時表示） -->
+        <!-- 該当図幅一覧 -->
         <div class="result-list-section">
           <div class="result-list-header">
             <span id="result-list-label" class="filter-label">該当図幅一覧</span>
+            <div class="result-list-header-actions">
+              <span id="result-count" class="result-badge" aria-live="polite">読込中...</span>
+              <button
+                type="button"
+                id="fit-all-btn"
+                class="icon-button subtle"
+                title="絞り込み中の全図幅にズーム"
+                aria-label="絞り込み中の全図幅にズーム"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path>
+                </svg>
+              </button>
+            </div>
           </div>
           <ul id="result-list" class="result-list"></ul>
+        </div>
         </div>
       </div>
     </aside>
 
-    <!-- 中央マップエリア -->
-    <main class="map-container">
-      <div id="map" tabindex="0" aria-label="地質図幅検索マップ"></div>
-    </main>
-
-    <!-- 右サイドバー：現在表示中の地質図のうち最も広い図幅の詳細情報＆凡例 -->
-    <aside id="legend-sidebar" class="sidebar sidebar-right" aria-label="図幅詳細・地質凡例" hidden>
-      <!-- 上段：最も広く表示されている図幅の詳細情報 -->
-      <section id="dominant-info-section" class="dominant-info-section">
-        <div class="sidebar-header dominant-info-header">
-          <div class="legend-title-group">
-            <span id="dominant-info-eyebrow" class="dominant-info-eyebrow">表示中の図幅詳細</span>
-            <h2 id="dominant-info-title" class="legend-panel-title"></h2>
-            <p id="dominant-info-subtitle" class="dominant-info-subtitle" hidden></p>
-          </div>
+    <!-- 右：格納可能なレイヤー＆凡例インスペクタ（幅 340px） -->
+    <aside id="right-inspector" class="floating-panel right-inspector" aria-label="表示中の地質図・凡例・詳細" inert>
+      <div class="inspector-header">
+        <div class="inspector-title-group">
+          <span id="wms-status-dot" class="wms-dot" aria-hidden="true"></span>
+          <h2 id="active-wms-name" class="inspector-title">表示中の地質図</h2>
+        </div>
+        <div class="inspector-header-actions">
           <button
             type="button"
-            id="close-dominant-btn"
-            class="icon-button subtle"
-            title="詳細パネルを閉じる"
-            aria-label="詳細パネルを閉じる"
+            id="clear-wms-btn"
+            class="text-button"
+            title="表示中の地質図をすべて閉じる"
+            aria-label="表示中の地質図をすべて閉じる"
+            hidden
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
+            すべて閉じる
+          </button>
+          <button
+            type="button"
+            id="collapse-right-btn"
+            class="icon-button subtle"
+            title="パネルを折りたたむ"
+            aria-label="パネルを折りたたむ"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
           </button>
         </div>
-        <div class="dominant-info-body">
-          <dl id="dominant-info-meta" class="dominant-info-meta"></dl>
-          <div id="dominant-info-links" class="dominant-info-links"></div>
-        </div>
-      </section>
+      </div>
 
-      <!-- 下段：地質凡例 / 地質断面図 -->
-      <div class="sidebar-header legend-sidebar-header">
-        <div class="legend-title-group">
-          <h2 id="legend-panel-title" class="legend-panel-title">地質凡例</h2>
-          <span id="legend-map-name" class="legend-map-name"></span>
-        </div>
-        <div class="legend-header-actions">
-          <div id="visual-mode-tabs" class="segmented-control" role="tablist" aria-label="表示切り替え" hidden>
-            <button type="button" id="tab-legend-btn" class="segmented-btn is-active" data-visual-mode="legend" role="tab" aria-selected="true">凡例</button>
-            <button type="button" id="tab-section-btn" class="segmented-btn" data-visual-mode="section" role="tab" aria-selected="false">断面図</button>
+      <!-- 上部：表示中レイヤー一覧（最大4図幅、コンパクト行） -->
+      <div id="active-overlays-section" class="active-overlays-section" hidden>
+        <ul id="active-overlay-list" class="active-overlay-list"></ul>
+      </div>
+
+      <!-- 下部：タブ切替エリア（凡例 / 断面図 / 詳細・PDF） -->
+      <div id="inspector-detail-section" class="inspector-detail-section">
+        <div class="inspector-tabs-bar">
+          <div id="visual-mode-tabs" class="segmented-control" role="tablist" aria-label="インスペクタ表示切り替え">
+            <button type="button" id="tab-legend-btn" class="segmented-btn is-active" data-inspector-tab="legend" role="tab" aria-selected="true">凡例</button>
+            <button type="button" id="tab-section-btn" class="segmented-btn" data-inspector-tab="section" role="tab" aria-selected="false" hidden>断面図</button>
+            <button type="button" id="tab-detail-btn" class="segmented-btn" data-inspector-tab="detail" role="tab" aria-selected="false">詳細・PDF</button>
           </div>
           <a
             id="legend-open-link"
@@ -327,34 +234,141 @@
             拡大
           </a>
         </div>
-      </div>
-      <div id="section-chips" class="section-chips" hidden></div>
-      <div class="legend-sidebar-body">
-        <div id="legend-zoom-wrapper" class="legend-zoom-wrapper">
-          <img id="legend-image" class="legend-image" src="" alt="地質図凡例" loading="lazy">
-          <div id="legend-loupe" class="legend-loupe" hidden aria-hidden="true"></div>
+
+        <!-- タブ1・2: 凡例 / 断面図 -->
+        <div id="inspector-visual-pane" class="inspector-pane">
+          <div class="inspector-target-bar">
+            <span id="legend-map-name" class="legend-map-name"></span>
+          </div>
+          <div id="seamless-point-card" class="seamless-point-card" hidden></div>
+          <div id="section-chips" class="section-chips" hidden></div>
+          <div class="legend-sidebar-body">
+            <div id="legend-zoom-wrapper" class="legend-zoom-wrapper">
+              <img id="legend-image" class="legend-image" src="" alt="地質図凡例">
+              <div id="legend-lens-indicator" class="legend-lens-indicator" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- タブ3: 詳細・PDF -->
+        <div id="inspector-detail-pane" class="inspector-pane inspector-detail-pane" hidden>
+          <div class="dominant-info-header-block">
+            <h3 id="dominant-info-title" class="legend-panel-title"></h3>
+            <p id="dominant-info-subtitle" class="dominant-info-subtitle" hidden></p>
+          </div>
+          <dl id="dominant-info-meta" class="dominant-info-meta"></dl>
+          <div id="dominant-info-links" class="dominant-info-links"></div>
         </div>
       </div>
     </aside>
-  </div>
 
-  <!-- キーボードショートカット一覧ヘルプモーダル -->
-  <div id="shortcut-modal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="shortcut-modal-title" hidden>
-    <div class="modal-dialog">
-      <div class="modal-header">
-        <h2 id="shortcut-modal-title" class="modal-title">キーボードショートカット</h2>
-        <button type="button" id="close-shortcut-modal" class="icon-button subtle" aria-label="閉じる">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
+    <!-- 右インスペクタ再展開タブ（格納時のみ表示） -->
+    <button
+      type="button"
+      id="reopen-right-btn"
+      class="reopen-right-tab"
+      title="凡例・詳細パネルを開く"
+      aria-label="凡例・詳細パネルを開く"
+      inert
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <polyline points="15 18 9 12 15 6"></polyline>
+      </svg>
+      <span id="reopen-right-label">凡例</span>
+    </button>
+
+    <!-- 右下：地図コントロール（レイヤーボタン / 環境設定ボタン） -->
+    <div id="map-bottom-right-controls" class="map-bottom-right-controls">
+      <!-- レイヤーポップオーバー -->
+      <div class="popover-anchor">
+        <div id="layers-popover" class="map-popover" role="dialog" aria-label="レイヤー設定" inert>
+          <div class="popover-section">
+            <span id="basemap-label" class="filter-label">背景地図</span>
+            <div class="segmented-control basemap-segmented" role="group" aria-label="背景地図の切り替え">
+              <button type="button" class="segmented-btn is-active" data-basemap="blank">白地図</button>
+              <button type="button" class="segmented-btn" data-basemap="pale">淡色</button>
+              <button type="button" class="segmented-btn" data-basemap="std">標準</button>
+              <button type="button" class="segmented-btn" data-basemap="photo">写真</button>
+            </div>
+          </div>
+          <div class="popover-section">
+            <label class="popover-switch-row">
+              <span id="show-index-label">図郭枠を表示</span>
+              <input type="checkbox" id="show-index-toggle" class="toggle-checkbox" checked>
+            </label>
+            <label class="popover-switch-row">
+              <span id="seamless-200k-label">20万分の1 シームレス地質図 V2</span>
+              <input type="checkbox" id="seamless-200k-toggle" class="toggle-checkbox">
+            </label>
+            <div id="seamless-opacity-row" class="seamless-opacity-row" hidden>
+              <label for="seamless-opacity" id="seamless-opacity-label" class="wms-opacity-label">シームレス透過度</label>
+              <input type="range" id="seamless-opacity" class="range-slider" min="0" max="100" value="65" aria-label="シームレス透過度">
+              <span id="seamless-opacity-value" class="wms-opacity-value">65%</span>
+            </div>
+            <label id="seamless-query-row" class="popover-switch-row seamless-sub-row" hidden>
+              <span id="seamless-query-label">地点の地質を調べる</span>
+              <input type="checkbox" id="seamless-query-toggle" class="toggle-checkbox">
+            </label>
+          </div>
+        </div>
+        <button
+          type="button"
+          id="layers-popover-btn"
+          class="map-fab-btn"
+          title="背景地図・レイヤー"
+          aria-label="背景地図・レイヤー設定を開く"
+          aria-expanded="false"
+          aria-controls="layers-popover"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
           </svg>
         </button>
       </div>
-      <div class="modal-body">
-        <dl id="shortcut-list" class="shortcut-list"></dl>
+
+      <!-- 環境設定ポップオーバー -->
+      <div class="popover-anchor">
+        <div id="prefs-popover" class="map-popover" role="dialog" aria-label="環境設定" inert>
+          <div class="popover-section">
+            <span id="prefs-theme-label" class="filter-label">テーマ</span>
+            <div class="segmented-control" role="group" aria-label="テーマ">
+              <button type="button" class="segmented-btn is-active" data-theme-choice="light">ライト</button>
+              <button type="button" class="segmented-btn" data-theme-choice="dark">ダーク</button>
+            </div>
+          </div>
+          <div class="popover-section">
+            <span id="prefs-lang-label" class="filter-label">表示言語</span>
+            <div class="segmented-control lang-switch" role="group" aria-label="表示言語の切り替え">
+              <button type="button" class="segmented-btn is-active" data-lang="ja">日本語</button>
+              <button type="button" class="segmented-btn" data-lang="en">English</button>
+            </div>
+          </div>
+          <div class="popover-footer">
+            <button type="button" id="reset-settings-btn" class="text-button">初期設定に戻す</button>
+          </div>
+        </div>
+        <button
+          type="button"
+          id="prefs-popover-btn"
+          class="map-fab-btn"
+          title="環境設定"
+          aria-label="環境設定を開く"
+          aria-expanded="false"
+          aria-controls="prefs-popover"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
       </div>
     </div>
   </div>
+
+  <!-- 凡例拡大鏡ルーペ（clipping 回避のため body 直下） -->
+  <div id="legend-loupe" class="legend-loupe" aria-hidden="true"></div>
 
   <!-- Leaflet.js v1.9.4 JS -->
   <script

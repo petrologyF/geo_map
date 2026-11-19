@@ -2,19 +2,19 @@
 
 
 def build_seamless_200k_record() -> dict:
-    """20万分の1日本シームレス地質図（全国WMSレイヤー）の共通スキーマレコードを返す。"""
+    """20万分の1日本シームレス地質図V2（Web API v1.2 XYZタイル）の共通スキーマレコードを返す。"""
     return {
         "source": {
             "provider_id": "gsj_seamless_200k",
             "provider_name_ja": "産業技術総合研究所 地質調査総合センター",
             "provider_url": "https://gbank.gsj.jp/seamless/",
             "license": "CC BY 4.0（産総研 地質調査総合センター）",
-            "attribution": "産業技術総合研究所 地質調査総合センター（20万分の1日本シームレス地質図V2）",
+            "attribution": '<a href="https://gbank.gsj.jp/seamless/" target="_blank" rel="noopener noreferrer">産総研 地質調査総合センター「20万分の1日本シームレス地質図V2」(CC BY 4.0)</a>',
         },
         "map": {
             "map_id": "gsj_seamless_200k_jp",
             "local_id": "seamless_v2",
-            "layer_name": "geology",
+            "layer_name": "glfs",
             "map_name_ja": "20万分の1日本シームレス地質図V2",
             "map_name_en": "Seamless Digital Geological Map of Japan (1:200,000) V2",
             "map_type": "seamless_geological_map",
@@ -34,19 +34,19 @@ def build_seamless_200k_record() -> dict:
             "bounds": [122.0, 20.0, 154.0, 46.0],
             "center": [138.0, 36.0],
             "zoom": {
-                "min": 4,
-                "max": 16,
+                "min": 2,
+                "max": 13,
                 "default": 6,
             },
         },
         "geometry": None,
         "display": {
-            "tile_type": "wms",
-            "tile_url": "",
-            "wms_url": "https://ows.gsj.jp/ows/seamlessgeologicmapv2",
-            "wms_layers": "geology",
+            "tile_type": "xyz",
+            "tile_url": "https://gbank.gsj.jp/seamless/v2/api/1.2/tiles/{z}/{y}/{x}.png",
+            "wms_url": "",
+            "wms_layers": "",
             "raster_image_url": "",
-            "opacity": 0.75,
+            "opacity": 0.65,
         },
         "documents": {
             "light_pdf_url": "",
@@ -60,5 +60,6 @@ def build_seamless_200k_record() -> dict:
         "related_resources": {
             "catalog_url": "https://gbank.gsj.jp/seamless/use.html",
             "viewer_url": "https://gbank.gsj.jp/seamless/v2/viewer/",
+            "legend_api_url": "https://gbank.gsj.jp/seamless/v2/api/1.2/legend.json",
         },
     }
