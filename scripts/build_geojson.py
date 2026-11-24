@@ -4,6 +4,7 @@
 data/providers/*.json・data/map_catalog.json・data/map_index.geojson を出力する。
 """
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -11,6 +12,8 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
+from scripts.build_review_bundle import build_review_bundle  # noqa: E402
+from scripts.providers.field_trips import build_field_trips_geojson  # noqa: E402
 from scripts.providers.gsj_50k import normalize_gsj_50k  # noqa: E402
 from scripts.providers.gsj_coastal_seamless import build_coastal_seamless_records  # noqa: E402
 from scripts.providers.gsj_seamless_200k import build_seamless_200k_record  # noqa: E402
@@ -39,7 +42,21 @@ def ensure_gsj_50k_schema(rec: dict) -> dict:
     return rec
 
 
-def main() -> None:
+def validate_unique_map_ids(records: list[dict]) -> None:
+    """統合後の全レコードで map.map_id が一意であることを検証する。"""
+    seen_ids: set[str] = set()
+    for rec in records:
+        map_id = rec.get("map", {}).get("map_id", "")
+        if map_id in seen_ids:
+            raise ValueError(f"重複した map.map_id が検出されました: {map_id}")
+        seen_ids.add(map_id)
+
+
+def main(argv: list[str] | None = None) -> None:
+    parser = argparse.ArgumentParser(description="地質図・巡検データ統合 & GeoJSON 生成")
+    parser.add_argument("--skip-bundle", action="store_true", help="REVIEW_BUNDLE.md の自動更新をスキップする")
+    args = parser.parse_args(argv)
+
     data_dir = PROJECT_ROOT / "data"
     providers_dir = data_dir / "providers"
     providers_dir.mkdir(parents=True, exist_ok=True)
@@ -83,6 +100,7 @@ def main() -> None:
     )
     for rec in all_records:
         validate_common_record(rec)
+    validate_unique_map_ids(all_records)
 
     # プロバイダ別JSONを書き出し
     (providers_dir / "gsj_50k.json").write_text(
@@ -128,16 +146,26 @@ def main() -> None:
 
     geojson_path = data_dir / "map_index.geojson"
     geojson_path.write_text(
-        json.dumps({"type": "FeatureCollection", "features": features}, ensure_ascii=False, indent=2),
+        json.dumps({"type": "FeatureCollection", "features": features}, ensure_ascii=False, separators=(",", ":")),
         encoding="utf-8",
     )
+
+    field_trips_csv_path = data_dir / "field_trips.csv"
+    field_trips_geojson_path = data_dir / "field_trips.geojson"
+    field_trip_records = []
+    if field_trips_csv_path.exists():
+        field_trip_records = build_field_trips_geojson(field_trips_csv_path, field_trips_geojson_path)
 
     print(f"gsj_50k: {len(gsj_50k_records)} 件")
     print(f"gsj_seamless_200k: {len(seamless_records)} 件")
     print(f"gsj_volcanic: {len(volcanic_records)} 件")
     print(f"gsj_coastal_seamless: {len(coastal_records)} 件")
     print(f"hro_eeg: {len(hro_records)} 件")
+    print(f"field_trips: {len(field_trip_records)} 件")
     print(f"出力完了: {catalog_path} ({len(all_records)} 件), {geojson_path} ({len(features)} features)")
+    if not args.skip_bundle:
+        bundle_path = build_review_bundle()
+        print(f"REVIEW_BUNDLE 更新: {bundle_path}")
 
 
 if __name__ == "__main__":

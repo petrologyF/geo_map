@@ -2,6 +2,8 @@
 
 import re
 
+from scripts.providers.common import to_int_year
+
 
 def clean_author_name(name: str) -> str:
     """著者名から分割時に残った不対の括弧などを除去する。"""
@@ -17,19 +19,6 @@ def clean_author_name(name: str) -> str:
         if inner:
             cleaned = inner
     return cleaned
-
-
-def to_int_year(value) -> int | None:
-    """発行年を安全に整数へ変換する。"""
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, int):
-        return value
-    if isinstance(value, str):
-        match = re.search(r"\d{4}", value)
-        if match:
-            return int(match.group(0))
-    return None
 
 
 def build_polygon_geometry(bounds: list[float]) -> dict | None:

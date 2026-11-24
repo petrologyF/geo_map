@@ -10,7 +10,9 @@ GSJ 5万分の1地質図幅のメタデータから Leaflet 用 map_catalog.json
 
 import argparse
 import json
+import logging
 import re
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -18,30 +20,78 @@ from urllib.parse import urljoin
 
 import requests
 from bs4 import BeautifulSoup
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 BASE_URL = "https://gbank.gsj.jp/ld/resource/publication/map/{series}/map{map_id}.html"
 USER_AGENT = "GeologicalMapWebGIS/0.1 (research use)"
+logger = logging.getLogger(__name__)
+
+_THREAD_LOCAL = threading.local()
 
 
-def fetch_text(url: str) -> str:
-    """指定URLからHTMLテキストを取得する。"""
-    response = requests.get(
-        url,
-        headers={"User-Agent": USER_AGENT},
-        timeout=30,
+class RateLimiter:
+    """複数ワーカー間で共有するスレッドセーフなレートリミッター。"""
+
+    def __init__(self, delay_sec: float) -> None:
+        self.delay_sec = max(0.0, float(delay_sec))
+        self._lock = threading.Lock()
+        self._next_allowed = 0.0
+
+    def wait(self) -> None:
+        if self.delay_sec <= 0:
+            return
+        with self._lock:
+            now = time.monotonic()
+            if now < self._next_allowed:
+                sleep_for = self._next_allowed - now
+                self._next_allowed = self._next_allowed + self.delay_sec
+            else:
+                sleep_for = 0.0
+                self._next_allowed = now + self.delay_sec
+        if sleep_for > 0:
+            time.sleep(sleep_for)
+
+
+def create_retry_session() -> requests.Session:
+    """429/5xx リトライ付きの requests.Session を生成する。"""
+    session = requests.Session()
+    session.headers.update({"User-Agent": USER_AGENT})
+    retry = Retry(
+        total=3,
+        backoff_factor=0.5,
+        status_forcelist=[429, 500, 502, 503, 504],
+        allowed_methods=["HEAD", "GET"],
+        raise_on_status=False,
     )
+    adapter = HTTPAdapter(max_retries=retry)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    return session
+
+
+def get_http_session() -> requests.Session:
+    """スレッドごとの Session を再利用する。"""
+    session = getattr(_THREAD_LOCAL, "session", None)
+    if session is None:
+        session = create_retry_session()
+        _THREAD_LOCAL.session = session
+    return session
+
+
+def fetch_text(url: str, session: requests.Session | None = None) -> str:
+    """指定URLからHTMLテキストを取得する。"""
+    sess = session or get_http_session()
+    response = sess.get(url, timeout=30)
     response.raise_for_status()
     response.encoding = response.apparent_encoding or "utf-8"
     return response.text
 
 
-def fetch_json(url: str) -> dict:
+def fetch_json(url: str, session: requests.Session | None = None) -> dict:
     """指定URLからJSONを取得する。"""
-    response = requests.get(
-        url,
-        headers={"User-Agent": USER_AGENT},
-        timeout=30,
-    )
+    sess = session or get_http_session()
+    response = sess.get(url, timeout=30)
     response.raise_for_status()
     return response.json()
 
@@ -149,12 +199,12 @@ def extract_section_images(metadata_url: str, soup: BeautifulSoup) -> list[dict[
     return sections
 
 
-def check_url_exists(url: str) -> bool:
+def check_url_exists(url: str, session: requests.Session | None = None) -> bool:
     """HEADリクエストでURLが存在するか（HTTP 200系）確認する。"""
     try:
-        response = requests.head(
+        sess = session or get_http_session()
+        response = sess.head(
             url,
-            headers={"User-Agent": USER_AGENT},
             allow_redirects=True,
             timeout=5,
         )
@@ -236,7 +286,8 @@ def extract_japanese_metadata(catalog_url: str) -> dict:
     try:
         html = fetch_text(catalog_url)
         soup = BeautifulSoup(html, "html.parser")
-    except Exception:
+    except Exception as exc:
+        logger.warning("日本語カタログページの取得に失敗しました: %s (%s)", catalog_url, exc)
         return result
 
     kv: dict[str, str] = {}
@@ -476,7 +527,19 @@ def main() -> None:
         default=8,
         help="並列取得のワーカー数（既定: 8）",
     )
+    parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help="既存の --output JSON に含まれる map_id の取得をスキップする",
+    )
+    parser.add_argument(
+        "--error-log",
+        default="",
+        help="任意: 取得失敗URLとエラー詳細を保存する JSON ファイルパス",
+    )
     args = parser.parse_args()
+
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
     target_ids: list[str] = list(args.map_id)
     if args.all:
@@ -491,11 +554,25 @@ def main() -> None:
     if not target_ids:
         parser.error("--map-id または --all のいずれかを指定してください。")
 
+    output_path = Path(args.output)
+    existing_records: list[dict] = []
+    existing_ids: set[str] = set()
+    if args.skip_existing and output_path.exists():
+        try:
+            existing_records = json.loads(output_path.read_text(encoding="utf-8"))
+            existing_ids = {str(r.get("map_id")).zfill(5) for r in existing_records if r.get("map_id") is not None}
+            before_count = len(target_ids)
+            target_ids = [mid for mid in target_ids if str(mid).strip().zfill(5) not in existing_ids]
+            print(f"--skip-existing: 既存 {len(existing_ids)} 件をスキップ（残り {len(target_ids)} / {before_count} 件）")
+        except Exception as exc:
+            logger.warning("既存ファイルの読み込みに失敗したため全件取得します: %s (%s)", output_path, exc)
+
+    rate_limiter = RateLimiter(args.delay)
+
     def fetch_one(index: int, raw_map_id: str) -> tuple[int, str, dict | None, str]:
         padded_id = str(raw_map_id).strip().zfill(5)
         metadata_url = BASE_URL.format(series=args.series, map_id=padded_id)
-        if args.delay > 0 and args.workers <= 1 and index > 0:
-            time.sleep(args.delay)
+        rate_limiter.wait()
         try:
             record = build_record(metadata_url, args.series)
             return index, metadata_url, record, ""
@@ -532,14 +609,20 @@ def main() -> None:
                 print(f"  ERROR: {url} -> {err}")
 
     indexed_records.sort(key=lambda item: item[0])
-    records: list[dict] = [rec for _, rec in indexed_records]
+    new_records: list[dict] = [rec for _, rec in indexed_records]
+    records: list[dict] = existing_records + new_records
 
     if errors:
         print(f"スキップ/エラー件数: {len(errors)} 件（先頭5件）:")
         for url, err in errors[:5]:
             print(f"  - {url}: {err}")
+        if args.error_log:
+            err_path = Path(args.error_log)
+            err_path.parent.mkdir(parents=True, exist_ok=True)
+            err_payload = [{"url": url, "error": err} for url, err in errors]
+            err_path.write_text(json.dumps(err_payload, ensure_ascii=False, indent=2), encoding="utf-8")
+            print(f"エラーログを保存しました: {err_path}")
 
-    output_path = Path(args.output)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("w", encoding="utf-8") as file:
         json.dump(records, file, ensure_ascii=False, indent=2)

@@ -1,0 +1,35 @@
+[
+  {
+    "local_id": "toyama_bay",
+    "map_name_ja": "富山湾沿岸域 海陸シームレス地質図",
+    "map_name_en": "Seamless Geological Map of Toyama Bay Coastal Zone",
+    "scale_denominator": 200000,
+    "published_year": 2021,
+    "region": "富山県・石川県",
+    "prefectures": ["富山県", "石川県"],
+    "bounds": [136.85, 36.65, 137.65, 37.35],
+    "center": [137.25, 37.00]
+  },
+  {
+    "local_id": "ishikari_south",
+    "map_name_ja": "石狩低地帯南部沿岸域 海陸シームレス地質図",
+    "map_name_en": "Seamless Geological Map of Southern Ishikari Lowland Coastal Zone",
+    "scale_denominator": 200000,
+    "published_year": 2018,
+    "region": "北海道",
+    "prefectures": ["北海道"],
+    "bounds": [141.15, 42.35, 142.05, 42.85],
+    "center": [141.60, 42.60]
+  },
+  {
+    "local_id": "fukuoka_coastal",
+    "map_name_ja": "福岡沿岸域 海陸シームレス地質図",
+    "map_name_en": "Seamless Geological Map of Fukuoka Coastal Zone",
+    "scale_denominator": 200000,
+    "published_year": 2016,
+    "region": "福岡県",
+    "prefectures": ["福岡県"],
+    "bounds": [130.00, 33.45, 130.65, 33.95],
+    "center": [130.325, 33.70]
+  }
+]

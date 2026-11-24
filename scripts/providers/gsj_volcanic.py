@@ -1,60 +1,16 @@
 """産総研（GSJ）火山地質図プロバイダアダプタ。"""
 
+import json
+from pathlib import Path
+
 from scripts.providers.gsj_50k import build_polygon_geometry
 
+SEED_PATH = Path(__file__).resolve().parent.parent.parent / "data" / "seeds" / "gsj_volcanic.json"
 
-def build_volcanic_records() -> list[dict]:
-    """代表的な火山地質図（焼岳・御嶽山・富士山）の共通スキーマレコード群を返す。"""
-    volcanic_seeds = [
-        {
-            "local_id": "v_yakedake",
-            "map_name_ja": "焼岳火山地質図",
-            "map_name_en": "Geological Map of Yakedake Volcano",
-            "volcano_name_ja": "焼岳",
-            "volcano_name_en": "Yakedake",
-            "scale_denominator": 25000,
-            "published_year": 2016,
-            "authors_ja": ["及川 輝樹"],
-            "authors_en": ["OIKAWA Teruki"],
-            "region": "長野県・岐阜県",
-            "prefectures": ["長野県", "岐阜県"],
-            "bounds": [137.54, 36.18, 137.65, 36.27],
-            "center": [137.595, 36.225],
-            "catalog_url": "https://www.gsj.jp/Map/JP/volcano.html",
-        },
-        {
-            "local_id": "v_ontake",
-            "map_name_ja": "御嶽山火山地質図",
-            "map_name_en": "Geological Map of Ontake Volcano",
-            "volcano_name_ja": "御嶽山",
-            "volcano_name_en": "Ontake",
-            "scale_denominator": 50000,
-            "published_year": 2016,
-            "authors_ja": ["及川 輝樹", "石塚 吉浩", "竹内 晋吾", "松本 哲一"],
-            "authors_en": ["OIKAWA Teruki", "ISHIZUKA Yoshihiro", "TAKEUCHI Shingo", "MATSUMOTO Akikazu"],
-            "region": "長野県・岐阜県",
-            "prefectures": ["長野県", "岐阜県"],
-            "bounds": [137.38, 35.80, 137.60, 35.98],
-            "center": [137.49, 35.89],
-            "catalog_url": "https://www.gsj.jp/Map/JP/volcano.html",
-        },
-        {
-            "local_id": "v_fuji",
-            "map_name_ja": "富士火山地質図（第2版）",
-            "map_name_en": "Geological Map of Fuji Volcano (2nd Edition)",
-            "volcano_name_ja": "富士山",
-            "volcano_name_en": "Fuji",
-            "scale_denominator": 50000,
-            "published_year": 2016,
-            "authors_ja": ["高田 亮", "山元 孝広", "石塚 吉浩", "中野 俊"],
-            "authors_en": ["TAKADA Akira", "YAMAMOTO Takahiro", "ISHIZUKA Yoshihiro", "NAKANO Shun"],
-            "region": "山梨県・静岡県",
-            "prefectures": ["山梨県", "静岡県"],
-            "bounds": [138.58, 35.24, 138.92, 35.52],
-            "center": [138.75, 35.38],
-            "catalog_url": "https://www.gsj.jp/Map/JP/volcano.html",
-        },
-    ]
+
+def build_volcanic_records(seed_path: Path = SEED_PATH) -> list[dict]:
+    """代表的な火山地質図の共通スキーマレコード群をシードJSONから構築して返す。"""
+    volcanic_seeds = json.loads(seed_path.read_text(encoding="utf-8"))
 
     records = []
     for seed in volcanic_seeds:

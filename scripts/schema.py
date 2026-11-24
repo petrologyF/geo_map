@@ -1,5 +1,11 @@
 """地質図共通スキーマの定数・バリデーション定義。"""
 
+import re
+from urllib.parse import urlparse
+
+FIELD_TRIP_ID_RE = re.compile(r"^\d{4}_[^_]+_\d+_[^_]+$")
+FIELD_TRIP_CATEGORIES = ("volcano", "basement", "sedimentary", "hazard_geo")
+
 MAP_TYPES = (
     "geological_map_sheet",
     "seamless_geological_map",
@@ -97,3 +103,84 @@ def validate_common_record(record: dict) -> None:
     for key in ("light_pdf_url", "full_pdf_url"):
         if key not in docs or not isinstance(docs.get(key), str):
             raise ValueError(f"documents.{key} がないか文字列ではありません")
+
+    for section_name, section, url_keys in (
+        ("display", disp, ("tile_url", "wms_url", "raster_image_url")),
+        ("documents", docs, ("light_pdf_url", "full_pdf_url", "legend_image_url", "original_image_url")),
+    ):
+        for key in url_keys:
+            val = section.get(key, "")
+            if val is None or val == "":
+                continue
+            if not isinstance(val, str) or (val.strip() and not is_valid_http_url(val)):
+                raise ValueError(f"{section_name}.{key} が有効な http/https URL ではありません: {val}")
+
+
+def is_valid_http_url(url: str) -> bool:
+    """http または https スキームの有効な URL か検証する。"""
+    if not isinstance(url, str) or not url.strip():
+        return False
+    parsed = urlparse(url.strip())
+    return parsed.scheme in ("http", "https") and bool(parsed.netloc)
+
+
+def validate_field_trip_record(record: dict) -> None:
+    """巡検スポットレコードの必須属性・ID形式・座標範囲・URL形式を検証する。"""
+    if not isinstance(record, dict):
+        raise ValueError("巡検レコードは辞書である必要があります")
+
+    required_str_fields = ("id", "course_abbr", "course_name", "stop_no", "stop_abbr", "stop_name")
+    for field in required_str_fields:
+        val = record.get(field)
+        if not isinstance(val, str) or not val.strip():
+            raise ValueError(f"field_trip.{field} が未設定または空文字です")
+
+    trip_id = record["id"].strip()
+    if not FIELD_TRIP_ID_RE.match(trip_id):
+        raise ValueError(
+            f"field_trip.id が命名規則（YYYY_巡検名略称_地点no._地点名略称）に一致しません: {trip_id}"
+        )
+
+    year = record.get("year")
+    if not isinstance(year, int) or isinstance(year, bool) or not (1000 <= year <= 9999):
+        raise ValueError(f"field_trip.year は西暦4桁の整数である必要があります: {year}")
+
+    id_parts = trip_id.split("_", 3)
+    id_year, id_course, id_stop_no, _id_stop_abbr = id_parts
+    if int(id_year) != year:
+        raise ValueError(f"field_trip.id の年（{id_year}）が year（{year}）と一致しません: {trip_id}")
+    if id_course != record["course_abbr"].strip():
+        raise ValueError(
+            f"field_trip.id のコース略称（{id_course}）が course_abbr（{record['course_abbr']}）と一致しません: {trip_id}"
+        )
+    if id_stop_no != record["stop_no"].strip():
+        raise ValueError(
+            f"field_trip.id の地点番号（{id_stop_no}）が stop_no（{record['stop_no']}）と一致しません: {trip_id}"
+        )
+
+    lat = record.get("lat")
+    lon = record.get("lon")
+    if not isinstance(lat, (int, float)) or isinstance(lat, bool) or not (-90.0 <= float(lat) <= 90.0):
+        raise ValueError(f"field_trip.lat が有効範囲（-90〜90）外です: {lat}")
+    if not isinstance(lon, (int, float)) or isinstance(lon, bool) or not (-180.0 <= float(lon) <= 180.0):
+        raise ValueError(f"field_trip.lon が有効範囲（-180〜180）外です: {lon}")
+
+    guidebook_url = record.get("guidebook_url", "")
+    if not isinstance(guidebook_url, str):
+        raise ValueError("field_trip.guidebook_url は文字列である必要があります")
+    if guidebook_url.strip() and not is_valid_http_url(guidebook_url):
+        raise ValueError(f"field_trip.guidebook_url が有効な http/https URL ではありません: {guidebook_url}")
+
+    description = record.get("description", "")
+    if not isinstance(description, str):
+        raise ValueError("field_trip.description は文字列である必要があります")
+
+    authors = record.get("authors", "")
+    if not isinstance(authors, str):
+        raise ValueError("field_trip.authors は文字列である必要があります")
+
+    category = record.get("category")
+    if not isinstance(category, str) or category.strip() not in FIELD_TRIP_CATEGORIES:
+        raise ValueError(
+            f"field_trip.category が不正です（許可値: {FIELD_TRIP_CATEGORIES}）: {category!r}"
+        )

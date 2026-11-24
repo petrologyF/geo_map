@@ -2,18 +2,7 @@
 
 import re
 
-
-def to_int_year(value) -> int | None:
-    """発行年を安全に整数へ変換する。"""
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, int):
-        return value
-    if isinstance(value, str):
-        match = re.search(r"\d{4}", value)
-        if match:
-            return int(match.group(0))
-    return None
+from scripts.providers.common import to_int_year
 
 
 def normalize_sheet_key(name: str) -> str:
@@ -78,6 +67,18 @@ def is_duplicate_record(gsj_rec: dict, hro_rec: dict) -> bool:
         return True
 
     # 3. 空間的中心点の一致 + (発行年±2年以内 または 名称類似)
+    #    ただし縮尺が大きく異なる場合（例: 1:50,000 と 1:200,000）は重複とみなさない
+    g_scale = gm.get("scale_denominator")
+    h_scale = hm.get("scale_denominator")
+    if (
+        isinstance(g_scale, int)
+        and isinstance(h_scale, int)
+        and g_scale > 0
+        and h_scale > 0
+        and max(g_scale, h_scale) / min(g_scale, h_scale) > 1.5
+    ):
+        return False
+
     same_space = is_same_spatial_sheet(gm.get("bounds"), hm.get("bounds"))
     if same_space and (year_close or same_name):
         return True
