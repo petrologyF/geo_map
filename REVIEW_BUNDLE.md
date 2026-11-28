@@ -1,6 +1,6 @@
 # REVIEW_BUNDLE — 地質図検索 WebGIS レビュー用バンドル
 
-> 自動生成日時: `2026-11-28 20:44:41`（`scripts/build_review_bundle.py` / `scripts/build_geojson.py` / Git pre-commit により自動更新）
+> 自動生成日時: `2026-11-29 00:21:04`（`scripts/build_review_bundle.py` / `scripts/build_geojson.py` / Git pre-commit により自動更新）
 
 ## 1. プロジェクト概要・データ統計
 
@@ -194,7 +194,7 @@
 | `docs/MEMORY.md` | 36 | 2711 |
 | `docs/PRD.md` | 72 | 6372 |
 | `docs/RULES.md` | 37 | 2275 |
-| `docs/TASKS.md` | 28 | 1823 |
+| `docs/TASKS.md` | 30 | 2029 |
 | `index.html` | 551 | 30367 |
 | `js/config.js` | 118 | 4019 |
 | `js/dom.js` | 65 | 2089 |
@@ -230,14 +230,14 @@
 
 ## 4. 直近の Git コミット
 
+- `b7a8c13 docs(tasks): link TASKS.md to Linear issues (Linear is the task source of truth)`
+- `d87cd56 style(ui): apply unslop-ui typography, parity, and aria-pressed fixes`
 - `224f37d chore: initialize project-docs, update REVIEW_BUNDLE, and refine UI`
 - `8c358b5 feat: add application state management and DOM element caching`
 - `a4cfa8f feat(catalog): enhance metadata extraction in build_map_catalog`
 - `9e3d7c1 feat(ui): add detail close button, auto-fit, and EN localization`
 - `89a2589 fix(pipeline): enforce strict schema validation and audit tests`
 - `963d58b fix(ui): resolve IME guard, bounds check, and image 404 edge cases`
-- `7a7195c feat(ui): add dark mode with OS sync and d-key toggle`
-- `4b81d4e feat(ui): add keyboard shortcuts, arrow navigation, and help modal`
 
 ## 5. フロントエンド主要ファイル（全文）
 
