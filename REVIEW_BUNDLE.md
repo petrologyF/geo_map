@@ -1,6 +1,6 @@
 # REVIEW_BUNDLE — 地質図検索 WebGIS レビュー用バンドル
 
-> 自動生成日時: `2026-11-23 03:46:54`（`scripts/build_review_bundle.py` / `scripts/build_geojson.py` / Git pre-commit により自動更新）
+> 自動生成日時: `2026-11-28 16:28:06`（`scripts/build_review_bundle.py` / `scripts/build_geojson.py` / Git pre-commit により自動更新）
 
 ## 1. プロジェクト概要・データ統計
 
@@ -186,22 +186,28 @@
 | ファイル | 行数 | サイズ (bytes) |
 |---|---:|---:|
 | `.github/workflows/pages.yml` | 37 | 706 |
-| `css/style.css` | 2795 | 60455 |
+| `css/style.css` | 2795 | 63248 |
 | `data/field_trips.csv` | 1258 | 568352 |
 | `data/field_trips.md` | 57 | 4832 |
-| `index.html` | 551 | 30140 |
-| `js/config.js` | 118 | 3901 |
+| `docs/ARCHITECTURE.md` | 78 | 7662 |
+| `docs/DESIGN.md` | 46 | 3616 |
+| `docs/MEMORY.md` | 36 | 2711 |
+| `docs/PRD.md` | 72 | 6372 |
+| `docs/RULES.md` | 37 | 2275 |
+| `docs/TASKS.md` | 28 | 1823 |
+| `index.html` | 551 | 30691 |
+| `js/config.js` | 118 | 4019 |
 | `js/dom.js` | 65 | 2089 |
-| `js/fieldTrips.js` | 1178 | 42071 |
+| `js/fieldTrips.js` | 1205 | 42569 |
 | `js/i18n.js` | 318 | 13413 |
 | `js/inspector.js` | 1012 | 34404 |
-| `js/main.js` | 634 | 20036 |
+| `js/main.js` | 628 | 20212 |
 | `js/map.js` | 490 | 14864 |
 | `js/normalize.js` | 369 | 14345 |
 | `js/permalink.js` | 129 | 3249 |
 | `js/seamless.js` | 239 | 7550 |
 | `js/search.js` | 932 | 30579 |
-| `js/state.js` | 287 | 13458 |
+| `js/state.js` | 291 | 13490 |
 | `LICENSE` | 21 | 1068 |
 | `README.md` | 90 | 7378 |
 | `requirements.txt` | 2 | 40 |
@@ -224,14 +230,14 @@
 
 ## 4. 直近の Git コミット
 
-- `84237ee Enhance metadata extraction and processing in build_map_catalog.py`
-- `732fe21 Improve UX: add detail panel close button, auto-fit on map type switch, and complete EN localization`
-- `4e7729a fix: Pythonパイプライン・スキーマ厳格検証、HRO重複判定境界ケース、シームレス詳細同期の修正と監査テスト追加`
-- `62bbadc fix: コード監査に基づくエッジケース修正(IME変換確定ガード、画面外判定、広域/図幅面積比較、イベント解除、画像404/スクロール対応)`
-- `87900cf feat: ダークモード(Chrome風ダークテーマ・OS設定連動・dキー切替・localStorage永続化)を追加`
-- `1ad7d6b feat: キーボードショートカット(m/l/f/i/s/b/[/]/x/?/Esc)、一覧矢印ナビ、ヘルプモーダル、focus-visible対応を実装`
-- `6e025e5 fix: パイプライン入出力分離(gsj_50k_raw.json)、HRO空間/表記ゆれ重複排除、schema.py型/座標検証強化`
-- `6a34609 feat: 断面図(section_images)の自動抽出および右サイドバー凡例/断面図切替・ルーペ拡大を実装`
+- `8c358b5 feat: add application state management and DOM element caching`
+- `a4cfa8f feat(catalog): enhance metadata extraction in build_map_catalog`
+- `9e3d7c1 feat(ui): add detail close button, auto-fit, and EN localization`
+- `89a2589 fix(pipeline): enforce strict schema validation and audit tests`
+- `963d58b fix(ui): resolve IME guard, bounds check, and image 404 edge cases`
+- `7a7195c feat(ui): add dark mode with OS sync and d-key toggle`
+- `4b81d4e feat(ui): add keyboard shortcuts, arrow navigation, and help modal`
+- `c4dad76 fix(pipeline): separate raw JSON and strengthen HRO deduplication`
 
 ## 5. フロントエンド主要ファイル（全文）
 
@@ -799,22 +805,22 @@
    ========================================================================== */
 :root {
   --font-sans: "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --color-bg: #ffffff;
-  --color-panel-bg: rgba(255, 255, 255, 0.96);
-  --color-surface: #f8f9fa;
-  --color-surface-hover: #f1f3f4;
-  --color-border: #dadce0;
-  --color-border-focus: #1a73e8;
-  --color-primary: #1a73e8;
-  --color-primary-soft: rgba(26, 115, 232, 0.1);
-  --color-text: #202124;
-  --color-text-secondary: #5f6368;
-  --color-danger: #d93025;
-  --color-divider: #eef0f2;
-  --shadow-floating: 0 4px 16px rgba(60, 64, 67, 0.2), 0 1px 4px rgba(60, 64, 67, 0.12);
-  --shadow-control: 0 2px 6px rgba(60, 64, 67, 0.2);
-  --radius-lg: 12px;
-  --radius-md: 8px;
+  --color-bg: #f6f5f1;
+  --color-panel-bg: rgba(252, 252, 250, 0.96);
+  --color-surface: #f0eee8;
+  --color-surface-hover: #e5e2d9;
+  --color-border: #dddad0;
+  --color-border-focus: #1f5650;
+  --color-primary: #1f5650;
+  --color-primary-soft: rgba(31, 86, 80, 0.12);
+  --color-text: #1c1f1e;
+  --color-text-secondary: #5c6360;
+  --color-danger: #b91c1c;
+  --color-divider: #e5e2d9;
+  --shadow-floating: 0 4px 14px rgba(28, 31, 30, 0.14), 0 1px 3px rgba(28, 31, 30, 0.08);
+  --shadow-control: 0 2px 6px rgba(28, 31, 30, 0.12);
+  --radius-lg: 6px;
+  --radius-md: 4px;
   --radius-pill: 9999px;
   --ease-fluid: cubic-bezier(0.22, 1, 0.36, 1);
   --dur-fast: 160ms;
@@ -822,20 +828,20 @@
 }
 
 html[data-theme="dark"] {
-  --color-bg: #202124;
-  --color-panel-bg: rgba(32, 33, 36, 0.95);
-  --color-surface: #292a2d;
-  --color-surface-hover: #35363a;
-  --color-border: #3c4043;
-  --color-border-focus: #8ab4f8;
-  --color-primary: #8ab4f8;
-  --color-primary-soft: rgba(138, 180, 248, 0.16);
-  --color-text: #e8eaed;
-  --color-text-secondary: #9aa0a6;
+  --color-bg: #141716;
+  --color-panel-bg: rgba(27, 31, 30, 0.96);
+  --color-surface: #222725;
+  --color-surface-hover: #2a302e;
+  --color-border: #2a302e;
+  --color-border-focus: #3b8278;
+  --color-primary: #3b8278;
+  --color-primary-soft: rgba(59, 130, 120, 0.18);
+  --color-text: #eceae4;
+  --color-text-secondary: #9ca39f;
   --color-danger: #f28b82;
-  --color-divider: #35363a;
-  --shadow-floating: 0 6px 20px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(0, 0, 0, 0.35);
-  --shadow-control: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --color-divider: #2a302e;
+  --shadow-floating: 0 6px 18px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.3);
+  --shadow-control: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 *,
@@ -3784,7 +3790,7 @@ export function getCourseKey(props) {
 }
 ```
 
-### `js/fieldTrips.js`（全 1178 行）
+### `js/fieldTrips.js`（全 1205 行）
 
 ```javascript
 import { CONFIG, FIELD_TRIP_CATEGORIES, FIELD_TRIP_CATEGORY_KEYS } from './config.js';
@@ -3986,15 +3992,21 @@ export function findSheetMapForLatLng(latlng) {
 }
 
 /**
+ * 指定 Stop 配列から現在選択中（または先頭）の Stop に対応する重ね合わせ候補図幅を返す
+ */
+function getOverlayCandidateForStops(stops) {
+  if (!Array.isArray(stops) || stops.length === 0) {
+    return null;
+  }
+  const current = stops.find((it) => it.props.id === state.selectedFieldTripId) || stops[0];
+  return current ? findSheetMapForLatLng(current.latlng) : null;
+}
+
+/**
  * 展開中の現在地点（未選択時はコース代表座標）を包含する地質図を重ねる
  */
 export function overlayGeoMapAtCurrentSpot() {
-  const sorted = getExpandedCourseStops();
-  if (sorted.length === 0) {
-    return;
-  }
-  const current = sorted.find((it) => it.props.id === state.selectedFieldTripId) || sorted[0];
-  const matched = findSheetMapForLatLng(current.latlng);
+  const matched = getOverlayCandidateForStops(getExpandedCourseStops());
   if (matched) {
     addOverlayForItem(matched);
   }
@@ -4076,8 +4088,7 @@ export function syncFieldTripActiveBar() {
       }
     }
     if (dom.fieldTripBarOverlayBtn) {
-      const targetSpot = sorted.find((it) => it.props.id === state.selectedFieldTripId) || sorted[0];
-      const matchedMap = targetSpot ? findSheetMapForLatLng(targetSpot.latlng) : null;
+      const matchedMap = getOverlayCandidateForStops(sorted);
       if (matchedMap) {
         dom.fieldTripBarOverlayBtn.textContent = dict.fieldTripOverlayMapHere;
         dom.fieldTripBarOverlayBtn.hidden = false;
@@ -4361,35 +4372,49 @@ function clusterCourseEntries(courseEntries, map) {
 }
 
 /**
- * 単独ピルおよび複数コース集約クラスタピルを地図へ描画する
+ * 指定した巡検コースを展開し、フィルタ・設定・UI・地図表示を同期する
  */
-function renderUnexpandedClusters(clusters, isCompactLod) {
-  const dict = t();
-  const selectAndExpandCourse = (courseKey, items, sample) => {
+function activateFieldTripCourse(courseKey, sample = null, { fitItems = null, maxZoom = 16 } = {}) {
+  if (sample) {
     if (state.fieldTripYear !== 'all') {
       state.fieldTripYear = String(sample.year || 'all');
       state.settings.fieldTripYear = state.fieldTripYear;
     }
     state.fieldTripCourse = sample.course_abbr || 'all';
     state.settings.fieldTripCourse = state.fieldTripCourse;
-    state.expandedFieldTripCourses.clear();
-    state.expandedFieldTripCourses.add(courseKey);
+  }
+  state.expandedFieldTripCourses.clear();
+  state.expandedFieldTripCourses.add(courseKey);
+  if (sample) {
     populateFieldTripFilters();
-    saveSettings();
-    syncSettingsUI();
-    renderFieldTripMarkers();
-    renderFieldTripList();
-    schedulePermalinkSync();
-    if (state.map) {
-      const bounds = L.latLngBounds(items.map((it) => it.latlng));
-      const fitPad = getMapFitPadding();
-      state.map.fitBounds(bounds, {
-        paddingTopLeft: [Math.max(fitPad.paddingTopLeft[0], 40), 40],
-        paddingBottomRight: [Math.max(fitPad.paddingBottomRight[0], 40), Math.max(fitPad.paddingBottomRight[1], 40)],
-        maxZoom: 16,
-        animate: true
-      });
-    }
+  }
+  saveSettings();
+  syncSettingsUI();
+  renderFieldTripMarkers();
+  renderFieldTripList();
+  schedulePermalinkSync();
+
+  if (Array.isArray(fitItems) && fitItems.length > 0 && state.map) {
+    const bounds = L.latLngBounds(fitItems.map((it) => it.latlng));
+    const fitPad = getMapFitPadding();
+    state.map.fitBounds(bounds, {
+      paddingTopLeft: [Math.max(fitPad.paddingTopLeft[0], 40), 40],
+      paddingBottomRight: [Math.max(fitPad.paddingBottomRight[0], 40), Math.max(fitPad.paddingBottomRight[1], 40)],
+      maxZoom,
+      animate: true
+    });
+  } else {
+    fitExpandedFieldTrips();
+  }
+}
+
+/**
+ * 単独ピルおよび複数コース集約クラスタピルを地図へ描画する
+ */
+function renderUnexpandedClusters(clusters, isCompactLod) {
+  const dict = t();
+  const selectAndExpandCourse = (courseKey, items, sample) => {
+    activateFieldTripCourse(courseKey, sample, { fitItems: items, maxZoom: 16 });
   };
 
   clusters.forEach((cluster) => {
@@ -4593,6 +4618,20 @@ export function fitFilteredFieldTrips() {
 export function setFieldTripsVisible(visible) {
   state.showFieldTrips = Boolean(visible);
   state.settings.showFieldTrips = state.showFieldTrips;
+  if (!state.showFieldTrips) {
+    if (state.map) {
+      state.map.closePopup();
+    }
+    state.expandedFieldTripCourses.clear();
+    if (state.fieldTripCourse !== 'all') {
+      state.fieldTripCourse = 'all';
+      state.settings.fieldTripCourse = 'all';
+      populateFieldTripFilters();
+    }
+    renderFieldTripMarkers();
+    renderFieldTripList();
+    schedulePermalinkSync();
+  }
   saveSettings();
   syncSettingsUI();
 
@@ -4621,13 +4660,7 @@ export function expandAllFieldTrips() {
     setFieldTripsVisible(true);
   }
   const first = filtered[0];
-  const targetKey = getCourseKey(first.props);
-  state.expandedFieldTripCourses.clear();
-  state.expandedFieldTripCourses.add(targetKey);
-  renderFieldTripMarkers();
-  renderFieldTripList();
-  fitExpandedFieldTrips();
-  schedulePermalinkSync();
+  activateFieldTripCourse(getCourseKey(first.props));
 }
 
 /**
@@ -4638,6 +4671,12 @@ export function collapseAllFieldTrips() {
     state.map.closePopup();
   }
   state.expandedFieldTripCourses.clear();
+  if (state.fieldTripCourse !== 'all') {
+    state.fieldTripCourse = 'all';
+    state.settings.fieldTripCourse = 'all';
+    populateFieldTripFilters();
+    syncSettingsUI();
+  }
   renderFieldTripMarkers();
   renderFieldTripList();
   schedulePermalinkSync();
@@ -4649,6 +4688,9 @@ export function collapseAllFieldTrips() {
 export function updateFieldTripFilter(yearValue, courseValue) {
   state.fieldTripYear = yearValue || 'all';
   state.fieldTripCourse = courseValue || 'all';
+  if (state.fieldTripCourse === 'all') {
+    state.expandedFieldTripCourses.clear();
+  }
   populateFieldTripFilters();
   state.settings.fieldTripYear = state.fieldTripYear;
   state.settings.fieldTripCourse = state.fieldTripCourse;
@@ -4656,6 +4698,7 @@ export function updateFieldTripFilter(yearValue, courseValue) {
   syncSettingsUI();
   renderFieldTripMarkers();
   renderFieldTripList();
+  schedulePermalinkSync();
 }
 
 /**
@@ -4697,7 +4740,7 @@ export function focusFieldTripSpot(ftItem) {
   schedulePermalinkSync();
 
   const marker = ensureFieldTripMarker(ftItem);
-  const targetZoom = Math.max(state.map.getZoom(), 12);
+  const targetZoom = Math.max(state.map.getZoom(), 14);
   const targetLatLng = (marker && typeof marker.getLatLng === 'function')
     ? marker.getLatLng()
     : ftItem.latlng;
@@ -4758,16 +4801,7 @@ export function renderFieldTripList() {
         type: 'button',
         className: `result-list-item${state.expandedFieldTripCourses.has(courseKey) ? ' is-selected' : ''}`,
         onClick: () => {
-          state.fieldTripCourse = sample.course_abbr || 'all';
-          state.settings.fieldTripCourse = state.fieldTripCourse;
-          state.expandedFieldTripCourses.clear();
-          state.expandedFieldTripCourses.add(courseKey);
-          saveSettings();
-          syncSettingsUI();
-          renderFieldTripMarkers();
-          renderFieldTripList();
-          fitExpandedFieldTrips();
-          schedulePermalinkSync();
+          activateFieldTripCourse(courseKey, sample);
         }
       },
         el('div', { className: 'field-trip-list-item-row', dataset: { tripCategory: sample.category } },
@@ -4840,8 +4874,7 @@ export function renderFieldTripList() {
         courseActions.appendChild(link);
       }
 
-      const targetSpot = filtered.find((it) => it.props.id === state.selectedFieldTripId) || filtered[0];
-      const matchedMap = targetSpot ? findSheetMapForLatLng(targetSpot.latlng) : null;
+      const matchedMap = getOverlayCandidateForStops(filtered);
       if (matchedMap) {
         const overlayBtn = document.createElement('button');
         overlayBtn.type = 'button';
@@ -6307,7 +6340,7 @@ export function addOverlayForItem(item) {
 }
 ```
 
-### `js/main.js`（全 634 行）
+### `js/main.js`（全 628 行）
 
 ```javascript
 import { CONFIG } from './config.js';
@@ -6386,8 +6419,6 @@ import {
 } from './seamless.js';
 import { debouncedSaveSettings, dom, loadSettings, saveSettings, state } from './state.js';
 
-let searchDebounceTimer = null;
-
 function toggleIndexFrames() {
   state.showIndexFrames = dom.showIndexToggle.checked;
   state.settings.showIndexFrames = state.showIndexFrames;
@@ -6454,6 +6485,45 @@ function resetAllSettings() {
   syncSettingsUI();
 }
 
+function getPopoverPairs() {
+  return [
+    [dom.layersPopoverBtn, dom.layersPopover],
+    [dom.prefsPopoverBtn, dom.prefsPopover]
+  ].filter(([btn, pop]) => btn && pop);
+}
+
+function bindDebouncedSearchInput(inputEl, onApply, delayMs = 100, { onInput } = {}) {
+  if (!inputEl) {
+    return;
+  }
+  let timer = null;
+  inputEl.addEventListener('input', (event) => {
+    if (event.isComposing) {
+      return;
+    }
+    if (typeof onInput === 'function') {
+      onInput();
+    }
+    if (timer) {
+      clearTimeout(timer);
+    }
+    timer = setTimeout(() => {
+      timer = null;
+      onApply();
+    }, delayMs);
+  });
+  inputEl.addEventListener('compositionend', () => {
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+    if (typeof onInput === 'function') {
+      onInput();
+    }
+    onApply();
+  });
+}
+
 function handleGlobalKeydown(event) {
   if (event.isComposing || event.keyCode === 229) {
     return;
@@ -6463,7 +6533,7 @@ function handleGlobalKeydown(event) {
   const hasModifier = event.ctrlKey || event.metaKey || event.altKey;
 
   if (event.key === 'Escape') {
-    if (dom.layersPopover.classList.contains('is-open') || dom.prefsPopover.classList.contains('is-open')) {
+    if (getPopoverPairs().some(([, pop]) => pop.classList.contains('is-open'))) {
       event.preventDefault();
       closeAllPopovers();
       return;
@@ -6554,27 +6624,7 @@ function switchLanguage(lang) {
 }
 
 function bindSearchEvents() {
-  dom.searchInput.addEventListener('input', (event) => {
-    if (event.isComposing) {
-      return;
-    }
-    renderSuggestions();
-    if (searchDebounceTimer) {
-      clearTimeout(searchDebounceTimer);
-    }
-    searchDebounceTimer = setTimeout(() => {
-      searchDebounceTimer = null;
-      applyFilters();
-    }, 100);
-  });
-  dom.searchInput.addEventListener('compositionend', () => {
-    if (searchDebounceTimer) {
-      clearTimeout(searchDebounceTimer);
-      searchDebounceTimer = null;
-    }
-    renderSuggestions();
-    applyFilters();
-  });
+  bindDebouncedSearchInput(dom.searchInput, applyFilters, 100, { onInput: renderSuggestions });
   dom.searchInput.addEventListener('focus', renderSuggestions);
   dom.searchInput.addEventListener('blur', hideSuggestions);
   dom.searchInput.addEventListener('keydown', handleSearchKeydown);
@@ -6625,30 +6675,10 @@ function bindFieldTripEvents() {
     });
   }
   if (dom.drawerTripSearch) {
-    let tripSearchTimer = null;
-    const applyTripSearch = () => {
+    bindDebouncedSearchInput(dom.drawerTripSearch, () => {
       state.fieldTripQuery = dom.drawerTripSearch.value || '';
       renderFieldTripMarkers();
       renderFieldTripList();
-    };
-    dom.drawerTripSearch.addEventListener('input', (event) => {
-      if (event.isComposing) {
-        return;
-      }
-      if (tripSearchTimer) {
-        clearTimeout(tripSearchTimer);
-      }
-      tripSearchTimer = setTimeout(() => {
-        tripSearchTimer = null;
-        applyTripSearch();
-      }, 100);
-    });
-    dom.drawerTripSearch.addEventListener('compositionend', () => {
-      if (tripSearchTimer) {
-        clearTimeout(tripSearchTimer);
-        tripSearchTimer = null;
-      }
-      applyTripSearch();
     });
   }
   if (dom.fitFieldTripsBtn) {
@@ -6799,20 +6829,17 @@ function initEventListeners() {
   bindInspectorEvents();
   bindMapControlEvents();
 
-  dom.layersPopoverBtn.addEventListener('click', (event) => {
-    event.stopPropagation();
-    togglePopover(dom.layersPopoverBtn, dom.layersPopover);
-  });
-
-  dom.prefsPopoverBtn.addEventListener('click', (event) => {
-    event.stopPropagation();
-    togglePopover(dom.prefsPopoverBtn, dom.prefsPopover);
+  const popoverPairs = getPopoverPairs();
+  popoverPairs.forEach(([btn, pop]) => {
+    btn.addEventListener('click', (event) => {
+      event.stopPropagation();
+      togglePopover(btn, pop);
+    });
   });
 
   document.addEventListener('click', (event) => {
-    const insideLayers = dom.layersPopover.contains(event.target) || dom.layersPopoverBtn.contains(event.target);
-    const insidePrefs = dom.prefsPopover.contains(event.target) || dom.prefsPopoverBtn.contains(event.target);
-    if (!insideLayers && !insidePrefs) {
+    const insidePopover = popoverPairs.some(([btn, pop]) => pop.contains(event.target) || btn.contains(event.target));
+    if (!insidePopover) {
       closeAllPopovers();
     }
   });
@@ -9130,7 +9157,7 @@ export function renderGeoJsonFeatures(geojsonData, { skipInitialFit = false } = 
 }
 ```
 
-### `js/state.js`（全 287 行）
+### `js/state.js`（全 291 行）
 
 ```javascript
 import { CONFIG, FIELD_TRIP_CATEGORY_KEYS } from './config.js';
@@ -9402,14 +9429,18 @@ export function loadSettings() {
     ? Math.min(2.5, Math.max(0.4, Math.round(wheelSpeed * 10) / 10))
     : CONFIG.DEFAULT_SETTINGS.wheelZoomSpeed;
 
+  // 年・コースの絞り込みは一時的な検索状態とし、再読み込み時に1コースのみへ固定されないよう復元しない
+  merged.fieldTripYear = 'all';
+  merged.fieldTripCourse = 'all';
+
   state.settings = merged;
   state.showIndexFrames = Boolean(merged.showIndexFrames);
   state.showFieldTrips = Boolean(merged.showFieldTrips);
   state.showScaleBar = merged.showScaleBar !== false;
   state.showFieldTripRoute = merged.showFieldTripRoute !== false;
   state.wheelZoomSpeed = merged.wheelZoomSpeed;
-  state.fieldTripYear = typeof merged.fieldTripYear === 'string' && merged.fieldTripYear ? merged.fieldTripYear : 'all';
-  state.fieldTripCourse = typeof merged.fieldTripCourse === 'string' && merged.fieldTripCourse ? merged.fieldTripCourse : 'all';
+  state.fieldTripYear = 'all';
+  state.fieldTripCourse = 'all';
   const validCategories = Array.isArray(merged.fieldTripCategories)
     ? merged.fieldTripCategories.filter((cat) => FIELD_TRIP_CATEGORY_KEYS.includes(cat))
     : [];
