@@ -25,9 +25,9 @@
   <div class="app-layout" data-mobile-view="map">
     <!-- モバイル用パネル切替バー（720px以下で表示） -->
     <nav id="mobile-nav-bar" class="mobile-nav-bar" aria-label="表示パネル切り替え">
-      <button type="button" class="mobile-nav-btn is-active" data-mobile-view="map" data-i18n="mobileTabMap">地図</button>
-      <button type="button" class="mobile-nav-btn" data-mobile-view="search" data-i18n="mobileTabSearch">検索・一覧</button>
-      <button type="button" id="mobile-legend-tab" class="mobile-nav-btn" data-mobile-view="legend" data-i18n="mobileTabLegend" hidden>凡例・詳細</button>
+      <button type="button" class="mobile-nav-btn is-active" data-mobile-view="map" data-i18n="mobileTabMap" aria-pressed="true">地図</button>
+      <button type="button" class="mobile-nav-btn" data-mobile-view="search" data-i18n="mobileTabSearch" aria-pressed="false">検索・一覧</button>
+      <button type="button" id="mobile-legend-tab" class="mobile-nav-btn" data-mobile-view="legend" data-i18n="mobileTabLegend" aria-pressed="false" hidden>凡例・詳細</button>
     </nav>
 
     <!-- 中央マップエリア（フルスクリーン 100vw x 100vh） -->
@@ -424,10 +424,10 @@
           <div class="popover-section">
             <span id="basemap-label" class="filter-label" data-i18n="basemapLabel">背景地図</span>
             <div class="segmented-control basemap-segmented" role="group" aria-label="背景地図の切り替え">
-              <button type="button" class="segmented-btn is-active" data-basemap="blank" data-i18n="basemapBlank">白地図</button>
-              <button type="button" class="segmented-btn" data-basemap="pale" data-i18n="basemapPale">淡色</button>
-              <button type="button" class="segmented-btn" data-basemap="std" data-i18n="basemapStd">標準</button>
-              <button type="button" class="segmented-btn" data-basemap="photo" data-i18n="basemapPhoto">写真</button>
+              <button type="button" class="segmented-btn is-active" data-basemap="blank" data-i18n="basemapBlank" aria-pressed="true">白地図</button>
+              <button type="button" class="segmented-btn" data-basemap="pale" data-i18n="basemapPale" aria-pressed="false">淡色</button>
+              <button type="button" class="segmented-btn" data-basemap="std" data-i18n="basemapStd" aria-pressed="false">標準</button>
+              <button type="button" class="segmented-btn" data-basemap="photo" data-i18n="basemapPhoto" aria-pressed="false">写真</button>
             </div>
           </div>
           <div class="popover-section">
@@ -475,15 +475,15 @@
           <div class="popover-section">
             <span id="prefs-theme-label" class="filter-label" data-i18n="prefsThemeLabel">テーマ</span>
             <div class="segmented-control" role="group" aria-label="テーマ">
-              <button type="button" class="segmented-btn is-active" data-theme-choice="light" data-i18n="prefsThemeLight">ライト</button>
-              <button type="button" class="segmented-btn" data-theme-choice="dark" data-i18n="prefsThemeDark">ダーク</button>
+              <button type="button" class="segmented-btn is-active" data-theme-choice="light" data-i18n="prefsThemeLight" aria-pressed="true">ライト</button>
+              <button type="button" class="segmented-btn" data-theme-choice="dark" data-i18n="prefsThemeDark" aria-pressed="false">ダーク</button>
             </div>
           </div>
           <div class="popover-section">
             <span id="prefs-lang-label" class="filter-label" data-i18n="prefsLangLabel">表示言語</span>
             <div class="segmented-control lang-switch" role="group" aria-label="表示言語の切り替え">
-              <button type="button" class="segmented-btn is-active" data-lang="ja">日本語</button>
-              <button type="button" class="segmented-btn" data-lang="en">English</button>
+              <button type="button" class="segmented-btn is-active" data-lang="ja" aria-pressed="true">日本語</button>
+              <button type="button" class="segmented-btn" data-lang="en" aria-pressed="false">English</button>
             </div>
           </div>
           <div class="popover-section">

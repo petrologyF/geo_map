@@ -378,9 +378,22 @@ export function syncFieldTripActiveBar() {
   syncActiveFieldTripMarkerHighlight();
 }
 
+function createStarIconSvg() {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', '11');
+  svg.setAttribute('height', '11');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('fill', 'currentColor');
+  svg.setAttribute('aria-hidden', 'true');
+  const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  poly.setAttribute('points', '12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2');
+  svg.appendChild(poly);
+  return svg;
+}
+
 function createFieldTripMarker(props, latlng) {
   const pinEl = el('div', { className: 'field-trip-pin', dataset: { tripCategory: props.category } },
-    el('span', { className: 'field-trip-pin-num' }, props.stop_no || '★')
+    el('span', { className: 'field-trip-pin-num' }, props.stop_no || createStarIconSvg())
   );
 
   const icon = L.divIcon({
@@ -1002,9 +1015,11 @@ export function renderFieldTripList() {
     const fragment = document.createDocumentFragment();
     courseMap.forEach((items, courseKey) => {
       const sample = items[0].props;
+      const isCourseExpanded = state.expandedFieldTripCourses.has(courseKey);
       const btn = el('button', {
         type: 'button',
-        className: `result-list-item${state.expandedFieldTripCourses.has(courseKey) ? ' is-selected' : ''}`,
+        className: `result-list-item${isCourseExpanded ? ' is-selected' : ''}`,
+        'aria-pressed': String(isCourseExpanded),
         onClick: () => {
           activateFieldTripCourse(courseKey, sample);
         }
@@ -1126,10 +1141,11 @@ export function renderFieldTripList() {
     const btn = el('button', {
       type: 'button',
       className: `result-list-item${isSelected ? ' is-selected' : ''}`,
+      'aria-pressed': String(isSelected),
       onClick: () => focusFieldTripSpot(ftItem)
     },
       el('div', { className: 'field-trip-list-item-row', dataset: { tripCategory: props.category } },
-        el('span', { className: 'field-trip-list-badge' }, props.stop_no || '★'),
+        el('span', { className: 'field-trip-list-badge' }, props.stop_no || createStarIconSvg()),
         el('div', { className: 'field-trip-list-text' },
           el('div', { className: 'field-trip-list-title' }, props.stop_name || props.stop_abbr || ''),
           el('div', { className: 'field-trip-list-sub' }, props.description || `${props.year} ${props.course_abbr}`)

@@ -1,6 +1,6 @@
 # REVIEW_BUNDLE — 地質図検索 WebGIS レビュー用バンドル
 
-> 自動生成日時: `2026-11-28 16:28:06`（`scripts/build_review_bundle.py` / `scripts/build_geojson.py` / Git pre-commit により自動更新）
+> 自動生成日時: `2026-11-28 20:44:41`（`scripts/build_review_bundle.py` / `scripts/build_geojson.py` / Git pre-commit により自動更新）
 
 ## 1. プロジェクト概要・データ統計
 
@@ -186,7 +186,7 @@
 | ファイル | 行数 | サイズ (bytes) |
 |---|---:|---:|
 | `.github/workflows/pages.yml` | 37 | 706 |
-| `css/style.css` | 2795 | 63248 |
+| `css/style.css` | 2820 | 61180 |
 | `data/field_trips.csv` | 1258 | 568352 |
 | `data/field_trips.md` | 57 | 4832 |
 | `docs/ARCHITECTURE.md` | 78 | 7662 |
@@ -195,18 +195,18 @@
 | `docs/PRD.md` | 72 | 6372 |
 | `docs/RULES.md` | 37 | 2275 |
 | `docs/TASKS.md` | 28 | 1823 |
-| `index.html` | 551 | 30691 |
+| `index.html` | 551 | 30367 |
 | `js/config.js` | 118 | 4019 |
 | `js/dom.js` | 65 | 2089 |
-| `js/fieldTrips.js` | 1205 | 42569 |
+| `js/fieldTrips.js` | 1221 | 43301 |
 | `js/i18n.js` | 318 | 13413 |
-| `js/inspector.js` | 1012 | 34404 |
+| `js/inspector.js` | 1013 | 34472 |
 | `js/main.js` | 628 | 20212 |
-| `js/map.js` | 490 | 14864 |
+| `js/map.js` | 498 | 15212 |
 | `js/normalize.js` | 369 | 14345 |
 | `js/permalink.js` | 129 | 3249 |
 | `js/seamless.js` | 239 | 7550 |
-| `js/search.js` | 932 | 30579 |
+| `js/search.js` | 934 | 30675 |
 | `js/state.js` | 291 | 13490 |
 | `LICENSE` | 21 | 1068 |
 | `README.md` | 90 | 7378 |
@@ -230,6 +230,7 @@
 
 ## 4. 直近の Git コミット
 
+- `224f37d chore: initialize project-docs, update REVIEW_BUNDLE, and refine UI`
 - `8c358b5 feat: add application state management and DOM element caching`
 - `a4cfa8f feat(catalog): enhance metadata extraction in build_map_catalog`
 - `9e3d7c1 feat(ui): add detail close button, auto-fit, and EN localization`
@@ -237,7 +238,6 @@
 - `963d58b fix(ui): resolve IME guard, bounds check, and image 404 edge cases`
 - `7a7195c feat(ui): add dark mode with OS sync and d-key toggle`
 - `4b81d4e feat(ui): add keyboard shortcuts, arrow navigation, and help modal`
-- `c4dad76 fix(pipeline): separate raw JSON and strengthen HRO deduplication`
 
 ## 5. フロントエンド主要ファイル（全文）
 
@@ -271,9 +271,9 @@
   <div class="app-layout" data-mobile-view="map">
     <!-- モバイル用パネル切替バー（720px以下で表示） -->
     <nav id="mobile-nav-bar" class="mobile-nav-bar" aria-label="表示パネル切り替え">
-      <button type="button" class="mobile-nav-btn is-active" data-mobile-view="map" data-i18n="mobileTabMap">地図</button>
-      <button type="button" class="mobile-nav-btn" data-mobile-view="search" data-i18n="mobileTabSearch">検索・一覧</button>
-      <button type="button" id="mobile-legend-tab" class="mobile-nav-btn" data-mobile-view="legend" data-i18n="mobileTabLegend" hidden>凡例・詳細</button>
+      <button type="button" class="mobile-nav-btn is-active" data-mobile-view="map" data-i18n="mobileTabMap" aria-pressed="true">地図</button>
+      <button type="button" class="mobile-nav-btn" data-mobile-view="search" data-i18n="mobileTabSearch" aria-pressed="false">検索・一覧</button>
+      <button type="button" id="mobile-legend-tab" class="mobile-nav-btn" data-mobile-view="legend" data-i18n="mobileTabLegend" aria-pressed="false" hidden>凡例・詳細</button>
     </nav>
 
     <!-- 中央マップエリア（フルスクリーン 100vw x 100vh） -->
@@ -670,10 +670,10 @@
           <div class="popover-section">
             <span id="basemap-label" class="filter-label" data-i18n="basemapLabel">背景地図</span>
             <div class="segmented-control basemap-segmented" role="group" aria-label="背景地図の切り替え">
-              <button type="button" class="segmented-btn is-active" data-basemap="blank" data-i18n="basemapBlank">白地図</button>
-              <button type="button" class="segmented-btn" data-basemap="pale" data-i18n="basemapPale">淡色</button>
-              <button type="button" class="segmented-btn" data-basemap="std" data-i18n="basemapStd">標準</button>
-              <button type="button" class="segmented-btn" data-basemap="photo" data-i18n="basemapPhoto">写真</button>
+              <button type="button" class="segmented-btn is-active" data-basemap="blank" data-i18n="basemapBlank" aria-pressed="true">白地図</button>
+              <button type="button" class="segmented-btn" data-basemap="pale" data-i18n="basemapPale" aria-pressed="false">淡色</button>
+              <button type="button" class="segmented-btn" data-basemap="std" data-i18n="basemapStd" aria-pressed="false">標準</button>
+              <button type="button" class="segmented-btn" data-basemap="photo" data-i18n="basemapPhoto" aria-pressed="false">写真</button>
             </div>
           </div>
           <div class="popover-section">
@@ -721,15 +721,15 @@
           <div class="popover-section">
             <span id="prefs-theme-label" class="filter-label" data-i18n="prefsThemeLabel">テーマ</span>
             <div class="segmented-control" role="group" aria-label="テーマ">
-              <button type="button" class="segmented-btn is-active" data-theme-choice="light" data-i18n="prefsThemeLight">ライト</button>
-              <button type="button" class="segmented-btn" data-theme-choice="dark" data-i18n="prefsThemeDark">ダーク</button>
+              <button type="button" class="segmented-btn is-active" data-theme-choice="light" data-i18n="prefsThemeLight" aria-pressed="true">ライト</button>
+              <button type="button" class="segmented-btn" data-theme-choice="dark" data-i18n="prefsThemeDark" aria-pressed="false">ダーク</button>
             </div>
           </div>
           <div class="popover-section">
             <span id="prefs-lang-label" class="filter-label" data-i18n="prefsLangLabel">表示言語</span>
             <div class="segmented-control lang-switch" role="group" aria-label="表示言語の切り替え">
-              <button type="button" class="segmented-btn is-active" data-lang="ja">日本語</button>
-              <button type="button" class="segmented-btn" data-lang="en">English</button>
+              <button type="button" class="segmented-btn is-active" data-lang="ja" aria-pressed="true">日本語</button>
+              <button type="button" class="segmented-btn" data-lang="en" aria-pressed="false">English</button>
             </div>
           </div>
           <div class="popover-section">
@@ -797,7 +797,7 @@
 </html>
 ```
 
-### `css/style.css`（全 2795 行）
+### `css/style.css`（全 2820 行）
 
 ```css
 /* ==========================================================================
@@ -805,41 +805,47 @@
    ========================================================================== */
 :root {
   --font-sans: "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --color-bg: #f6f5f1;
-  --color-panel-bg: rgba(252, 252, 250, 0.96);
-  --color-surface: #f0eee8;
-  --color-surface-hover: #e5e2d9;
-  --color-border: #dddad0;
-  --color-border-focus: #1f5650;
-  --color-primary: #1f5650;
-  --color-primary-soft: rgba(31, 86, 80, 0.12);
-  --color-text: #1c1f1e;
-  --color-text-secondary: #5c6360;
-  --color-danger: #b91c1c;
-  --color-divider: #e5e2d9;
-  --shadow-floating: 0 4px 14px rgba(28, 31, 30, 0.14), 0 1px 3px rgba(28, 31, 30, 0.08);
-  --shadow-control: 0 2px 6px rgba(28, 31, 30, 0.12);
-  --radius-lg: 6px;
-  --radius-md: 4px;
-  --radius-pill: 9999px;
+  --color-bg: #f6f8fa;
+  --color-panel-bg: rgba(255, 255, 255, 0.96);
+  --color-surface: #ffffff;
+  --color-surface-hover: #eaeef2;
+  --color-border: #d0d7de;
+  --color-border-focus: #0969da;
+  --color-primary: #0969da;
+  --color-primary-soft: rgba(9, 105, 218, 0.10);
+  --color-text: #1f2328;
+  --color-text-secondary: #656d76;
+  --color-danger: #cf222e;
+  --color-divider: #eaeef2;
+  --shadow-floating: 0 4px 14px rgba(31, 35, 40, 0.14), 0 1px 3px rgba(31, 35, 40, 0.08);
+  --shadow-control: 0 2px 6px rgba(31, 35, 40, 0.12);
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-pill: 4px;
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --space-3: 1.5rem;
+  --space-4: 2rem;
+  --control-h: 2rem;
   --ease-fluid: cubic-bezier(0.22, 1, 0.36, 1);
   --dur-fast: 160ms;
   --dur-normal: 260ms;
 }
 
 html[data-theme="dark"] {
-  --color-bg: #141716;
-  --color-panel-bg: rgba(27, 31, 30, 0.96);
-  --color-surface: #222725;
-  --color-surface-hover: #2a302e;
-  --color-border: #2a302e;
-  --color-border-focus: #3b8278;
-  --color-primary: #3b8278;
-  --color-primary-soft: rgba(59, 130, 120, 0.18);
-  --color-text: #eceae4;
-  --color-text-secondary: #9ca39f;
-  --color-danger: #f28b82;
-  --color-divider: #2a302e;
+  --color-bg: #0d1117;
+  --color-panel-bg: rgba(22, 27, 34, 0.96);
+  --color-surface: #161b22;
+  --color-surface-hover: #21262d;
+  --color-border: #30363d;
+  --color-border-focus: #2f81f7;
+  --color-primary: #2f81f7;
+  --color-primary-soft: rgba(47, 129, 247, 0.16);
+  --color-text: #e6edf3;
+  --color-text-secondary: #8b949e;
+  --color-danger: #f85149;
+  --color-divider: #21262d;
   --shadow-floating: 0 6px 18px rgba(0, 0, 0, 0.45), 0 1px 4px rgba(0, 0, 0, 0.3);
   --shadow-control: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
@@ -1050,7 +1056,7 @@ html[data-theme="dark"] #map {
   border: 1px solid var(--color-border);
   color: var(--color-text-secondary);
   font-family: inherit;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.4;
   pointer-events: none;
   transition: opacity 0.15s ease;
@@ -1095,8 +1101,12 @@ html[data-theme="dark"] #map {
   height: 14px;
   width: 14px;
   cursor: pointer;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235f6368' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'/%3E%3Cline x1='6' y1='6' x2='18' y2='18'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23656d76' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'/%3E%3Cline x1='6' y1='6' x2='18' y2='18'/%3E%3C/svg%3E");
   background-size: contain;
+}
+
+html[data-theme="dark"] .text-input::-webkit-search-cancel-button {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b949e' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cline x1='18' y1='6' x2='6' y2='18'/%3E%3Cline x1='6' y1='6' x2='18' y2='18'/%3E%3C/svg%3E");
 }
 
 .drawer-chevron {
@@ -1190,7 +1200,7 @@ html[data-theme="dark"] #map {
 
 .suggestion-group-header {
   padding: 6px 10px 3px;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.03em;
   color: var(--color-text-secondary);
@@ -1226,7 +1236,7 @@ html[data-theme="dark"] .suggestion-highlight {
   flex-shrink: 0;
   padding: 1px 6px;
   border-radius: var(--radius-pill);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 500;
   background-color: var(--color-surface);
   color: var(--color-text-secondary);
@@ -1289,7 +1299,7 @@ html[data-theme="dark"] .suggestion-badge.is-region {
 }
 
 .filter-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--color-text-secondary);
 }
@@ -1302,7 +1312,7 @@ html[data-theme="dark"] .suggestion-badge.is-region {
   border-radius: var(--radius-pill);
   border: 1px solid var(--color-border);
   background-color: var(--color-surface);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--color-text);
   cursor: pointer;
@@ -1376,6 +1386,7 @@ html[data-theme="dark"] .suggestion-badge.is-region {
 }
 
 .active-filter-badge {
+  font-variant-numeric: tabular-nums;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1385,7 +1396,7 @@ html[data-theme="dark"] .suggestion-badge.is-region {
   border-radius: var(--radius-pill);
   background-color: var(--color-primary);
   color: #ffffff;
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -1514,7 +1525,7 @@ html[data-theme="dark"] .suggestion-badge.is-region {
   height: 14px;
   margin-left: 7px;
   margin-right: 7px;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
 }
@@ -1563,7 +1574,7 @@ html[data-theme="dark"] .suggestion-badge.is-region {
   background-color: var(--color-surface);
   color: var(--color-text);
   font-family: inherit;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
@@ -1584,12 +1595,16 @@ html[data-theme="dark"] .suggestion-badge.is-region {
    Buttons & Segmented Controls
    ========================================================================== */
 .text-button {
-  padding: 3px 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--control-h);
+  padding: 0 8px;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   background: transparent;
   font-family: inherit;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--color-primary);
   cursor: pointer;
@@ -1605,11 +1620,11 @@ html[data-theme="dark"] .suggestion-badge.is-region {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 26px;
-  height: 26px;
+  width: var(--control-h);
+  height: var(--control-h);
   padding: 0;
   border: none;
-  border-radius: 50%;
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--color-primary);
   cursor: pointer;
@@ -1655,7 +1670,7 @@ html[data-theme="dark"] .suggestion-badge.is-region {
   border-radius: 6px;
   background: transparent;
   font-family: inherit;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--color-text-secondary);
   cursor: pointer;
@@ -1721,11 +1736,12 @@ html[data-theme="dark"] .status-message {
 }
 
 .result-badge {
+  font-variant-numeric: tabular-nums;
   padding: 2px 8px;
   border-radius: var(--radius-pill);
   background-color: var(--color-surface);
   color: var(--color-text-secondary);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   border: 1px solid var(--color-border);
 }
@@ -1784,7 +1800,7 @@ html[data-theme="dark"] .status-message {
 }
 
 .result-item-author {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -1793,7 +1809,7 @@ html[data-theme="dark"] .status-message {
 
 .result-item-year {
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
 }
@@ -1801,7 +1817,7 @@ html[data-theme="dark"] .status-message {
 .result-list-note {
   padding: 8px;
   text-align: center;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-secondary);
 }
 
@@ -1878,7 +1894,7 @@ html[data-theme="dark"] .status-message {
 }
 
 .active-overlays-section.is-single .active-overlay-label {
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .active-overlays-section[hidden] {
@@ -1941,7 +1957,7 @@ html[data-theme="dark"] .status-message {
   border-radius: var(--radius-pill);
   background-color: var(--color-primary-soft);
   color: var(--color-primary);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   flex-shrink: 0;
   cursor: pointer;
@@ -1963,7 +1979,7 @@ html[data-theme="dark"] .status-message {
 .overlay-item-opacity-val {
   min-width: 30px;
   text-align: right;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
 }
@@ -2018,11 +2034,14 @@ html[data-theme="dark"] .status-message {
 }
 
 .legend-external-link {
-  padding: 2px 8px;
-  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  height: var(--control-h);
+  padding: 0 10px;
+  border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   background-color: var(--color-surface);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--color-primary);
   text-decoration: none;
@@ -2055,7 +2074,7 @@ html[data-theme="dark"] .status-message {
 
 .legend-map-name {
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
   color: var(--color-text-secondary);
   white-space: nowrap;
@@ -2174,7 +2193,7 @@ html[data-theme="dark"] .status-message {
 
 .dominant-info-subtitle {
   margin: 2px 0 0;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-secondary);
 }
 
@@ -2216,7 +2235,7 @@ html[data-theme="dark"] .status-message {
   border: 1px solid var(--color-border);
   background-color: var(--color-surface);
   color: var(--color-primary);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   text-decoration: none;
   transition: background-color 0.15s ease;
@@ -2412,7 +2431,7 @@ html[data-theme="dark"] .status-message {
 
 .seamless-sub-row {
   padding-left: 10px;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-secondary);
 }
 
@@ -2453,14 +2472,14 @@ html[data-theme="dark"] .status-message {
   background-color: var(--color-surface-hover);
   border: 1px solid var(--color-border);
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--color-text);
 }
 
 .seamless-coords {
   margin-left: auto;
-  font-size: 10px;
+  font-size: 12px;
   color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
 }
@@ -2470,7 +2489,7 @@ html[data-theme="dark"] .status-message {
   display: grid;
   grid-template-columns: 46px 1fr;
   gap: 3px 6px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 1.4;
 }
 
@@ -2513,7 +2532,7 @@ html[data-theme="dark"] .status-message {
 }
 
 .wms-opacity-label {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-secondary);
   flex-shrink: 0;
 }
@@ -2521,7 +2540,7 @@ html[data-theme="dark"] .status-message {
 .wms-opacity-value {
   min-width: 32px;
   text-align: right;
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
 }
@@ -2662,8 +2681,9 @@ a:focus-visible {
 
 .drawer-trip-search {
   width: 100%;
+  height: var(--control-h);
   margin-top: 6px;
-  padding: 6px 10px;
+  padding: 0 10px;
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border);
   background-color: var(--color-surface);
@@ -2673,7 +2693,6 @@ a:focus-visible {
 }
 
 .drawer-trip-search:focus {
-  outline: none;
   border-color: var(--color-border-focus);
   background-color: var(--color-bg);
 }
@@ -2685,7 +2704,7 @@ a:focus-visible {
   background: transparent;
   color: var(--color-primary);
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
 }
@@ -2745,7 +2764,7 @@ a:focus-visible {
 }
 
 .filter-sub-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--color-text-secondary);
 }
@@ -2784,12 +2803,13 @@ html[data-theme="dark"] .decade-chip.field-trip-category-chip.is-active {
 }
 
 .field-trip-course-pill-badge {
+  font-variant-numeric: tabular-nums;
   flex-shrink: 0;
   padding: 2px 6px;
   border-radius: 5px;
   background-color: var(--trip-tint, var(--color-primary-soft));
   color: var(--trip-accent, var(--color-primary));
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -2814,7 +2834,7 @@ html[data-theme="dark"] .field-trip-course-pill-badge {
 }
 
 .field-trip-course-card-meta {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--trip-accent, var(--color-primary));
 }
@@ -2840,6 +2860,7 @@ html[data-theme="dark"] .field-trip-course-card-meta {
 }
 
 .field-trip-list-badge {
+  font-variant-numeric: tabular-nums;
   flex-shrink: 0;
   display: inline-flex;
   align-items: center;
@@ -2850,7 +2871,7 @@ html[data-theme="dark"] .field-trip-course-card-meta {
   border-radius: 6px;
   background-color: var(--trip-color, var(--color-primary));
   color: var(--trip-pill-text, #ffffff);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
 }
 
@@ -2869,7 +2890,7 @@ html[data-theme="dark"] .field-trip-course-card-meta {
 }
 
 .field-trip-list-sub {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-secondary);
   white-space: nowrap;
   overflow: hidden;
@@ -2886,22 +2907,22 @@ html[data-theme="dark"] .field-trip-course-card-meta {
   align-items: center;
   gap: 5px;
   padding: 3px 8px;
-  border-radius: var(--radius-pill);
-  background: linear-gradient(135deg, var(--trip-color, var(--color-primary)) 0%, var(--trip-color-dark, var(--color-primary)) 100%);
+  border-radius: var(--radius-md);
+  background-color: var(--trip-color, var(--color-primary));
   color: var(--trip-pill-text, #ffffff);
   border: 1.5px solid #ffffff;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--shadow-control);
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
   transform: translate(-50%, -50%);
-  transition: transform var(--dur-fast) var(--ease-fluid), box-shadow var(--dur-fast) ease;
+  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
 }
 
 .field-trip-course-cluster-icon:hover .field-trip-course-pill {
-  transform: translate(-50%, -50%) scale(1.06);
-  box-shadow: 0 6px 16px var(--trip-shadow, rgba(217, 119, 6, 0.45));
+  border-color: var(--trip-accent, var(--color-primary));
+  box-shadow: var(--shadow-floating);
 }
 
 .field-trip-course-pill-count {
@@ -2911,21 +2932,23 @@ html[data-theme="dark"] .field-trip-course-card-meta {
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-sm);
   background-color: rgba(255, 255, 255, 0.55);
-  font-size: 11px;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 
 .field-trip-select {
   flex: 1;
   min-width: 0;
-  padding: 4px 6px;
+  height: var(--control-h);
+  padding: 0 8px;
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text);
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: 6px;
+  border-radius: var(--radius-md);
   cursor: pointer;
 }
 
@@ -2947,25 +2970,26 @@ html[data-theme="dark"] .field-trip-course-card-meta {
   height: 28px;
   border-radius: 50% 50% 50% 0;
   transform: rotate(-45deg);
-  background: linear-gradient(135deg, var(--trip-color, var(--color-primary)) 0%, var(--trip-color-dark, var(--color-primary)) 100%);
+  background-color: var(--trip-color, var(--color-primary));
   border: 2px solid #ffffff;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.36);
-  transition: transform var(--dur-fast) var(--ease-fluid), box-shadow var(--dur-fast) ease;
+  box-shadow: var(--shadow-control);
+  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
 }
 
 .field-trip-marker-icon:hover .field-trip-pin {
-  transform: rotate(-45deg) scale(1.12);
-  box-shadow: 0 5px 12px var(--trip-shadow, rgba(217, 119, 6, 0.45));
+  border-color: var(--trip-accent, var(--color-primary));
+  box-shadow: var(--shadow-floating);
 }
 
 .field-trip-pin.is-active {
-  transform: rotate(-45deg) scale(1.18);
-  box-shadow: 0 0 0 3px #ffffff, 0 5px 14px var(--trip-shadow, rgba(0, 0, 0, 0.42));
+  border-color: var(--color-text);
+  box-shadow: var(--shadow-floating);
 }
 
 .field-trip-pin-num {
+  font-variant-numeric: tabular-nums;
   transform: rotate(45deg);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 700;
   line-height: 1;
   color: var(--trip-pill-text, #ffffff);
@@ -3008,7 +3032,7 @@ html[data-theme="dark"] .field-trip-course-card-meta {
 }
 
 html[data-theme="dark"] .field-trip-guidebook-btn {
-  color: #202124 !important;
+  color: #0d1117 !important;
 }
 
 .field-trip-guidebook-btn:hover {
@@ -3020,7 +3044,7 @@ html[data-theme="dark"] .field-trip-guidebook-btn {
 }
 
 .field-trip-no-guidebook {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-secondary);
 }
 
@@ -3064,7 +3088,7 @@ html[data-theme="dark"] .suggestion-badge.is-field-trip {
 html[data-theme="dark"] .map-fab-btn.is-field-trip-active {
   background-color: var(--color-primary);
   border-color: var(--color-primary);
-  color: #202124;
+  color: #0d1117;
 }
 
 @keyframes locate-pulse {
@@ -3092,7 +3116,7 @@ html[data-theme="dark"] .map-fab-btn.is-field-trip-active {
 
 .field-trip-expand-toggle-btn {
   padding: 3px 7px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -3113,7 +3137,7 @@ html[data-theme="dark"] .map-fab-btn.is-field-trip-active {
   background-color: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -3164,7 +3188,7 @@ html[data-theme="dark"] .map-fab-btn.is-field-trip-active {
 }
 
 .field-trip-active-badge {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--trip-accent, var(--color-primary));
 }
@@ -3174,7 +3198,7 @@ html[data-theme="dark"] .field-trip-active-badge {
 }
 
 .field-trip-active-count {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-secondary);
   font-variant-numeric: tabular-nums;
 }
@@ -3190,7 +3214,7 @@ html[data-theme="dark"] .field-trip-active-badge {
 }
 
 .field-trip-active-authors {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-secondary);
   line-height: 1.35;
 }
@@ -3222,7 +3246,7 @@ html[data-theme="dark"] .field-trip-active-badge {
   background-color: var(--color-bg);
   color: var(--color-text);
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -3260,10 +3284,10 @@ html[data-theme="dark"] .field-trip-active-badge {
 }
 
 .field-trip-current-stop-desc {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--color-text-secondary);
   line-height: 1.35;
-  height: calc(11px * 1.35 * 2);
+  height: calc(12px * 1.35 * 2);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -3284,7 +3308,7 @@ html[data-theme="dark"] .field-trip-active-badge {
   background-color: var(--color-surface);
   color: var(--color-text);
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   text-decoration: none;
   cursor: pointer;
@@ -3308,7 +3332,7 @@ html[data-theme="dark"] .field-trip-active-badge {
 }
 
 html[data-theme="dark"] .field-trip-bar-btn.is-overlay:hover {
-  color: #202124;
+  color: #0d1117;
 }
 
 .field-trip-bar-btn.is-overlay[hidden] {
@@ -3324,7 +3348,7 @@ html[data-theme="dark"] .field-trip-bar-btn.is-overlay:hover {
 }
 
 html[data-theme="dark"] .field-trip-bar-btn.is-guidebook {
-  color: #202124;
+  color: #0d1117;
 }
 
 .field-trip-bar-btn.is-guidebook:hover {
@@ -3341,21 +3365,22 @@ html[data-theme="dark"] .field-trip-bar-btn.is-guidebook {
   align-items: center;
   gap: 5px;
   padding: 4px 10px;
-  border-radius: var(--radius-pill);
-  background: linear-gradient(135deg, var(--trip-color, #cbd5e1) 0%, var(--trip-color-dark, #94a3b8) 100%);
+  border-radius: var(--radius-md);
+  background-color: var(--trip-color, #cbd5e1);
   color: var(--trip-pill-text, #1e293b);
   border: 2px solid #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.34);
+  box-shadow: var(--shadow-control);
   font-family: var(--font-sans);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
   transform: translate(-50%, -50%);
-  transition: transform var(--dur-fast) var(--ease-fluid);
+  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
 }
 
 .field-trip-course-cluster-icon:hover .field-trip-cluster-pill {
-  transform: translate(-50%, -50%) scale(1.07);
+  border-color: var(--trip-accent, var(--color-primary));
+  box-shadow: var(--shadow-floating);
 }
 
 .field-trip-cluster-popup-list {
@@ -3375,7 +3400,7 @@ html[data-theme="dark"] .field-trip-bar-btn.is-guidebook {
 }
 
 .field-trip-cluster-popup-title {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--color-text-secondary);
   margin-bottom: 2px;
@@ -3790,7 +3815,7 @@ export function getCourseKey(props) {
 }
 ```
 
-### `js/fieldTrips.js`（全 1205 行）
+### `js/fieldTrips.js`（全 1221 行）
 
 ```javascript
 import { CONFIG, FIELD_TRIP_CATEGORIES, FIELD_TRIP_CATEGORY_KEYS } from './config.js';
@@ -4173,9 +4198,22 @@ export function syncFieldTripActiveBar() {
   syncActiveFieldTripMarkerHighlight();
 }
 
+function createStarIconSvg() {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', '11');
+  svg.setAttribute('height', '11');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('fill', 'currentColor');
+  svg.setAttribute('aria-hidden', 'true');
+  const poly = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+  poly.setAttribute('points', '12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2');
+  svg.appendChild(poly);
+  return svg;
+}
+
 function createFieldTripMarker(props, latlng) {
   const pinEl = el('div', { className: 'field-trip-pin', dataset: { tripCategory: props.category } },
-    el('span', { className: 'field-trip-pin-num' }, props.stop_no || '★')
+    el('span', { className: 'field-trip-pin-num' }, props.stop_no || createStarIconSvg())
   );
 
   const icon = L.divIcon({
@@ -4797,9 +4835,11 @@ export function renderFieldTripList() {
     const fragment = document.createDocumentFragment();
     courseMap.forEach((items, courseKey) => {
       const sample = items[0].props;
+      const isCourseExpanded = state.expandedFieldTripCourses.has(courseKey);
       const btn = el('button', {
         type: 'button',
-        className: `result-list-item${state.expandedFieldTripCourses.has(courseKey) ? ' is-selected' : ''}`,
+        className: `result-list-item${isCourseExpanded ? ' is-selected' : ''}`,
+        'aria-pressed': String(isCourseExpanded),
         onClick: () => {
           activateFieldTripCourse(courseKey, sample);
         }
@@ -4921,10 +4961,11 @@ export function renderFieldTripList() {
     const btn = el('button', {
       type: 'button',
       className: `result-list-item${isSelected ? ' is-selected' : ''}`,
+      'aria-pressed': String(isSelected),
       onClick: () => focusFieldTripSpot(ftItem)
     },
       el('div', { className: 'field-trip-list-item-row', dataset: { tripCategory: props.category } },
-        el('span', { className: 'field-trip-list-badge' }, props.stop_no || '★'),
+        el('span', { className: 'field-trip-list-badge' }, props.stop_no || createStarIconSvg()),
         el('div', { className: 'field-trip-list-text' },
           el('div', { className: 'field-trip-list-title' }, props.stop_name || props.stop_abbr || ''),
           el('div', { className: 'field-trip-list-sub' }, props.description || `${props.year} ${props.course_abbr}`)
@@ -5323,7 +5364,7 @@ export function t() {
 }
 ```
 
-### `js/inspector.js`（全 1012 行）
+### `js/inspector.js`（全 1013 行）
 
 ```javascript
 import { CONFIG } from './config.js';
@@ -5864,6 +5905,7 @@ function renderInspectorVisualContent(item, meta, loc, activeTab, hasSections) {
         el('button', {
           type: 'button',
           className: idx === state.activeSectionIndex ? 'decade-chip is-selected' : 'decade-chip',
+          'aria-pressed': String(idx === state.activeSectionIndex),
           onClick: () => {
             state.activeSectionIndex = idx;
             renderInspectorDetail(item, true);
@@ -6973,7 +7015,7 @@ async function init() {
 document.addEventListener('DOMContentLoaded', init);
 ```
 
-### `js/map.js`（全 490 行）
+### `js/map.js`（全 498 行）
 
 ```javascript
 import { CONFIG } from './config.js';
@@ -7052,13 +7094,19 @@ export function syncSettingsUI() {
     dom.mapEl.classList.toggle('map-query-cursor', Boolean(s.seamless200k && state.seamlessQueryPriority));
   }
   dom.basemapButtons.forEach((btn) => {
-    btn.classList.toggle('is-active', btn.dataset.basemap === state.activeBasemapKey);
+    const isActive = btn.dataset.basemap === state.activeBasemapKey;
+    btn.classList.toggle('is-active', isActive);
+    btn.setAttribute('aria-pressed', String(isActive));
   });
   dom.themeChoiceButtons.forEach((btn) => {
-    btn.classList.toggle('is-active', btn.dataset.themeChoice === state.theme);
+    const isActive = btn.dataset.themeChoice === state.theme;
+    btn.classList.toggle('is-active', isActive);
+    btn.setAttribute('aria-pressed', String(isActive));
   });
   dom.langButtons.forEach((btn) => {
-    btn.classList.toggle('is-active', btn.dataset.lang === state.lang);
+    const isActive = btn.dataset.lang === state.lang;
+    btn.classList.toggle('is-active', isActive);
+    btn.setAttribute('aria-pressed', String(isActive));
   });
   if (dom.wheelZoomSpeedSlider) {
     dom.wheelZoomSpeedSlider.value = String(state.wheelZoomSpeed);
@@ -7203,7 +7251,9 @@ export function applyScaleBarVisibility() {
 export function switchMobileView(view) {
   dom.appLayout.dataset.mobileView = view;
   dom.mobileNavButtons.forEach((btn) => {
-    btn.classList.toggle('is-active', btn.dataset.mobileView === view);
+    const isActive = btn.dataset.mobileView === view;
+    btn.classList.toggle('is-active', isActive);
+    btn.setAttribute('aria-pressed', String(isActive));
   });
   if (dom.leftDrawerWrap) {
     const isMobileSearch = window.innerWidth <= 720 && view === 'search';
@@ -8220,7 +8270,7 @@ export async function loadSeamlessProvider({ forceEnable = false } = {}) {
 }
 ```
 
-### `js/search.js`（全 932 行）
+### `js/search.js`（全 934 行）
 
 ```javascript
 import { CONFIG } from './config.js';
@@ -8268,10 +8318,12 @@ export function renderResultList() {
     const li = document.createElement('li');
     const button = document.createElement('button');
     button.type = 'button';
+    const isSelected = isItemOverlayed(item);
     button.className = 'result-list-item';
-    if (isItemOverlayed(item)) {
+    if (isSelected) {
       button.classList.add('is-selected');
     }
+    button.setAttribute('aria-pressed', String(isSelected));
 
     const mainSpan = document.createElement('span');
     mainSpan.className = 'result-item-main';

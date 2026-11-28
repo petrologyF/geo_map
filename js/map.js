@@ -74,13 +74,19 @@ export function syncSettingsUI() {
     dom.mapEl.classList.toggle('map-query-cursor', Boolean(s.seamless200k && state.seamlessQueryPriority));
   }
   dom.basemapButtons.forEach((btn) => {
-    btn.classList.toggle('is-active', btn.dataset.basemap === state.activeBasemapKey);
+    const isActive = btn.dataset.basemap === state.activeBasemapKey;
+    btn.classList.toggle('is-active', isActive);
+    btn.setAttribute('aria-pressed', String(isActive));
   });
   dom.themeChoiceButtons.forEach((btn) => {
-    btn.classList.toggle('is-active', btn.dataset.themeChoice === state.theme);
+    const isActive = btn.dataset.themeChoice === state.theme;
+    btn.classList.toggle('is-active', isActive);
+    btn.setAttribute('aria-pressed', String(isActive));
   });
   dom.langButtons.forEach((btn) => {
-    btn.classList.toggle('is-active', btn.dataset.lang === state.lang);
+    const isActive = btn.dataset.lang === state.lang;
+    btn.classList.toggle('is-active', isActive);
+    btn.setAttribute('aria-pressed', String(isActive));
   });
   if (dom.wheelZoomSpeedSlider) {
     dom.wheelZoomSpeedSlider.value = String(state.wheelZoomSpeed);
@@ -225,7 +231,9 @@ export function applyScaleBarVisibility() {
 export function switchMobileView(view) {
   dom.appLayout.dataset.mobileView = view;
   dom.mobileNavButtons.forEach((btn) => {
-    btn.classList.toggle('is-active', btn.dataset.mobileView === view);
+    const isActive = btn.dataset.mobileView === view;
+    btn.classList.toggle('is-active', isActive);
+    btn.setAttribute('aria-pressed', String(isActive));
   });
   if (dom.leftDrawerWrap) {
     const isMobileSearch = window.innerWidth <= 720 && view === 'search';

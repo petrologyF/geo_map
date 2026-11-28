@@ -536,6 +536,7 @@ function renderInspectorVisualContent(item, meta, loc, activeTab, hasSections) {
         el('button', {
           type: 'button',
           className: idx === state.activeSectionIndex ? 'decade-chip is-selected' : 'decade-chip',
+          'aria-pressed': String(idx === state.activeSectionIndex),
           onClick: () => {
             state.activeSectionIndex = idx;
             renderInspectorDetail(item, true);

@@ -43,10 +43,12 @@ export function renderResultList() {
     const li = document.createElement('li');
     const button = document.createElement('button');
     button.type = 'button';
+    const isSelected = isItemOverlayed(item);
     button.className = 'result-list-item';
-    if (isItemOverlayed(item)) {
+    if (isSelected) {
       button.classList.add('is-selected');
     }
+    button.setAttribute('aria-pressed', String(isSelected));
 
     const mainSpan = document.createElement('span');
     mainSpan.className = 'result-item-main';
